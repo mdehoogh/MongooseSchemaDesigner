@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: libs/rhino-1.7.9.jar
+Main-Class: com.officevitae.marc.MongooseSchemaDesignerFrame
+Created-By: 1.0.0 (OfficeVitae)
