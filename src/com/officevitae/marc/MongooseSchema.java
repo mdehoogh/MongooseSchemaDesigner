@@ -237,6 +237,12 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return false;
 	}
 
+	public ITextLinesContainer getModelTextLinesContainer(){
+		if(modelTextFile==null){
+			modelTextFile=new ITextLinesProcessor.TextFile(new java.io.File("app/models",name+"model.js"));
+		}
+		return modelTextFile;
+	}
 	private void setSynced(boolean synced){
 		/////////if(this.synced==synced)return;
 		this.synced=synced;
@@ -435,6 +441,16 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		}
 	}
 
+	// keeping the model in a text file now the question when to actually read and write it
+	// I suppose read at start, so we have access to the text lines, and write at save!!
+	// in between we allow editing the text, extracting
+	// basically the .msd file is leading, defining the schema and subschemas
+	// but fields can also be parsed from the model file which is problematic if we have both!!!
+	// unless we decide to also write the internal field definition to the model file allowing as to import them back from the model file
+	// we can do that on the same line of the field as a commment at the end or on the line before!!!
+	// which is like embedding the .msd in the model file, I'd have to think about that...
+	// it's better to just mark the field lines in the model file, so they can be read if .msd is missing!!!
+	private ITextLinesProcessor.TextFile modelTextFile;
 	private void writeModel(File appDirectory){
 		// basically
 		try{

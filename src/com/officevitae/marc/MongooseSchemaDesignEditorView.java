@@ -289,6 +289,12 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		/////////schemaDesignPanel.add(schemaButtonView=getSchemaButtonView(),BorderLayout.SOUTH);
 		return schemaDesignPanel;
 	}
+	private JTextLinesEditor modelTextLinesEditor;
+	private JComponent getSchemaModelView(){
+		JPanel schemaTextPanel=new JPanel(new BorderLayout());
+		schemaTextPanel.add(modelTextLinesEditor=new JTextLinesEditor());
+		return schemaTextPanel;
+	}
 	private JTextLinesEditor fieldsTextLinesEditor; // where we show the text of the Mongoose Schema
 	private JComponent getSchemaTextView(){
 		JPanel schemaTextPanel=new JPanel(new BorderLayout());
@@ -330,6 +336,10 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 					*/
 					showSchemaFields();
 				}
+				break;
+			case 2:
+				if(mongooseSchema!=null)
+					modelTextLinesEditor.write();
 				break;
 		}
 	}
@@ -393,6 +403,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		if(this.mongooseSchema!=null){
 			if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
 			fieldsTextLinesEditor.setTextLinesContainer(null); // get rid of editing the current field collection...
+			modelTextLinesEditor.setTextLinesContainer(null);
 			/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
 			this.mongooseSchema.deleteSchemaSyncListener(this);
 			this.mongooseSchema.setFieldChangeListener(null);
@@ -402,6 +413,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		updateSelectedTabView(); // MDH@17OCT2018: we have to ascertain that the Mongoose Schema is up to date for showing in the currently showing tab page
 		if(this.mongooseSchema!=null){
 			fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
+			modelTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getModelTextLinesContainer());
 			if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.read();
 			this.mongooseSchema.addSchemaSyncListener(this); // listen in to any changes to the sync property!!!
 			this.mongooseSchema.setFieldChangeListener(this);

@@ -42,17 +42,24 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     private JLabel infoLabel;
     private JComponent getInfoView(){
         JPanel infoPanel=SwingUtils.getTitledPanel(null);
-        infoPanel.add(new JLabel("Info: "),BorderLayout.WEST);
-        infoPanel.add(infoLabel=new JLabel());
+        ////////infoPanel.add(new JLabel("Info: "),BorderLayout.WEST);
+        infoPanel.add(infoLabel=new JLabel(" "));
+        infoLabel.setToolTipText("Informative messages like notes, warnings and errors will appear here. Click to remove.");
+        infoLabel.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mousePressed(MouseEvent e){
+				infoLabel.setText(" ");
+			}
+		});
         infoLabel.setForeground(Color.BLUE);
         return infoPanel;
     }
 
     // IInfoViewer implementation
     public void setInfo(String source,String info){
-        String infoNow=infoLabel.getText();
-        if(!infoNow.isEmpty())System.out.println((source!=null?source:"Info")+": "+infoNow);
-        infoLabel.setText(info);
+        String infoNow=infoLabel.getText().trim();
+        if(!infoNow.isEmpty())Utils.consoleprintln((source!=null?source:"Info")+": "+infoNow);
+        infoLabel.setText(info==null||info.isEmpty()?" ":info);
     }
     // end IInfoViewer implementation
 
@@ -117,7 +124,8 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 				String newSchemaName;
 				for(String newSchemaNameText:newSchemaNameTexts){
 					newSchemaName=newSchemaNameText.trim();
-					if(!newSchemaName.isEmpty()&&!isExistingSchemaName(newSchemaName,selectedMongooseSchema)){
+					if(newSchemaName.isEmpty())continue;
+					if(!isExistingSchemaName(newSchemaName,selectedMongooseSchema)){
 						newSchemaTreePath=getANewMongooseSchemaTreePath(newSchemaName,selectedMongooseSchema);
 						if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
 					}else

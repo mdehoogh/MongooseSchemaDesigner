@@ -7,7 +7,7 @@ import java.io.PrintWriter;
  * a TextLinesProcessor processes the text lines provided but does not remember them
  */
 
-public interface ITextLinesProcessor extends ITextLinesProducer,ITextLinesConsumer{
+public interface ITextLinesProcessor extends ITextLinesContainer{
 
 	public class TextFile extends ITextLinesProducer.TextFile implements ITextLinesProcessor{
 		// the producer takes care of reading the text lines
