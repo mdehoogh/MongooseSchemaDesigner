@@ -98,6 +98,19 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         }
         return null;
     }
+	private TreePath getANewJavaScriptMongooseSchemaTreePath(String name,JavaScriptMongooseSchema parent){
+		TreePath treePath=null;
+		try {
+			JavaScriptMongooseSchema newMongooseSchema=(parent!=null?new JavaScriptMongooseSchema(name,parent):MongooseSchemaFactory.getANewJavaScriptMongooseSchema(name)); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
+			// NOTE call getMongooseSchemaTreeNode() because it will automatically append the subschema tree nodes as well!!!
+			DefaultMutableTreeNode newMongooseSchemaTreeNode=getMongooseSchemaTreeNode(newMongooseSchema);
+			selectedMongooseSchemaNode.add(newMongooseSchemaTreeNode);
+			return new TreePath(newMongooseSchemaTreeNode.getPath());
+		}catch(Exception ex){
+			setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' creating a new JavaScript Mongoose schema.");
+		}
+		return null;
+	}
 /*
     private boolean isExistingMongooseSchemaname(String name){
         for(int schemaIndex=0;schemaIndex<mongooseSchemasList.getModel().getSize();schemaIndex++)
@@ -333,7 +346,23 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
                 dispose();
             }
         });
-        // read any (top-level) schema definitions!!
+
+		// if we do not have a console, let's redirect to a file
+		if(System.console()==null){
+			// redirect System.out to the log file
+			System.out.println("Trying to redirect output to Office Vitae Mongoose Schema Designer.log.");
+			try{
+				PrintStream o=new PrintStream(new File("./OfficeVitaeMongooseSchemaDesigner.log"));
+				// Store current System.out before assigning a new value
+				Utils.setConsole(System.out);
+				System.setOut(o);
+			}catch(Exception ex){
+				System.err.println("'"+ex.getLocalizedMessage()+"' redirecting System.out.");
+			}
+		}
+		System.out.println("Start of a Office Vitae Mongoose Schema Designer session.");
+
+		// read any (top-level) schema definitions!!
         // NOTE the schema's themselves will take care of reading any subschema's
         File[] schemaFiles=new File(".").listFiles(new FilenameFilter(){
             @Override
@@ -341,33 +370,37 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
                 return name.endsWith(".msd")&&name.indexOf('.')==name.lastIndexOf('.'); // NOT a subschema!!
             }
         });
+		TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
         if(schemaFiles.length>0){
 			String schemaName;
-			TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
 			for(File schemaFile:schemaFiles)if(!schemaFile.isDirectory()&&schemaFile.canRead()){
 				schemaName=schemaFile.getName().substring(0,schemaFile.getName().indexOf('.'));
 				newSchemaTreePath=getANewMongooseSchemaTreePath(schemaName,null);
 				if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
 			}
-			if(lastCreatedSchemaTreePath!=null)selectTreePath(lastCreatedSchemaTreePath);
-			// and ascertain to see all nodes (although perhaps we do not want to extend the nodes)
-			SwingUtils.expandNode(mongooseSchemasTree,schemasTreeRootNode);
 		}
 
-        // if we do not have a console, let's redirect to a file
-        if(System.console()==null){
-            // redirect System.out to the log file
-            System.out.println("Trying to redirect output to Office Vitae Mongoose Schema Designer.log.");
-            try{
-                PrintStream o=new PrintStream(new File("./OfficeVitaeMongooseSchemaDesigner.log"));
-                // Store current System.out before assigning a new value
-                Utils.setConsole(System.out);
-                System.setOut(o);
-            }catch(Exception ex){
-                System.err.println("'"+ex.getLocalizedMessage()+"' redirecting System.out.");
-            }
-        }
-        System.out.println("Start of a Office Vitae Mongoose Schema Designer session.");
+		// how about also adding the JavaScriptMongooseSchema's????
+		lastCreatedSchemaTreePath=null;
+		File[] jsschemaFiles=new File("./app/models").listFiles(new FilenameFilter(){
+			@Override
+			public boolean accept(File dir,String name){
+				// any JavaScript file published by this app starts with ovmsd (short for Office Vitae Mongoose Schema Designer), and should NOT be included!!!!
+				return !name.startsWith("ovmsd.")&&name.endsWith(".model.js");
+			}
+		});
+		if(jsschemaFiles.length>0){
+			String jsschemaName;
+			for(File jsschemaFile:jsschemaFiles)if(!jsschemaFile.isDirectory()&&jsschemaFile.canRead()){
+				jsschemaName=jsschemaFile.getName().substring(0,jsschemaFile.getName().indexOf('.'));
+				newSchemaTreePath=getANewJavaScriptMongooseSchemaTreePath(jsschemaName,null);
+				if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
+			}
+		}
+		if(lastCreatedSchemaTreePath!=null)selectTreePath(lastCreatedSchemaTreePath);
+		// and ascertain to see all nodes (although perhaps we do not want to extend the nodes)
+		SwingUtils.expandNode(mongooseSchemasTree,schemasTreeRootNode);
+
     }
 
     public static void main(String[] args) {

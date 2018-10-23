@@ -108,6 +108,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	}
 	// can have subschema's
 	private Vector<MongooseSchema> subSchemas=new Vector<MongooseSchema>();
+	protected void removeAllSubSchemas(){subSchemas.clear();}
 	public boolean containsASubSchemaCalled(String subSchemaName){
 		for(MongooseSchema subSchema:subSchemas)if(subSchema.getName().equalsIgnoreCase(subSchemaName))return true;
 		return false;
@@ -168,19 +169,23 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return (tableSyncListener!=null?!tableSyncListeners.contains(tableSyncListener)||tableSyncListeners.remove(tableSyncListener):false);
 	}
 
+	// as we require that associatedFile is initialized in the constructor, subclasses cannot call my constructor, but may call initialize and checkFieldCollection()
+	// alternatively passing the associatedFile into the constructor is perhaps also a good idea
+	protected String getAssociatedFilename(){
+		return "."+File.pathSeparator+name+".msd";
+	}
+
 	// where to load a subschema from depends on the parent!!
+	protected MongooseSchema(){}
 	public MongooseSchema(String name,MongooseSchema parentSchema){
 		this.name=name;
-		// if not a sub schema load it...
-		if(parentSchema==null)
-			load();
-		else // a sub schema, it's setTextLines() might be called after this with lines to initialize it from (see load() below)
+		if(parentSchema!=null)
 			setParent(parentSchema);
-		// if we do not have _id defined, force having one
-		// TODO should we make _id unique????
+		else
+			load();
+		// MDH@15OCT2018: the automatic _id field can only be disabled on a parentless schema
 		if(!fieldCollection.containsFieldWithName("_id")&&!fieldCollection.add(new Field("_id").setType(MongooseFieldType.OBJECTID).setDisabable(this.parentSchema!=null)))
 			Utils.setInfo(this,"ERROR: Failed to add automatic _id field to schema '"+getRepresentation(false)+"'.");
-		// MDH@15OCT2018: the automatic _id field can only be disabled on a parentless schema
 	}
 	public MongooseSchema(String name){this(name,null);} // a main schema (not a subschema!!)
 
@@ -798,46 +803,40 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		*/
 	}
 
-	// TODO get these back in!!!
-	private ITextLinesProcessor.TextFile mongooseSchemaTextFileProcessor;
+	// NOTE not to call setSynced() on all subschema, but instead call assumeSynced() as that method will also assume sync all of its subschema's like we want to as well!!!
+	void assumeSynced(){try{for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();}finally{setSynced(true);}}
+
+	// TODO we can keep the following stuff private as long as subclasses call setAssociatedFile/getAssociatedFile() to return the text file associated with them
+	private ITextLinesProcessor mongooseSchemaTextFileProcessor; // MDH@21OCT2018: does not need to be declared as a TextFile per se here (so subclasses can have other ones)
 	private ITextLinesProducer getTextLinesProducer(){
-		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new java.io.File("./"+name+".msd"));
+		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new File(getAssociatedFilename()));
 		return mongooseSchemaTextFileProcessor;
 	}
 	private ITextLinesConsumer getTextLinesConsumer(){
-		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new java.io.File("./"+name+".msd"));
+		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new File(getAssociatedFilename()));
 		return mongooseSchemaTextFileProcessor;
 	}
-	// NOTE not to call setSynced() on all subschema, but instead call assumeSynced() as that method will also assume sync all of its subschema's like we want to as well!!!
-	void assumeSynced(){try{for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();}finally{setSynced(true);}}
-	public boolean load(){
+	// MDH@21OCT2018: we can leave load() and save() the same as what they were, but override getTextLinesProducer() and getTextLinesConsumer() in subclasses
+	public final boolean load(){
 		// this is now relatively easy
 		try{
-			getTextLinesProducer();
-			if(mongooseSchemaTextFileProcessor!=null){
-				setTextLines(mongooseSchemaTextFileProcessor.getTextLines());
-				assumeSynced();
-			}else
-				Utils.consoleprintln("No Mongoose schema text file reader!");
+			setTextLines(getTextLinesProducer().getTextLines());
+			assumeSynced();
 		}catch(Exception ex){
-			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' loading the Mongoose schema design.");
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' loading the Mongoose schema design '"+name+"'.");
 		}
 		return isSynced();
 	}
-	public boolean save(){
+	public final boolean save(){
 		// this is now relatively easy
 		// CAREFUL NOW, if this is a subschema, we're going to return what the parent says, which is a very convenient method to also get the root schema saved (and all its subschema's as well!)
 		// NOTE that this way only root schema's will try to load themselves from disk
 		if(parentSchema!=null)return parentSchema.save();
 		try{
-			getTextLinesConsumer();
-			if(mongooseSchemaTextFileProcessor!=null){
-				mongooseSchemaTextFileProcessor.setTextLines(getTextLines());
-				assumeSynced();
-			}else
-				Utils.consoleprintln("No Mongoose schema text file writer!");
+			getTextLinesConsumer().setTextLines(getTextLines());
+			assumeSynced();
 		}catch(Exception ex){
-			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving the Mongoose schema design.");
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving the Mongoose schema design '"+name+"'.");
 		}
 		return isSynced();
 	}

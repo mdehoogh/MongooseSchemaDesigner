@@ -52,6 +52,6 @@ u
 	+_id:ObjectId
 v
 	+_id:ObjectId
-+_id:ObjectId	+alias=	+default=
--a:[]	+alias=	+default=
-+b:[Number]	+alias=	+default=
++_id:ObjectId
+-a:[]
++b:[Number]
