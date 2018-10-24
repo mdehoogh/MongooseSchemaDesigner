@@ -35,7 +35,8 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 	public boolean isWhitespace(char c){return(c==' '||c=='\t'||c=='\r'||c=='\n');} // NOTE the last two are quite unlikely as they are typically used in the line separator itself...
 	// WORD tokens are typically separated by whitespace to separate them from the rest
 	public enum TokenType{
-		EMPTY,WHITESPACE,NEWLINE,SINGLECHARACTER,WORD,ASSIGNMENTOPERATOR,SINGLELINECOMMENT,MULTILINECOMMENT,DOUBLEQUOTEDLITERAL,SINGLEQUOTEDLITERAL,SCHEMANAME,SCHEMACONSTRUCTORCALL,FIELDNAME,OPTIONNAME,FIELDTYPE,FIELDPROPERTYNAME,FIELDPROPERTYVALUE;
+		EMPTY,WHITESPACE,NEWLINE,SINGLECHARACTER,WORD,ASSIGNMENTOPERATOR,SINGLELINECOMMENT,MULTILINECOMMENT,DOUBLEQUOTEDLITERAL,SINGLEQUOTEDLITERAL,SCHEMANAME,SCHEMACONSTRUCTORCALL,
+		FIELDNAME,OPTIONNAME,FIELDTYPE,FIELDPROPERTYNAME,OPTIONPROPERTYNAME,FIELDPROPERTYVALUE,OPTIONPROPERTYVALUE;
 	}
 	// at its minimum a token is of a certain type
 	private interface IToken{
@@ -366,11 +367,12 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 			// I suppose this means we have to identify out of comment and out of string literal text mongoose.Schema
 			int l,singleCharacterTokenIndex;
 			char c=' ',prevc=' ';
-			String currentSchemaName=null,currentFieldName=null,currentOptionName=null; // keeping track of the current schema name and/or current field name and/or current option name
+			String currentSchemaName=null,currentFieldName=null,currentOptionName=null,currentFieldPropertyName=null,currentOptionPropertyName=null; // keeping track of the current schema name and/or current field name and/or current option name
 			int currentSchemaConstructorCallArgumentIndex=0;
 			String newTokenText=null; // this is the text to set in a new token when the current token ends
 			TokenType newTokenType=null;
 			int jsobjects=0; // count how many JavaScript objects we encountered...
+			TokenSequence tokenSequence=null;
 			for(String textLine:textLines){
 				// a single text line might be processed in multiple pieces...
 				l=textLine.length();
@@ -460,7 +462,7 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 											case 1: // : typically separates the field name from the field definition object (or type) but only at level 2
 												if(currentSchemaName!=null){
 													if(tokenSequenceStack.size()==2){
-														TokenSequence tokenSequence=tokenSequenceStack.peek();
+														tokenSequence=tokenSequenceStack.peek();
 														int nameTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
 														if(nameTokenIndex>=0){
 															sequenceToken=tokenSequence.get(nameTokenIndex);
@@ -473,6 +475,22 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 															}
 														}else
 															Utils.consoleprintln("ERROR: Missing attribute name.");
+													}else if(tokenSequenceStack.size()==3){
+														// a colon inside a field property value object
+														tokenSequence=tokenSequenceStack.peek();
+														int propertyNameTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+														if(propertyNameTokenIndex>=0){
+															sequenceToken=tokenSequence.get(propertyNameTokenIndex);
+															if(currentSchemaConstructorCallArgumentIndex==1){
+																currentFieldPropertyName=((SimpleToken)sequenceToken).getSignificantText();
+																((SimpleToken)sequenceToken).setTokenType(TokenType.FIELDPROPERTYNAME); // tag as field name!!
+															}else if(currentSchemaConstructorCallArgumentIndex==2){ // an option
+																currentOptionPropertyName=((SimpleToken)sequenceToken).getSignificantText();
+																((SimpleToken)sequenceToken).setTokenType(TokenType.OPTIONPROPERTYNAME); // tag as field name!!
+															}
+														}else
+															Utils.consoleprintln("ERROR: Missing attribute name.");
+
 													}
 												}
 												break; // MDH@24OCT2018: BUG FIX need this indeed!!!
@@ -503,14 +521,66 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 																newSchemaConstructorCallArgument=true;
 															}
 														}
+													}else if(tokenSequenceStack.size()==3){
+														if(currentSchemaConstructorCallArgumentIndex==1){
+															if(currentFieldPropertyName!=null){
+																tokenSequenceStack.push(newTokenSequence("Field property values of "+currentFieldPropertyName));
+																newSchemaConstructorCallArgument=true;
+															}
+														}else if(currentSchemaConstructorCallArgumentIndex==2){
+															if(currentOptionPropertyName!=null){
+																tokenSequenceStack.push(newTokenSequence("Option property values of "+currentOptionPropertyName));
+																newSchemaConstructorCallArgument=true;
+															}
+														}
 													}
 												}
 												if(!newSchemaConstructorCallArgument)tokenSequenceStack.push(newTokenSequence(String.valueOf(++jsobjects)));
 												break;
 											case 4: // }
+												// we have to do the same as what we did on ,
+												// a } behind the definition of the type of a field ends the current field name (definition)
+												if(tokenSequenceStack.size()==2){
+													if(currentSchemaConstructorCallArgumentIndex==1){
+														if(currentFieldName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.FIELDTYPE);
+															currentFieldName=null;
+														}
+													}else if(currentSchemaConstructorCallArgumentIndex==2){
+														if(currentOptionName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex >= 0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.OPTIONPROPERTYNAME);
+															currentOptionName=null;
+														}
+													}
+												}else if(tokenSequenceStack.size()==3){
+													if(currentSchemaConstructorCallArgumentIndex==1){
+														if(currentFieldPropertyName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.FIELDPROPERTYVALUE);
+															currentFieldPropertyName=null;
+														}
+													}else if(currentSchemaConstructorCallArgumentIndex==2){
+														if(currentOptionPropertyName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.OPTIONPROPERTYVALUE);
+															currentOptionPropertyName=null;
+														}
+													}
+												}
+												// some extra things to do at the end of a JS object!
 												// ok, if we want } to be part of the sub token sequence (like { is) we have to add the token first before popping!!!
 												if(!tokenSequenceStack.peek().addToken(token)) throw new TokenAdditionException(token); // we push the } onto the new stack
-												TokenSequence tokenSequence=poppedTokenSequence(); // ends the current JS object token sequence
+												tokenSequence=poppedTokenSequence(); // ends the current JS object token sequence
 												token=new SimpleToken(); // start a new token (which might end up containing the whitespace following the } single character token)
 												tokenSequenceStack.peek().addToken(tokenSequence); // whatever's on top now should received the popped off token sequence as a whole!!
 												break;
@@ -565,12 +635,40 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 											case 7: // ,
 												// a comma behind the definition of the type of a field ends the current field name (definition)
 												if(tokenSequenceStack.size()==2){
-													if(currentFieldName!=null){
-														tokenSequence=tokenSequenceStack.peek();
-														// if the previous token is composite
-														int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
-														if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.FIELDTYPE);
-														currentFieldName=null;
+													if(currentSchemaConstructorCallArgumentIndex==1){
+														if(currentFieldName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.FIELDTYPE);
+															currentFieldName=null;
+														}
+													}else if(currentSchemaConstructorCallArgumentIndex==2){
+														if(currentOptionName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex >= 0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.OPTIONPROPERTYNAME);
+															currentOptionName=null;
+														}
+													}
+												}else if(tokenSequenceStack.size()==3){
+													if(currentSchemaConstructorCallArgumentIndex==1){
+														if(currentFieldPropertyName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.FIELDPROPERTYVALUE);
+															currentFieldPropertyName=null;
+														}
+													}else if(currentSchemaConstructorCallArgumentIndex==2){
+														if(currentOptionPropertyName!=null){
+															tokenSequence=tokenSequenceStack.peek();
+															// if the previous token is composite
+															int lastWordTokenIndex=tokenSequence.getLastTokenIndex(tokenSequence.size(),TokenType.WORD);
+															if(lastWordTokenIndex>=0)((SimpleToken)tokenSequence.get(lastWordTokenIndex)).setTokenType(TokenType.OPTIONPROPERTYVALUE);
+															currentOptionPropertyName=null;
+														}
 													}
 												}
 												break;
