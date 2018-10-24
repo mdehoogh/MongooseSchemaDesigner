@@ -113,12 +113,22 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		for(MongooseSchema subSchema:subSchemas)if(subSchema.getName().equalsIgnoreCase(subSchemaName))return true;
 		return false;
 	}
+	public MongooseSchema getSubSchemaCalled(String subSchemaName){
+		for(MongooseSchema subSchema:subSchemas)if(subSchema.getName().equalsIgnoreCase(subSchemaName))return subSchema;
+		return null;
+	}
 	boolean addSubSchema(MongooseSchema subSchema){
 		if(subSchema==null)return false;
 		if(subSchemas.contains(subSchema))return true;
 		if(!subSchemas.add(subSchema))return false;
 		for(SubSchemaListener subSchemaListener:subSchemaListeners)try{subSchemaListener.subSchemaAdded(subSchema);}catch(Exception ex){}
 		return true;
+	}
+	// MDH@24OCT2018: convenience method to be able to add a subschema if it's not there already, or otherwise create a new one and add it
+	MongooseSchema newSubSchemaCalled(String subSchemaName){
+		for(MongooseSchema subSchema:subSchemas)if(subSchema.getName().equalsIgnoreCase(subSchemaName))return subSchema;
+		MongooseSchema subSchema=new MongooseSchema(subSchemaName,this);
+		return(addSubSchema(subSchema)?subSchema:null);
 	}
 	boolean removeSubSchema(MongooseSchema subSchema){
 		if(subSchema==null)return false;
@@ -517,7 +527,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return (field==null?"":field.getTextRepresentation(true));
 	}
 
-	private IFieldType getFieldType(String fieldTypeName){
+	protected IFieldType getMongooseFieldType(String fieldTypeName){
 		if(fieldTypeName.isEmpty())return MongooseFieldType.MIXED; // e.g. as generic array element type!!!
 		if(fieldTypeName.equalsIgnoreCase("array")) return MongooseFieldType.ARRAY;
 		//////////if(fieldTypeName.equalsIgnoreCase("auto incremented integer"))return FieldType.AUTO_INCREMENT;
@@ -530,12 +540,17 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		if(fieldTypeName.equalsIgnoreCase("number")) return MongooseFieldType.NUMBER;
 		if(fieldTypeName.equalsIgnoreCase("objectid")) return MongooseFieldType.OBJECTID;
 		if(fieldTypeName.equalsIgnoreCase("string")) return MongooseFieldType.STRING;
+		return null;
+	}
+	private IFieldType getFieldType(String fieldTypeName){
 		// TODO could be the name of a sub schema????
+		IFieldType mongooseFieldType=getMongooseFieldType(fieldTypeName);
+		if(mongooseFieldType!=null)return mongooseFieldType;
 		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)if(subSchema.getDescription().equals(fieldTypeName))return subSchema;
 		return null;
 	}
 
-	private Field getFieldFromContents(String fieldcontents){
+	protected Field getFieldFromContents(String fieldcontents){
 		Field field=null;
 		Utils.consoleprintln("Parsing field from '"+fieldcontents+"'.");
 		String[] contentParts=fieldcontents.split("\t");
