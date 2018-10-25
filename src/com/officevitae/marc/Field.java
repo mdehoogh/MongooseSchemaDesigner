@@ -567,11 +567,12 @@ public class Field{
 
 		// MDH@16OCT2018: type is a bit of an issue, because when the type is an array, we use a different representation (i.e. not just Array)
 		// so something enclosed in square brackets represents the type of the array elements (typically Mixed)
-		// NOTE I fixed this problem by creating an array specific field type: ArrayFieldType!!
+		/* NOTE I fixed this problem by creating an array specific field type: ArrayFieldType!!
 		if(type.equals(MongooseFieldType.ARRAY))
-			sbRepresentation.append("["+(arrayElementType==null||MongooseFieldType.MIXED.equals(arrayElementType)?"":arrayElementType.getDescription().toString())+"]");
+			sbRepresentation.append("["+(arrayElementType==null||MongooseFieldType.MIXED.equals(arrayElementType)?"":arrayElementType.toString())+"]"); // MDH@24OCT2018: switching to using the toString() on the type itself, no longer on the description of the type!!
 		else
-			sbRepresentation.append(type.getDescription().toString()); // we're using the description here otherwise we'd get a$a* instread of a$aSchema what we like it to be!!
+		*/
+		sbRepresentation.append(type.toString()); // MDH@24OCT2018: the type itself should know how to show itself
 
 		// NOTE as you can see the alias text is written even if undefined BUT in that case isDisabled() should return false, not true
 		sbRepresentation.append(getLiteralRepresentation("alias",serialized,aliasLiteral));

@@ -11,7 +11,7 @@ import java.awt.event.ItemListener;
 import java.util.Date;
 import java.util.List;
 
-public class FieldView extends JPanel implements MongooseSchema.SubSchemaListener{
+public class FieldView extends JPanel implements MongooseSchema.SubSchemaListener,FieldTypeSelectorView.ChangeListener{
 
 	private static final void setInfo(String info){
 		System.out.println("Field view info"+info);
@@ -27,8 +27,12 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	private ValidatedFieldLiteralView<String[]> valuesLiteralView;
 	private ValidatedFieldLiteralView<String> defaultLiteralView,matchLiteralView,aliasLiteralView,getLiteralView,setLiteralView,validateLiteralView,refLiteralView;
 
-	private JComboBox typeComboBox;
-	private JCheckBox autoIncrementCheckBox,requiredCheckBox,selectCheckBox;
+	// MDH@24OCT2018: replacing typeComboBox with a FieldTypeSelectorView which has full support for defining a type
+	private FieldTypeSelectorView fieldTypeSelectorView; // replacing: private JComboBox typeComboBox;
+	public void fieldTypeChanged(FieldTypeSelectorView fieldTypeSelectorView,IFieldType selectedFieldType){
+		field.setType(selectedFieldType); // update the type of the current field
+	}
+	private JCheckBox requiredCheckBox,selectCheckBox;
 	// the check boxes associated with the flags of the optional options
 	//////////private JCheckBox defaultCheckBox,minNumberCheckBox,maxNumberCheckBox,minDateCheckBox,maxDateCheckBox,startAtCheckBox,valuesCheckBox;
 	private JComponent autoIncrementView,optionsView,functionsView,indexView,stringOptionsView,numberOptionsView,dateOptionsView,refView,arrayElementTypeView;
@@ -48,7 +52,8 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	}
 	*/
 	private void showType(){
-		typeComboBox.setSelectedItem(field.getType()); // most convenient way to speed up stuff
+		// MDH@24OCT2018: now using a FieldTypeSelectorView for taking care of selecting a type...
+		fieldTypeSelectorView.selectFieldType(field.getType()); // replacing: typeComboBox.setSelectedItem(field.getType()); // most convenient way to speed up stuff
 		/////////newFieldType(); // TODO call this?????
 	}
 	/*
@@ -151,6 +156,8 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 			boolean autoincremented=field.isAutoIncremented();
 
 			IFieldType type=field.getType();
+			// MDH@24OCT2018: we no longer have a subview to select the array element field type, that's all taken care of by FieldTypeSelectorView
+			/* replacing
 			if(type.equals(MongooseFieldType.ARRAY)){ // either a generic Array or type specific array!!
 				removeSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
 				addSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
@@ -159,7 +166,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 				arrayElementTypeView.setVisible(true);
 			}else
 				arrayElementTypeView.setVisible(false);
-
+			*/
 			// I suppose anything that is numeric can be auto-incremented!!
 			if(!references&&(type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.INTEGER)))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
 
@@ -183,13 +190,21 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	}
 	// MongooseSchema.SubSchemaListener implementation
 	public void subSchemaAdded(MongooseSchema subSchema){
+		// MDH@24OCT2018: typeComboBox replaced by an instance of FieldTypeSelectorView
+		fieldTypeSelectorView.addAdditionalFieldType(subSchema);
+		/* replacing:
 		typeComboBoxModel.addElement(subSchema.getDescription());
 		if(arrayElementTypeComboBoxModel!=null)arrayElementTypeComboBoxModel.addElement(subSchema.getDescription());
+		*/
 	}
 	public void subSchemaRemoved(MongooseSchema subSchema){
+		fieldTypeSelectorView.removeAdditionalFieldType(subSchema);
+		/* replacing:
 		typeComboBoxModel.removeElement(subSchema.getDescription());
 		if(arrayElementTypeComboBoxModel!=null)arrayElementTypeComboBoxModel.removeElement(subSchema.getDescription());
+		*/
 	}
+	/* replacing:
 	private void removeSubSchemaFieldTypes(DefaultComboBoxModel comboBoxModel){
 		int fieldTypeIndex=comboBoxModel.getSize();
 		while(--fieldTypeIndex>=0)if(((IFieldType.Description)comboBoxModel.getElementAt(fieldTypeIndex)).getFieldType() instanceof MongooseSchema)comboBoxModel.removeElementAt(fieldTypeIndex);
@@ -199,15 +214,16 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 			for(MongooseSchema subSchema:field.getCollection().getSchema().getSubSchemas())comboBoxModel.addElement(subSchema.getDescription()); // TODO should be showing the description????
 		}catch(Exception ex){}
 	}
+	*/
 	// end MongooseSchema.SubSchemaListener implementation
 	public void setField(Object field){
-		removeSubSchemaFieldTypes(typeComboBoxModel);
+		// MDH@24OCT2018 removing: removeSubSchemaFieldTypes(typeComboBoxModel);
 		try{this.field.getCollection().getSchema().removeSubSchemaListener(this);}catch(Exception ex){}
 		this.field=(field!=null&&field instanceof Field?(Field)field:null);
 		if(this.field!=null){
 			try{
 				showField();
-				addSubSchemaFieldTypes(typeComboBoxModel);
+				// MDH@24OCT2018 removing: addSubSchemaFieldTypes(typeComboBoxModel);
 				this.field.getCollection().getSchema().addSubSchemaListener(this);
 			}catch(Exception ex){
 				System.out.println("ERROR: '"+ex.getLocalizedMessage()+"' in setting the field of the field viewer.");
@@ -220,8 +236,11 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	public void setFieldType(IFieldType fieldType) { // to be called whenever
 		try{field.setType(fieldType);}finally{showField();} // easiest way to get to see the contents of the field (without the field type itself)
 	}
-	private DefaultComboBoxModel typeComboBoxModel;
+	// MDH@24OCT2018 removing: private DefaultComboBoxModel typeComboBoxModel;
 	private JComponent getTypeView(){
+		if(fieldTypeSelectorView==null)fieldTypeSelectorView=new FieldTypeSelectorView().setPrefix("Type: ").setFieldTypeChangeListener(this);
+		return fieldTypeSelectorView;
+		/*
 		JPanel typePanel=SwingUtils.getTitledPanel(null);
 		typePanel.add(new JLabel("Type: "),BorderLayout.WEST);
 		// MDH@16OCT2018: we want to be able to add the subschema's of the owner as types to the type combo box of a field
@@ -237,7 +256,9 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		});
 		////////////typeComboBox.setSelectedIndex(DEFAULT_TYPE_INDEX); // get the right type selected
 		return typePanel;
+		*/
 	}
+	/* MDH@24OCT2018 removing:
 	// if the user selects Array as type, (s)he should be allowed to select the type of the array elements
 	private DefaultComboBoxModel arrayElementTypeComboBoxModel;
 	private JComboBox arrayElementTypeComboBox;
@@ -258,6 +279,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		///// wait for field being selected!!! addSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
 		return arrayElementTypePanel;
 	}
+	*/
 	private JComponent getDefaultView(){
 		return(defaultLiteralView=new ValidatedFieldLiteralView<String>("Default: "));
 	}
@@ -461,7 +483,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		Box fieldBox=Box.createVerticalBox();
 		fieldBox.add(SwingUtils.getLeftAlignedView(fieldNameLabel));
 		fieldBox.add(getTypeView());
-		fieldBox.add(arrayElementTypeView=getArrayElementTypeView()); // MDH@16OCT2018: only to be shown when type Array is selected, so a user can select the array element type
+		// MDH@24OCT2018 removing: fieldBox.add(arrayElementTypeView=getArrayElementTypeView()); // MDH@16OCT2018: only to be shown when type Array is selected, so a user can select the array element type
 		fieldBox.add(getStartAtView()); // right below the type where a person can define whether to be auto-incrementing...
 		fieldBox.add(refView=getRefView());
 		fieldBox.add(indexView=getIndexView());

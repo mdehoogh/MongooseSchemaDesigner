@@ -244,7 +244,9 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		newMongooseSchemaButton.setEnabled(anyNewSchemaName);
 		if(anyNewSchemaName)SwingUtils.setDefaultButton(newMongooseSchemaButton);else SwingUtils.unsetDefaultButton(newMongooseSchemaButton);
 	}
+	public String toString(){return "Office Vitae Mongoose Schema Designer";}
 	private void setSelectedMongooseSchema(MongooseSchema mongooseSchema){
+		if(mongooseSchema!=null)Utils.setInfo(this,"Selected schema: '"+mongooseSchema.getRepresentation(false)+"'.");
 		mongooseSchemaEditorView.setMongooseSchema(mongooseSchema);
 		checkForNewSchemaNames();
 	}
@@ -362,16 +364,17 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		}
 		System.out.println("Start of a Office Vitae Mongoose Schema Designer session.");
 
-		// read any (top-level) schema definitions!!
-        // NOTE the schema's themselves will take care of reading any subschema's
+		// read any (top-level) schema definitions, and remember the last created schema tree path for selection
+		TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
+
+		// NOTE the schema's themselves will take care of reading any subschema's
         File[] schemaFiles=new File(".").listFiles(new FilenameFilter(){
             @Override
             public boolean accept(File dir,String name){
                 return name.endsWith(".msd")&&name.indexOf('.')==name.lastIndexOf('.'); // NOT a subschema!!
             }
         });
-		TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
-        if(schemaFiles.length>0){
+        if(schemaFiles!=null&&schemaFiles.length>0){
 			String schemaName;
 			for(File schemaFile:schemaFiles)if(!schemaFile.isDirectory()&&schemaFile.canRead()){
 				schemaName=schemaFile.getName().substring(0,schemaFile.getName().indexOf('.'));
@@ -380,8 +383,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			}
 		}
 
-		// how about also adding the JavaScriptMongooseSchema's????
-		lastCreatedSchemaTreePath=null;
+		// external (JavaScript) model files we want to import automatically
 		File[] jsschemaFiles=new File("./app/models").listFiles(new FilenameFilter(){
 			@Override
 			public boolean accept(File dir,String name){
@@ -389,7 +391,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 				return !name.startsWith("ovmsd.")&&name.endsWith(".model.js");
 			}
 		});
-		if(jsschemaFiles.length>0){
+		if(jsschemaFiles!=null&&jsschemaFiles.length>0){
 			String jsschemaName;
 			for(File jsschemaFile:jsschemaFiles)if(!jsschemaFile.isDirectory()&&jsschemaFile.canRead()){
 				jsschemaName=jsschemaFile.getName().substring(0,jsschemaFile.getName().indexOf('.'));
@@ -398,6 +400,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			}
 		}
 		if(lastCreatedSchemaTreePath!=null)selectTreePath(lastCreatedSchemaTreePath);
+
 		// and ascertain to see all nodes (although perhaps we do not want to extend the nodes)
 		SwingUtils.expandNode(mongooseSchemasTree,schemasTreeRootNode);
 

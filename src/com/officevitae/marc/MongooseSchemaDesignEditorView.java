@@ -35,7 +35,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	}
 	// end syncListener implementation
 	// listen to any changes to a field of mine
-	public void fieldChanged(Field field) {
+	public void fieldChanged(Field field){
 		if(field==null)return;
 		int fieldIndex = mongooseSchema.getIndexOfField(field);
 		if(fieldIndex<0){Utils.setInfo(this,"Unknown field "+field.getName()+"' changed!");return;}
@@ -338,8 +338,9 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				}
 				break;
 			case 2:
+				// force a read so we will see the most recent model text lines
 				if(mongooseSchema!=null)
-					modelTextLinesEditor.write();
+					modelTextLinesEditor.read();
 				break;
 		}
 	}
@@ -352,6 +353,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		// initially when the schema is selected in the tree view we show the text only (before it's parsed when the Design view is shown!!!)
 		tabbedPane.addTab("Text",getSchemaTextView());
 		tabbedPane.addTab("Design",getSchemaDesignView());
+		tabbedPane.addTab("Model",getSchemaModelView());
 		tabbedPane.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e){
@@ -389,6 +391,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	}
 	private void showMongooseSchema(){
 		if(this.mongooseSchema!=null){
+			Utils.setInfo(this,"Showing schema '"+this.mongooseSchema.getRepresentation(false)+"'.");
 			/////////backButton.setVisible(aSubSchema);
 			// we're actually editing the fields and NOT the entire schema (with subschemas included!!!)
 			// MDH@19OCT2018: switch to showing the (full) representation (and not just toString() which shows the name and the sync status only)
@@ -400,27 +403,35 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	}
 	public void setMongooseSchema(MongooseSchema mongooseSchema){
 		// NOTE that this could possibly be a subschema
-		if(this.mongooseSchema!=null){
-			if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
-			fieldsTextLinesEditor.setTextLinesContainer(null); // get rid of editing the current field collection...
-			modelTextLinesEditor.setTextLinesContainer(null);
-			/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
-			this.mongooseSchema.deleteSchemaSyncListener(this);
-			this.mongooseSchema.setFieldChangeListener(null);
+		try{
+			if(this.mongooseSchema!=null){
+				if(tabbedPane.getSelectedIndex()==0) fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+				fieldsTextLinesEditor.setTextLinesContainer(null); // get rid of editing the current field collection...
+				modelTextLinesEditor.setTextLinesContainer(null);
+				/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
+				this.mongooseSchema.deleteSchemaSyncListener(this);
+				this.mongooseSchema.setFieldChangeListener(null);
+			}
+			this.mongooseSchema=mongooseSchema;
+			////////schemaButtonView.setVisible(this.mongooseSchema!=null&&this.mongooseSchema.getParent()==null); // TODO should we put this somewhere else??? unless we allow saving any schema even it's a subschema!!!
+			updateSelectedTabView(); // MDH@17OCT2018: we have to ascertain that the Mongoose Schema is up to date for showing in the currently showing tab page
+			if(this.mongooseSchema!=null){
+				fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
+				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
+				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
+				modelTextLinesEditor.setTextLinesConsumer(this.mongooseSchema.getModelTextLinesConsumer());
+				if(tabbedPane.getSelectedIndex()==0) fieldsTextLinesEditor.read();
+				this.mongooseSchema.addSchemaSyncListener(this); // listen in to any changes to the sync property!!!
+				this.mongooseSchema.setFieldChangeListener(this);
+			}
+		}catch(Exception ex){
+			Utils.consoleprintln("ERROR: '"+ex.getLocalizedMessage()+"' updating the Mongoose schema editor view to show a new Mongoose schema.");
+		}finally{
+			showMongooseSchema();
 		}
-		this.mongooseSchema=mongooseSchema;
-		////////schemaButtonView.setVisible(this.mongooseSchema!=null&&this.mongooseSchema.getParent()==null); // TODO should we put this somewhere else??? unless we allow saving any schema even it's a subschema!!!
-		updateSelectedTabView(); // MDH@17OCT2018: we have to ascertain that the Mongoose Schema is up to date for showing in the currently showing tab page
-		if(this.mongooseSchema!=null){
-			fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
-			modelTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getModelTextLinesContainer());
-			if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.read();
-			this.mongooseSchema.addSchemaSyncListener(this); // listen in to any changes to the sync property!!!
-			this.mongooseSchema.setFieldChangeListener(this);
-		}
-		showMongooseSchema();
 	}
 	public MongooseSchema getMongooseSchema(){return mongooseSchema;} // exposes the associated mongoose schema!!!
+	public String toString(){return "Office Vitae Mongoose Schema Editor";}
 	public MongooseSchemaDesignEditorView(){
 		super(new CardLayout());
 		add(new JLabel("The selected schema will show here!"),"NoSchema");

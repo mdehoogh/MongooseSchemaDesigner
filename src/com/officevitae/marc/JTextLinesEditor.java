@@ -67,7 +67,6 @@ public class JTextLinesEditor extends JPanel{
 		}
 	}
 	private HistoryStack history=new HistoryStack(); // the history of texts that we may return to
-	private ITextLinesContainer textLinesContainer;
 	private JTextArea textArea;
 	private JButton undoButton,storeButton;
 	private void remember(){ // if we succeed in pushing update
@@ -98,6 +97,8 @@ public class JTextLinesEditor extends JPanel{
 	private JComponent getTextView(){
 		JPanel textPanel=new JPanel(new BorderLayout());
 		textPanel.add(new JScrollPane(textArea=new JTextArea()));
+		// force a mono spaced font!!
+		textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 		textArea.addKeyListener(new KeyAdapter(){
 			@Override
 			public void keyReleased(KeyEvent e){
@@ -134,12 +135,12 @@ public class JTextLinesEditor extends JPanel{
 	public boolean read(){
 		// i.e. start over with the
 		try{
-			textArea.setText(String.join("\n",textLinesContainer.getTextLines())); // update the view
+			textArea.setText(String.join("\n",textLinesProducer.getTextLines())); // update the view
 			history.clear();
 			remember(); // keep the current value in the history (so we can go back to it)
 			return true;
 		}catch(Exception ex){
-			System.out.println("'"+ex.getLocalizedMessage()+"' in reading the text lines to be edited.");
+			System.out.println("'"+ex.getLocalizedMessage()+"' in obtaining the text lines.");
 		}
 		return false;
 	}
@@ -154,17 +155,26 @@ public class JTextLinesEditor extends JPanel{
 			}else
 				remember();
 			// update textLinesContainer with the new contents
-			textLinesContainer.setTextLines(text.split("\n"));
+			if(textLinesConsumer!=null)textLinesConsumer.setTextLines(text.split("\n"));
 			return true;
 		}catch(Exception ex){
 			Utils.consoleprintln("ERROR: '"+ex.getLocalizedMessage()+"' in updating the Mongoose schema from the text.");
 		}
 		return false;
 	}
+	private ITextLinesProducer textLinesProducer=null;
+	private ITextLinesConsumer textLinesConsumer=null;
+	public void setTextLinesProducer(ITextLinesProducer textLinesProducer){
+		this.textLinesProducer=textLinesProducer;
+		history.clear();
+	}
+	public void setTextLinesConsumer(ITextLinesConsumer textLinesConsumer){
+		this.textLinesConsumer=textLinesConsumer;
+	}
 	// not much to do now we have read() and write() in place and callable, and working!!!
 	public void setTextLinesContainer(ITextLinesContainer textLinesContainer){
-		this.textLinesContainer=textLinesContainer;
-		history.clear(); // will take care of updating the lot...
+		setTextLinesConsumer(textLinesContainer);
+		setTextLinesProducer(textLinesContainer);
 	}
 	/* replacing:
 	public void setTextLinesContainer(ITextLinesContainer textLinesContainer){

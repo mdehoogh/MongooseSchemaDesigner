@@ -1,17 +1,21 @@
 package com.officevitae.marc;
 
 // MDH@16OCT2018: because the user can expand the basic field types with its own field types (by defining subschemas)
-public enum MongooseFieldType implements IFieldType,IFieldType.Description {
+public enum MongooseFieldType implements IFieldType{
 
 	ARRAY("Array"),BOOLEAN("Boolean"),BUFFER("Buffer"),DATE("Date"),DECIMAL128("Decimal128"),INTEGER("Integer"),MAP("Map"),MIXED("Mixed"),NUMBER("Number"),OBJECTID("ObjectId"),STRING("String");
 
-	private String description;
-	MongooseFieldType(String description){this.description=description;}
+	// we need a fixed (and final) description object, so we create it only once
+	private final Description description;
+	MongooseFieldType(String description){
+		this.description=new Description(){
+			public IFieldType getFieldType(){return MongooseFieldType.this;}
+			public String toString(){return description;}
+		};
+	}
 
 	// IFieldType implementation
-	public Description getDescription(){return this;}
-	// IFieldType.Description implementation
-	public IFieldType getFieldType(){return this;}
+	public Description getDescription(){return description;}
 
 	public boolean representsAValidValue(String value){
 		boolean valid=(value!=null); // null is always invalid!!
@@ -38,7 +42,6 @@ public enum MongooseFieldType implements IFieldType,IFieldType.Description {
 				case 6: // Map
 					break;
 				case 7: // Mixed
-
 					break;
 				case 8: // Number
 					break;
@@ -50,20 +53,22 @@ public enum MongooseFieldType implements IFieldType,IFieldType.Description {
 		}
 		return valid;
 	}
+
 	public boolean equals(IFieldType fieldType){
 		try{
 			return((MongooseFieldType)fieldType).ordinal()==this.ordinal();
 		}catch(Exception ex){}
 		return false;
 	}
+	/*
 	public int compareTo(IFieldType fieldType){
 		try{
 			return this.ordinal()-((MongooseFieldType)fieldType).ordinal();
 		}catch(Exception ex){}
 		return -1; // always smaller than any other field type (MongooseSchema's)
 	}
-
+	*/
 	// end IFieldType implementation
-	public String toString(){return description;}
+	public String toString(){return "Schema.Types."+description.toString();} // TODO have to think about this though!!!
 
 }

@@ -182,7 +182,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	// as we require that associatedFile is initialized in the constructor, subclasses cannot call my constructor, but may call initialize and checkFieldCollection()
 	// alternatively passing the associatedFile into the constructor is perhaps also a good idea
 	protected String getAssociatedFilename(){
-		return "."+File.pathSeparator+name+".msd";
+		return "."+File.separator+name+".msd";
 	}
 
 	// where to load a subschema from depends on the parent!!
@@ -251,11 +251,17 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		Utils.setInfo(this,"ERROR: Failed to add field '"+field.getName()+"'.");
 		return false;
 	}
-
-	public ITextLinesContainer getModelTextLinesContainer(){
-		if(modelTextFile==null){
-			modelTextFile=new ITextLinesProcessor.TextFile(new java.io.File("app/models",name+"model.js"));
-		}
+	// yes, we make a distinction between a text lines producer (to generate the model text lines) which would be me) and a text lines consumer which should be the file the text lines are to be written to
+	// NOTE for a JavaScriptMongooseSchema the producer would be the text file as well
+	ITextLinesProducer getModelTextLinesProducer(){
+		return new ITextLinesProducer(){
+			public String[] getTextLines() throws Exception{
+				return getModelTextLines();
+			};
+		};
+	}
+	ITextLinesConsumer getModelTextLinesConsumer(){
+		if(modelTextFile==null)modelTextFile=new ITextLinesConsumer.TextFile(new java.io.File("app/models","ovmsd."+name+"model.js"));
 		return modelTextFile;
 	}
 	private void setSynced(boolean synced){
@@ -300,12 +306,15 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			}
 			// this is not just writing the entire model file although it could but alternatively replace the mongoose schema declaration
 			// BUT we only allow that on a model file with a schema that has been created with
-			File f=new File(routesDirectory,name+".routes.js");
+			File f=new File(routesDirectory,"ovmsd."+name+".routes.js"); // MDH@24OCT2018: created by this Office Vitae Mongoose Schema Designer
 			// for now let's decide to always overwrite the thing
 			if(f.exists()){
 				Utils.setInfo(this,"The routes file of table "+name+" already exists, and will not be overwritten.");
 				return;
 			}
+			PrintWriter pw=new PrintWriter(new FileWriter(f,false));
+			// TODO write the routes
+			pw.close();
 		}catch(Exception ex){
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' in writing the routes of table "+name+".");
 		}
@@ -322,7 +331,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			}
 			// this is not just writing the entire model file although it could but alternatively replace the mongoose schema declaration
 			// BUT we only allow that on a model file with a schema that has been created with
-			File f=new File(controllersDirectory,name+".controller.js");
+			File f=new File(controllersDirectory,"ovmsd."+name+".controller.js"); // MDH@24OCT2018: same here...
 			// for now let's decide to always overwrite the thing
 			if(f.exists()){
 				Utils.setInfo(this,"The controller file of table "+name+" already exists, and will not be replaced.");
@@ -381,81 +390,91 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	// MDH@16OCT2018: writing the schemas means writing the subschemas first, followed by writing the main schema
 	//                I suppose it's the schema's that can be overwritten, so should be marked somehow????
 	//                the problem is that additional code can be placed between the schema definitions, so I guess we can put the schema names in the annotation: /*MSD:<schemaname>*/
-
-	void writeSchemas(PrintWriter pw){
-		// MDH@15OCT2018: should we write the subschema's now????
-		for(MongooseSchema subSchema:subSchemas)subSchema.writeSchemas(pw); // pretty straightforward!!
-		// if we want to be able to re-create the Mongoose Schema from the model we need to mark the lines written somehow
-		// naming is a bit of an issue with subschemas with the same name as the main schema, I guess we cannot use a period in the schema name, instead we use underscores...
-		pw.println("const "+getDescription().toString().toLowerCase()+"=mongoose.Schema({"); // the description appends the word 'Schema' itself!!
+	public boolean hasSubSchemas(){return(subSchemas!=null&&!subSchemas.isEmpty());} // convenient method to determine if it has any subschema's defined at all!!!
+	List<String> getModelSchemaCreationLines(){
+		Vector<String> modelSchemaCreationLines=new Vector<String>();
+		if(!subSchemas.isEmpty())
+		for(MongooseSchema subSchema:subSchemas)if(subSchema.hasSubSchemas())modelSchemaCreationLines.addAll(subSchema.getModelSchemaCreationLines());
+		// now we can write the lines that define this subschema
+		String mongooseSchemaDeclaration="const "+getDescription().toString()+"=mongoose.Schema({";
+		String mongooseSchemaDeclarationPrefix=String.join("",Collections.nCopies(mongooseSchemaDeclaration.length()," "));
+		modelSchemaCreationLines.add(mongooseSchemaDeclaration); // the description appends the word 'Schema' itself!!
 		// write one field per line following
 		Field autoIncrementedField=null;
 		for(Field field:fieldCollection){
 			// MDH@16OCT2018: do NOT publish disabled fields!
-			if(!field.isEnabled())continue;
+			if(!field.isEnabled()) continue;
 			// the most simple form is just the name of the field, a colon and the type
 			// but for now let's not do that
 			// using the description to represent the type (so we'd get a$aSchema instead of a$a)
-			pw.print("\t\t\t\t"+field.getName().toLowerCase()+":{type:"+field.getType().getDescription().toString()); // writing the name (forced to lowercase) and the type
+			StringBuilder fieldTextRepresentation=new StringBuilder(mongooseSchemaDeclarationPrefix);
+			fieldTextRepresentation.append(field.getName().toLowerCase()+":{type:"+field.getType().getDescription().toString()); // writing the name (forced to lowercase) and the type
 			if(!field.isAutoIncremented()){
 				// if a ref property is defined write that before anything else
-				if(!field.refLiteral.isDisabled()&&field.refLiteral.isValid()) pw.print(",ref:"+field.refLiteral.getValue());
+				if(!field.refLiteral.isDisabled()&&field.refLiteral.isValid()) fieldTextRepresentation.append(",ref:"+field.refLiteral.getValue());
 				// I suppose the index is also quite important
-				if(field.isUnique()) pw.print(",unique:true");
-				else if(field.isIndex()) pw.print(",index:true");
-				else if(field.isSparse()) pw.print(",sparse:true");
+				if(field.isUnique()) fieldTextRepresentation.append(",unique:true");
+				else if(field.isIndex()) fieldTextRepresentation.append(",index:true");
+				else if(field.isSparse()) fieldTextRepresentation.append(",sparse:true");
 				// general option flags
-				if(field.isRequired()) pw.print(",required:true");
-				if(field.isSelect()) pw.print(",select:true");
+				if(field.isRequired()) fieldTextRepresentation.append(",required:true");
+				if(field.isSelect()) fieldTextRepresentation.append(",select:true");
 				// general options
-				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled()) pw.print(",alias:'"+field.aliasLiteral.getValue()+"'");
-				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid()) pw.print(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
+				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled()) fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
+				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid()) fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
 				// type-specific options
 				IFieldType fieldType=field.getType();
-				if(fieldType instanceof MongooseFieldType)
-				switch(((MongooseFieldType)fieldType).ordinal()){
+				if(fieldType instanceof MongooseFieldType) switch(((MongooseFieldType)fieldType).ordinal()){
 					case Field.DATE_FIELD:
-						if(!field.minDateLiteral.isDisabled()&&field.minDateLiteral.isValid()) pw.print(",min:"+field.minDateLiteral.getValue());
-						if(!field.maxDateLiteral.isDisabled()&&field.maxDateLiteral.isValid()) pw.print(",max:"+field.maxDateLiteral.getValue());
+						if(!field.minDateLiteral.isDisabled()&&field.minDateLiteral.isValid()) fieldTextRepresentation.append(",min:"+field.minDateLiteral.getValue());
+						if(!field.maxDateLiteral.isDisabled()&&field.maxDateLiteral.isValid()) fieldTextRepresentation.append(",max:"+field.maxDateLiteral.getValue());
 						break;
 					case Field.NUMBER_FIELD:
-						if(!field.minNumberLiteral.isDisabled()&&field.minNumberLiteral.isValid()) pw.print(",min:"+field.minNumberLiteral.getValue());
-						if(!field.maxNumberLiteral.isDisabled()&&field.maxNumberLiteral.isValid()) pw.print(",max:"+field.maxNumberLiteral.getValue());
+						if(!field.minNumberLiteral.isDisabled()&&field.minNumberLiteral.isValid())
+							fieldTextRepresentation.append(",min:"+field.minNumberLiteral.getValue());
+						if(!field.maxNumberLiteral.isDisabled()&&field.maxNumberLiteral.isValid())
+							fieldTextRepresentation.append(",max:"+field.maxNumberLiteral.getValue());
 						break;
 					case Field.STRING_FIELD:
-						if(field.isLowercase()) pw.print(",lowercase:true");
-						else if(field.isUppercase()) pw.print(",uppercase:true");
-						if(field.isTrim()) pw.print(",trim:true");
-						if(!field.minLengthLiteral.isDisabled()&&field.minLengthLiteral.isValid()) pw.print("minlength:"+field.minLengthLiteral.getValue());
-						if(!field.maxLengthLiteral.isDisabled()&&field.maxLengthLiteral.isValid()) pw.print("maxlength:"+field.minLengthLiteral.getValue());
-						if(!field.matchLiteral.isDisabled()&&field.matchLiteral.isValid()) pw.print(",match:new RegExp("+field.matchLiteral.getValue()+")"); // assuming the user did NOT enclose the regular expression between / and /
-						if(!field.valuesLiteral.isDisabled()&&field.valuesLiteral.isValid()) pw.print("enum:['"+String.join("','",field.valuesLiteral.getValue())+"'']");
+						if(field.isLowercase()) fieldTextRepresentation.append(",lowercase:true");
+						else if(field.isUppercase()) fieldTextRepresentation.append(",uppercase:true");
+						if(field.isTrim()) fieldTextRepresentation.append(",trim:true");
+						if(!field.minLengthLiteral.isDisabled()&&field.minLengthLiteral.isValid())
+							fieldTextRepresentation.append("minlength:"+field.minLengthLiteral.getValue());
+						if(!field.maxLengthLiteral.isDisabled()&&field.maxLengthLiteral.isValid())
+							fieldTextRepresentation.append("maxlength:"+field.minLengthLiteral.getValue());
+						if(!field.matchLiteral.isDisabled()&&field.matchLiteral.isValid()) fieldTextRepresentation.append(",match:new RegExp("+field.matchLiteral.getValue()+")"); // assuming the user did NOT enclose the regular expression between / and /
+						if(!field.valuesLiteral.isDisabled()&&field.valuesLiteral.isValid()) fieldTextRepresentation.append("enum:['"+String.join("','",field.valuesLiteral.getValue())+"'']");
 						break;
 				}
 			}else autoIncrementedField=field;
-			pw.print("},"); // ready for the next field!!
-			pw.println(" /*MSD:F*/"); // marks a MSD field line
+			fieldTextRepresentation.append("},"); // ready for the next field!!
+			///////fieldTextRepresentation.append(" /*MSD:F*/"); // marks a MSD field line
+			modelSchemaCreationLines.add(fieldTextRepresentation.toString());
 		}
-		pw.print("\t\t\t}"); // close the first argument to mongoose.Schema
+		StringBuilder optionsTextRepresentation=new StringBuilder(mongooseSchemaDeclarationPrefix.substring(1)+"}");
+		// add any options if we have them
 		// only subschema's can NOT have _id fields in which case the user disabled it (which is not possible for main schema's)
 		// TODO there might be other options that we'd like to be able to set
-		if(this.getParent()!=null)if(!this.containsFieldWithName("_id")||!this.getFieldCalled("_id").isEnabled())pw.print(",{_id:false}");
-		pw.println("); /*MSD:O*/"); // close the schema assignment (on the same line, so we save a little space!!! let's call this the O(ptions) line
+		if(this.getParent()!=null)if(!this.containsFieldWithName("_id")||!this.getFieldCalled("_id").isEnabled())optionsTextRepresentation.append(",{_id:false}");
+		optionsTextRepresentation.append(");");
+		////////optionsTextRepresentation.append(" /*MSD:O*/"); // close the schema assignment (on the same line, so we save a little space!!! let's call this the O(ptions) line
+		modelSchemaCreationLines.add(optionsTextRepresentation.toString());
 		if(autoIncrementedField!=null){
-			pw.println();
+			modelSchemaCreationLines.add("");
 			// NO LONGER REQUIRED WITH mongoose-plugin-autoinc: pw.println("// DO NOT FORGET TO initialize THE PLUGIN IN YOUR app.js WITH mongoose.connection!");
-			pw.println("const autoIncrement=require('mongoose-plugin-autoinc');"); // MDH@24SEP2018: switched to an updated version of mongoose-auto-increment (which is 3 years old and requires a version 4 of Mongoose)
-			pw.println(name.toLowerCase()+"Schema.plugin(autoIncrement,{model:'"+Utils.capitalize(name)+"',field:'"+autoIncrementedField.getName()+"',startAt:"+autoIncrementedField.startAtLiteral.getValue()+",incrementBy:1});");
+			modelSchemaCreationLines.add("const autoIncrement=require('mongoose-plugin-autoinc');"); // MDH@24SEP2018: switched to an updated version of mongoose-auto-increment (which is 3 years old and requires a version 4 of Mongoose)
+			modelSchemaCreationLines.add(name.toLowerCase()+"Schema.plugin(autoIncrement,{model:'"+Utils.capitalize(name)+"',field:'"+autoIncrementedField.getName()+"',startAt:"+autoIncrementedField.startAtLiteral.getValue()+",incrementBy:1});");
 			// being able to reset the counter would be nice, for which we need the connection and apparently mongoose.connection holds the connection (see app.js)
 			// TODO figure out when exactly the reset occurs????
-			pw.println("/* TO RESET AUTO-INCREMENT FIELD "+autoIncrementedField.getName()+" SAVE AN EMPTY INSTANCE, LIKE THIS:");
-			pw.println("const "+Utils.capitalize(name)+"=mongoose.model('"+Utils.capitalize(name)+"',"+Utils.capitalize(name)+"Schema);"); // mongoose.model will use the default mongoose connection i.e. mongoose.connection!!!
-			pw.println(name+"=new "+Utils.capitalize(name)+"();"); // get an instance
-			pw.println(name+".save(function(err){"+name+".nextCount(function(err,count){"+name+".resetCount(function(err,nextCount){});});});");
-			pw.println("*/");
+			modelSchemaCreationLines.add("/* TO RESET AUTO-INCREMENT FIELD "+autoIncrementedField.getName()+" SAVE AN EMPTY INSTANCE, LIKE THIS:");
+			modelSchemaCreationLines.add("const "+Utils.capitalize(name)+"=mongoose.model('"+Utils.capitalize(name)+"',"+Utils.capitalize(name)+"Schema);"); // mongoose.model will use the default mongoose connection i.e. mongoose.connection!!!
+			modelSchemaCreationLines.add(name+"=new "+Utils.capitalize(name)+"();"); // get an instance
+			modelSchemaCreationLines.add(name+".save(function(err){"+name+".nextCount(function(err,count){"+name+".resetCount(function(err,nextCount){});});});");
+			modelSchemaCreationLines.add("*/");
 		}
+		return modelSchemaCreationLines;
 	}
-
 	// keeping the model in a text file now the question when to actually read and write it
 	// I suppose read at start, so we have access to the text lines, and write at save!!
 	// in between we allow editing the text, extracting
@@ -465,7 +484,26 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	// we can do that on the same line of the field as a commment at the end or on the line before!!!
 	// which is like embedding the .msd in the model file, I'd have to think about that...
 	// it's better to just mark the field lines in the model file, so they can be read if .msd is missing!!!
-	private ITextLinesProcessor.TextFile modelTextFile;
+	private String[] getModelTextLines(){
+		Vector<String> modelTextLines=new Vector<String>();
+		modelTextLines.add("/*");
+		modelTextLines.add(" * Generated by: Office Vitae Mongoose Schema Designer");
+		modelTextLines.add(" * At: "+Utils.getTimestamp());
+		modelTextLines.add(" * Author: <Enter your name here>");
+		modelTextLines.add(" * Contents: Mongoose schema "+name.toLowerCase());
+		modelTextLines.add(" */");
+		modelTextLines.add("");
+		modelTextLines.add("const mongoose=require('mongoose');");
+		modelTextLines.add("const mongooseLong=require('mongoose-long');");
+		modelTextLines.add("");
+		// write all subschema
+		if(!subSchemas.isEmpty())modelTextLines.addAll(getModelSchemaCreationLines());
+		modelTextLines.add("");
+		modelTextLines.add("module.exports=mongoose.model('"+name.toUpperCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement
+		return(modelTextLines.isEmpty()?new String[]{}:(String[])modelTextLines.toArray(new String[modelTextLines.size()]));
+	}
+	private ITextLinesConsumer.TextFile modelTextFile;
+	/* MDH@24OCT2018 not writing the model ourselves directly anymore!!!
 	private void writeModel(File appDirectory){
 		// basically
 		try{
@@ -478,7 +516,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			}
 			// this is not just writing the entire model file although it could but alternatively replace the mongoose schema declaration
 			// BUT we only allow that on a model file with a schema that has been created with
-			File f=new File(modelsDirectory,name+".model.js");
+			File f=new File(modelsDirectory,"ovmsd."+name+".model.js"); // MDH@24OCT2018: prefix the name with ovmsd. to indicate that it was created by this Office Vitae Mongoose Schema Designer app, so we will know which JavaScript model files are external to this app
 			// for now let's decide to always overwrite the thing
 			if(f.exists()){
 				int dialogResult=JOptionPane.showConfirmDialog(null,"Replace the model file?","Warning",JOptionPane.YES_NO_OPTION);
@@ -503,13 +541,13 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' in writing the model of table "+name+".");
 		}
 	}
-
+	*/
 	public void publish()throws IllegalCallerException{
 		if(parentSchema!=null)throw new IllegalCallerException("A subschema cannot be published separately.");
 		// we can write a sample app.js for testing purposes
 		File appFile=new File("app.js");
 		if(!appFile.exists()){
-
+			// TODO what are we going to put in the app file????
 		}
 		// let's start with ascertaining that we have an app subfolder
 		File appDirectory=new File(".","app");
@@ -518,7 +556,13 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			Utils.setInfo(this,"The 'app' subdirectory does not exist, or is not a directory.");
 			return;
 		}
-		writeModel(appDirectory);
+		// writing the model can now be achieved by passing the model text lines produces to the model text lines consumer (which is the model file)
+		try{
+			getModelTextLinesConsumer().setTextLines(getModelTextLinesProducer().getTextLines()); // to write the model!!!
+		}catch(Exception ex){
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' in writing the model file.");
+		}
+		////////replacing: writeModel(appDirectory);
 		writeRoutes(appDirectory);
 		writeController(appDirectory);
 	}
@@ -531,15 +575,15 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		if(fieldTypeName.isEmpty())return MongooseFieldType.MIXED; // e.g. as generic array element type!!!
 		if(fieldTypeName.equalsIgnoreCase("array")) return MongooseFieldType.ARRAY;
 		//////////if(fieldTypeName.equalsIgnoreCase("auto incremented integer"))return FieldType.AUTO_INCREMENT;
-		if(fieldTypeName.equalsIgnoreCase("boolean")) return MongooseFieldType.BOOLEAN;
-		if(fieldTypeName.equalsIgnoreCase("buffer")) return MongooseFieldType.BUFFER;
-		if(fieldTypeName.equalsIgnoreCase("date")) return MongooseFieldType.DATE;
-		if(fieldTypeName.equalsIgnoreCase("decimal128")) return MongooseFieldType.DECIMAL128;
-		if(fieldTypeName.equalsIgnoreCase("map")) return MongooseFieldType.MAP;
-		if(fieldTypeName.equalsIgnoreCase("mixed")) return MongooseFieldType.MIXED;
-		if(fieldTypeName.equalsIgnoreCase("number")) return MongooseFieldType.NUMBER;
-		if(fieldTypeName.equalsIgnoreCase("objectid")) return MongooseFieldType.OBJECTID;
-		if(fieldTypeName.equalsIgnoreCase("string")) return MongooseFieldType.STRING;
+		if(fieldTypeName.equalsIgnoreCase("boolean")||fieldTypeName.equals("Schema.Types.Boolean"))return MongooseFieldType.BOOLEAN;
+		if(fieldTypeName.equalsIgnoreCase("buffer")||fieldTypeName.equals("Schema.Types.Buffer"))return MongooseFieldType.BUFFER;
+		if(fieldTypeName.equalsIgnoreCase("date")||fieldTypeName.equals("Schema.Types.Date"))return MongooseFieldType.DATE;
+		if(fieldTypeName.equalsIgnoreCase("decimal128")||fieldTypeName.equals("Schema.Types.Decimal128"))return MongooseFieldType.DECIMAL128;
+		if(fieldTypeName.equalsIgnoreCase("map")||fieldTypeName.equals("Schema.Types.Map"))return MongooseFieldType.MAP;
+		if(fieldTypeName.equalsIgnoreCase("mixed")||fieldTypeName.equals("Schema.Types.Mixed"))return MongooseFieldType.MIXED;
+		if(fieldTypeName.equalsIgnoreCase("number")||fieldTypeName.equals("Schema.Types.Number"))return MongooseFieldType.NUMBER;
+		if(fieldTypeName.equalsIgnoreCase("objectid")||fieldTypeName.equals("Schema.Types.ObjectId"))return MongooseFieldType.OBJECTID;
+		if(fieldTypeName.equalsIgnoreCase("string")||fieldTypeName.equals("Schema.Types.String"))return MongooseFieldType.STRING;
 		return null;
 	}
 	private IFieldType getFieldType(String fieldTypeName){
@@ -728,6 +772,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		// we do not want to 'load' more than once!!!
 		if(lines==null)throw new NullPointerException("No text defined to initialize Mongoose schema "+getRepresentation(false)+" from.");
 		int lineCount=lines.length;
+		Utils.consoleprintln("Number of lines to process in initializing schema '"+getRepresentation(false)+"': "+lineCount+".");
 		if(lineCount>0){ // at least a single line with the subschema names
 			String line,subSchemaName,subSchemaLineWhitespace;
 			Vector<String> subSchemaLines;
