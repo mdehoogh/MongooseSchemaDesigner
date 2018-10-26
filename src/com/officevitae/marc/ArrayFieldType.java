@@ -7,7 +7,11 @@ public class ArrayFieldType implements ICompositeFieldType{
 		return new Description(){
 			public IFieldType getFieldType(){return ArrayFieldType.this;} // NO, I do not want to return MongooseFieldType.ARRAY here but myself actually
 			// if the element type is undefined i.e. anything goes we return the word Array, otherwise the type of the element enclosed in square brackets...
-			public String toString(){return MongooseFieldType.ARRAY.toString();} // want to make it look the same as ARRAY!!!
+			public String toString(){
+				String representation=MongooseFieldType.ARRAY.getDescription().toString();
+				if(arrayElementType.equals(MongooseFieldType.MIXED))return representation;
+				return "["+arrayElementType.getDescription().toString()+"]"; // concise representation using square brackets around the subtype!!
+			} // want to make it look the same as ARRAY!!!
 		};
 	}
 
@@ -19,7 +23,10 @@ public class ArrayFieldType implements ICompositeFieldType{
 	}
 	// end IFieldType implementation
 
-	public String toString(){return "["+(arrayElementType.equals(MongooseFieldType.MIXED)?"":arrayElementType.toString())+"]";}
+	public String toString(){
+		// I suppose we could use MongooseFieldType.ARRAY.toString() when the array element type is MIXED??? instead of the square brackets????
+		return "["+(arrayElementType.equals(MongooseFieldType.MIXED)?"":arrayElementType.toString())+"]";
+	}
 
 	// the array element type defaults to MIXED
 	private IFieldType arrayElementType=MongooseFieldType.MIXED;

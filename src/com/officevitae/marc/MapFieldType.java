@@ -4,14 +4,28 @@ public class MapFieldType implements ICompositeFieldType{
 
 	private IFieldType ofFieldType=MongooseFieldType.MIXED;
 
+	private Description description=null;
 	public Description getDescription(){
-		return new Description(){
+		if(description==null)
+			description=new Description(){
 			public IFieldType getFieldType(){return MapFieldType.this;}
-			public String toString(){return MongooseFieldType.MAP.toString();} // make it look the same as Map!!!
+			// MDH@25OCT2018: the description should provide the 'internal' designer representation of the field type
+			public String toString(){
+				String descriptionText=MongooseFieldType.MAP.getDescription().toString(); // shorthand 'internal' notation of a Schema.Types.MAP
+				if(ofFieldType.equals(MongooseFieldType.MIXED))return descriptionText;
+				return descriptionText+" of "+ofFieldType.getDescription().toString();
+			}
 		};
+		return description;
 	}
 
-	public String toString(){return "("+(ofFieldType.equals(MongooseFieldType.MIXED)?"":ofFieldType.getDescription().toString())+")";}
+	public String toString(){
+		// the representation should be JavaScript style, so it can be used immediately
+		String representation=MongooseFieldType.MAP.toString(); // the full representation of the generic MAP instance
+		if(ofFieldType.equals(MongooseFieldType.MIXED))return representation; // just Map
+		return "{type:"+representation+",of:"+ofFieldType.toString()+"}";
+		// replacing: return "("+(ofFieldType.equals(MongooseFieldType.MIXED)?"":ofFieldType.getDescription().toString())+")";
+	}
 
 	public boolean representsAValidValue(String valueText){
 		return true;
@@ -23,7 +37,7 @@ public class MapFieldType implements ICompositeFieldType{
 		if(this.arrayElementType.equals(arrayElementType))throw new IllegalArgumentException("Array element type unchanged!");
 		*/
 		ofFieldType=subFieldType;
-		Utils.consoleprintln("Map element field type of '"+toString()+"' set to '"+ofFieldType.toString()+".");
+		Utils.consoleprintln("Map values field type set to '"+ofFieldType.toString()+".");
 	}
 	public IFieldType getSubFieldType(){return ofFieldType;}
 }

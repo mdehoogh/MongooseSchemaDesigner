@@ -299,6 +299,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     private JComponent getMongooseSchemasView(){
         JPanel tablesPanel=new JPanel(new BorderLayout());
         JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+        splitPane.setOneTouchExpandable(true);
         splitPane.setLeftComponent(getMongooseSchemaTreeView());
         splitPane.setRightComponent(getMongooseSchemaView());
         tablesPanel.add(splitPane);
@@ -334,14 +335,14 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
                         mongooseSchema=((MongooseSchema)((DefaultMutableTreeNode)schemasTreeRootNode.getChildAt(schemaIndex)).getUserObject());
                         if(!mongooseSchema.isSynced())mongooseSchema.save();
                     }catch(Exception ex){
-                        System.out.println("ERROR: '"+ex.getLocalizedMessage()+"' saving table "+mongooseSchema.getName()+".");
+                        System.out.println("ERROR: '"+ex.getLocalizedMessage()+"' saving schema "+mongooseSchema.getName()+".");
                     }
                     if(mongooseSchema!=null&&!mongooseSchema.isSynced())unsavedMongooseSchemaNames.insertElementAt(mongooseSchema.getName(),0);
                     mongooseSchema=null;
                 }
                 // do NOT dispose when there are still tables unsaved (you can delete them to get rid of them before trying again!!)
                 if(!unsavedMongooseSchemaNames.isEmpty()){
-                    int dialogResult=JOptionPane.showConfirmDialog(null,"Failed to save table(s) "+String.join(", ",unsavedMongooseSchemaNames.toArray(new String[]{}))+". Exit anyway?","Warning",JOptionPane.YES_NO_OPTION);
+                    int dialogResult=JOptionPane.showConfirmDialog(null,"Failed to save schema(s) "+String.join(", ",unsavedMongooseSchemaNames.toArray(new String[]{}))+". Exit anyway?","Warning",JOptionPane.YES_NO_OPTION);
                     if(dialogResult==JOptionPane.NO_OPTION)return;
                 }
                 if(console!=null)System.setOut(console); // restore System.out redirection!!

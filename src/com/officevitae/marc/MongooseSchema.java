@@ -11,7 +11,8 @@ import java.util.Vector;
 public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLinesContainer{
 
 	private static final int DEFAULT_TYPE_INDEX=7;
-	private static final java.util.List<String> FIELD_FLAG_NAMES=Arrays.asList(new String[]{"required","unique","index","sparse","lowercase","uppercase","trim"});
+	// MDH@25OCT2018: index, sparse and unique flags now removed (as they are not mutually exclusive)
+	private static final java.util.List<String> FIELD_FLAG_NAMES=Arrays.asList(new String[]{"required","lowercase","uppercase","trim"});
 
 	// MDH@18OCT2018: keep the fields in a separate FieldCollection class
 	public class FieldCollection extends Vector<Field> implements ITextLinesContainer{
@@ -253,15 +254,15 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	}
 	// yes, we make a distinction between a text lines producer (to generate the model text lines) which would be me) and a text lines consumer which should be the file the text lines are to be written to
 	// NOTE for a JavaScriptMongooseSchema the producer would be the text file as well
+	// TODO perhaps we only need to create it once
+	private ITextLinesProducer modelTextLinesProducer=null;
 	ITextLinesProducer getModelTextLinesProducer(){
-		return new ITextLinesProducer(){
-			public String[] getTextLines() throws Exception{
-				return getModelTextLines();
-			};
-		};
+		if(modelTextLinesProducer==null)
+			modelTextLinesProducer=new ITextLinesProducer(){public String[] getTextLines() throws Exception{return getModelTextLines();};};
+		return modelTextLinesProducer;
 	}
 	ITextLinesConsumer getModelTextLinesConsumer(){
-		if(modelTextFile==null)modelTextFile=new ITextLinesConsumer.TextFile(new java.io.File("app/models","ovmsd."+name+"model.js"));
+		if(modelTextFile==null)modelTextFile=new ITextLinesConsumer.TextFile(new java.io.File("./app/models","ovmsd."+name+".model.js"));
 		return modelTextFile;
 	}
 	private void setSynced(boolean synced){
@@ -401,27 +402,34 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		modelSchemaCreationLines.add(mongooseSchemaDeclaration); // the description appends the word 'Schema' itself!!
 		// write one field per line following
 		Field autoIncrementedField=null;
+		String fieldName;
 		for(Field field:fieldCollection){
 			// MDH@16OCT2018: do NOT publish disabled fields!
-			if(!field.isEnabled()) continue;
+			if(!field.isEnabled())continue;
 			// the most simple form is just the name of the field, a colon and the type
 			// but for now let's not do that
 			// using the description to represent the type (so we'd get a$aSchema instead of a$a)
-			StringBuilder fieldTextRepresentation=new StringBuilder(mongooseSchemaDeclarationPrefix);
-			fieldTextRepresentation.append(field.getName().toLowerCase()+":{type:"+field.getType().getDescription().toString()); // writing the name (forced to lowercase) and the type
+			StringBuilder fieldTextRepresentation=new StringBuilder();
+			// MDH@25OCT2018: a Map will wrap itself in an object {type:Map,of:<value rep>} and we may safely remove this DONE could we move this to Field as in getFieldTypeRepresentation??
+			////////replacing: String fieldTypeRepresentation=field.getType().toString();
+			fieldTextRepresentation.append("type:"+field.getTypeRepresentation(false)); // MDH@25OCT2018: again, NOT writing the description but the FULL name (particularly important for MapFieldType instances)
 			if(!field.isAutoIncremented()){
 				// if a ref property is defined write that before anything else
-				if(!field.refLiteral.isDisabled()&&field.refLiteral.isValid()) fieldTextRepresentation.append(",ref:"+field.refLiteral.getValue());
+				if(!field.refLiteral.isDisabled()&&field.refLiteral.isValid())fieldTextRepresentation.append(",ref:"+field.refLiteral.getValue());
 				// I suppose the index is also quite important
+				// MDH@25OCT2018: any valid index value is either text 'unique', 'index' or 'sparse' (currently)
+				if(!field.indexLiteral.isDisabled()&&field.indexLiteral.isValid())fieldTextRepresentation.append(","+field.indexLiteral.getText().toLowerCase()+":true");
+				/* replacing
 				if(field.isUnique()) fieldTextRepresentation.append(",unique:true");
 				else if(field.isIndex()) fieldTextRepresentation.append(",index:true");
 				else if(field.isSparse()) fieldTextRepresentation.append(",sparse:true");
+				*/
 				// general option flags
-				if(field.isRequired()) fieldTextRepresentation.append(",required:true");
-				if(field.isSelect()) fieldTextRepresentation.append(",select:true");
+				if(field.isRequired())fieldTextRepresentation.append(",required:true");
+				if(field.isSelect())fieldTextRepresentation.append(",select:true");
 				// general options
 				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled()) fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
-				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid()) fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
+				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
 				// type-specific options
 				IFieldType fieldType=field.getType();
 				if(fieldType instanceof MongooseFieldType) switch(((MongooseFieldType)fieldType).ordinal()){
@@ -448,9 +456,13 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 						break;
 				}
 			}else autoIncrementedField=field;
-			fieldTextRepresentation.append("},"); // ready for the next field!!
+			fieldName=field.getName()/*.toLowerCase()*/;
+			int firstColonPos=fieldTextRepresentation.indexOf(":");
+			if(firstColonPos!=fieldTextRepresentation.lastIndexOf(":")) // not just the the type is present in the field text representation
+				modelSchemaCreationLines.add(mongooseSchemaDeclarationPrefix+fieldName+":{"+fieldTextRepresentation.toString()+"},");
+			else // just the type is present and we can use the shorthand notation
+				modelSchemaCreationLines.add(mongooseSchemaDeclarationPrefix+fieldName+fieldTextRepresentation.substring(firstColonPos)+",");
 			///////fieldTextRepresentation.append(" /*MSD:F*/"); // marks a MSD field line
-			modelSchemaCreationLines.add(fieldTextRepresentation.toString());
 		}
 		StringBuilder optionsTextRepresentation=new StringBuilder(mongooseSchemaDeclarationPrefix.substring(1)+"}");
 		// add any options if we have them
@@ -496,8 +508,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		modelTextLines.add("const mongoose=require('mongoose');");
 		modelTextLines.add("const mongooseLong=require('mongoose-long');");
 		modelTextLines.add("");
-		// write all subschema
-		if(!subSchemas.isEmpty())modelTextLines.addAll(getModelSchemaCreationLines());
+		// write all subschema (and myself of course)
+		modelTextLines.addAll(getModelSchemaCreationLines());
 		modelTextLines.add("");
 		modelTextLines.add("module.exports=mongoose.model('"+name.toUpperCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement
 		return(modelTextLines.isEmpty()?new String[]{}:(String[])modelTextLines.toArray(new String[modelTextLines.size()]));
@@ -567,9 +579,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		writeController(appDirectory);
 	}
 
-	private String getFieldContents(Field field){
-		return (field==null?"":field.getTextRepresentation(true));
-	}
+	private String getFieldContents(Field field){return (field==null?"":field.getTextRepresentation(true,true));}
 
 	protected IFieldType getMongooseFieldType(String fieldTypeName){
 		if(fieldTypeName.isEmpty())return MongooseFieldType.MIXED; // e.g. as generic array element type!!!
@@ -587,9 +597,24 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return null;
 	}
 	private IFieldType getFieldType(String fieldTypeName){
-		// TODO could be the name of a sub schema????
+		// we need to distinguish between Mongoose field types, composite field types (Array and Map) and subschema field types
 		IFieldType mongooseFieldType=getMongooseFieldType(fieldTypeName);
 		if(mongooseFieldType!=null)return mongooseFieldType;
+		// perhaps an array???
+		if(fieldTypeName.length()>=2&&fieldTypeName.charAt(0)=='['&&fieldTypeName.endsWith("]")){
+			IFieldType arrayFieldType=new ArrayFieldType();
+			if(fieldTypeName.length()>2)((ArrayFieldType)arrayFieldType).setSubFieldType(getFieldType(fieldTypeName.substring(1,fieldTypeName.length()-1)));
+			return arrayFieldType;
+		}
+		// perhaps a Map???
+		String mapFieldTypePrefix=MongooseFieldType.MAP.getDescription().toString();
+		if(fieldTypeName.startsWith(mapFieldTypePrefix)){
+			IFieldType mapFieldType=new MapFieldType();
+			if(" of ".equals(fieldTypeName.substring(mapFieldTypePrefix.length(),mapFieldTypePrefix.length()+4)))
+				((MapFieldType)mapFieldType).setSubFieldType(getFieldType(fieldTypeName.substring(mapFieldTypePrefix.length()+4)));
+			return mapFieldType;
+		}
+		// should be a subschema!!!
 		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)if(subSchema.getDescription().equals(fieldTypeName))return subSchema;
 		return null;
 	}
@@ -606,6 +631,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 				// MDH@15OCT2018: the name is preceded by the enabled flag!!
 				field=new Field(nametypeParts[0].substring(1));
 				String fieldTypeName=nametypeParts[1];
+				// MDH@25OCT2018: interpreting the field type is a bit of a challenge now that we're using full Mongoose schema names (like Schema.Types.ARRAY)
 				if(fieldTypeName.length()>1&&fieldTypeName.charAt(0)=='['&&fieldTypeName.endsWith("]")){
 					field.setType(MongooseFieldType.ARRAY);
 					field.setArrayElementType(getFieldType(fieldTypeName.substring(1,fieldTypeName.length()-1)));
@@ -637,6 +663,9 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 						}else if(fieldPropertyName.equalsIgnoreCase("alias")){
 							field.aliasLiteral.setDisabled(fieldPropertyFlag);
 							field.aliasLiteral.setText(fieldPropertyValue);
+						}else if(fieldPropertyName.equalsIgnoreCase("indextype")){ // MDH@25OCT2018
+							field.indexLiteral.setDisabled(fieldPropertyFlag);
+							field.indexLiteral.setText(fieldPropertyValue);
 						}else if(fieldPropertyName.equalsIgnoreCase("default")){
 							field.defaultLiteral.setDisabled(fieldPropertyFlag);
 							field.defaultLiteral.setText(fieldPropertyValue);
@@ -672,20 +701,12 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 								field.setRequired(true);
 								break;
 							case 1:
-								field.setUnique(true);
-								break;
-							case 2:
-								field.setIndex(true);
-								break;
-							case 3:
-								field.setSparse(true);
-							case 4:
 								field.setLowercase(true);
 								break;
-							case 5:
+							case 2:
 								field.setUppercase(true);
 								break;
-							case 6:
+							case 3:
 								field.setTrim(true);
 								break;
 							default:
@@ -742,25 +763,46 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return subSchemaNames;
 	}
 	*/
-	// ITextLinesContainer implementation
-	public String[] getTextLines() throws Exception{
-		if(parentSchema==null)if(isSynced())return null; // nothing changed, so return null (MDH@19OCT2018: but only when a main schema, subschema's shouldn't be that fresh!!)
-		Vector<String> textLines=new Vector<String>();
-		// first to collect all the subschema text lines
+	private List<String> lastSubSchemasTextLines=null,lastFieldsTextLines=null; // the last constructed subschemas and fields text lines
+	private List<String> getSubSchemasTextLines() throws Exception{
+		Vector<String> allSubSchemaTextLines=new Vector<String>();
 		String[] subSchemaTextLines;
 		String subSchemaName;
 		for(MongooseSchema subSchema:subSchemas){
 			subSchemaName=subSchema.getName();
-			if(!textLines.add(subSchemaName))throw new Exception("Failed to add the name of subschema '"+subSchema.getName()+"'.");
+			if(!allSubSchemaTextLines.add(subSchemaName))throw new Exception("Failed to add the name of subschema '"+subSchema.getName()+"'.");
 			subSchemaTextLines=subSchema.getTextLines();
 			// we have to indent all the returned text lines
-			for(String subSchemaTextLine:subSchemaTextLines)if(!textLines.add("\t"+subSchemaTextLine))throw new Exception("Failed to add line '"+subSchemaTextLine+"' of subschema '"+subSchemaName+"'.");
+			for(String subSchemaTextLine:subSchemaTextLines)
+				if(!allSubSchemaTextLines.add("\t"+subSchemaTextLine))
+					throw new Exception("Failed to add line '"+subSchemaTextLine+"' of subschema '"+subSchemaName+"'.");
 		}
-		// now ready to append the fields (perhaps referring to the subschemas)
-		for(Field field:fieldCollection)if(!textLines.add(getFieldContents(field)))throw new Exception("Failed to append field '"+field.getName()+"'.");
+		return(lastSubSchemasTextLines=allSubSchemaTextLines);
+	}
+	private List<String> getFieldsTextLines() throws Exception{
+		Vector<String> fieldsTextLines=new Vector<String>();
+		for(Field field:fieldCollection)if(!fieldsTextLines.add(getFieldContents(field)))throw new Exception("Failed to append field '"+field.getName()+"'.");
+		return(lastFieldsTextLines=fieldsTextLines);
+	}
+	// ITextLinesContainer implementation
+	public String[] getTextLines() throws Exception{
+		if(parentSchema==null)if(isSynced())return null; // nothing changed, so return null (MDH@19OCT2018: but only when a main schema, subschema's shouldn't be that fresh!!)
+		// initialize textLines to return with the text lines of all subschema's
+		Vector<String> textLines=new Vector<String>();
+		textLines.addAll(getSubSchemasTextLines()); // adding all the subschemas text lines
+		textLines.addAll(getFieldsTextLines()); // adding all the fields text lines
 		// if nothing changed, since we started on editing this thing, return null, otherwise get the current representation and split it!!
 		return(textLines.isEmpty()?new String[]{}:textLines.toArray(new String[textLines.size()]));
 	}
+
+	// keep track of the last saved fields text lines and subschemas text lines separately
+	private List<String> lastSavedFieldsTextLines=null,lastSavedSubSchemasTextLines=null;
+
+	// a method to determine whether or not the text that would be written with certain new fields text lines would be unsaved at the moment
+	public boolean unsavedWithFieldsTextLines(String[] fieldsTextLines){
+		return!Utils.equalTextLists(fieldsTextLines==null||fieldsTextLines.length==0?null:Arrays.asList(fieldsTextLines),lastSavedFieldsTextLines);
+	}
+
 	////////public boolean doneEditing(){return true;}
 	// MDH@15OCT2018: load() returns True when something was actually loaded in which case _id does not need to be added!!!
 	// MDH@17OCT2018: there's no need to actually load() from the file (through the ITextLinesProducer.File instance)
@@ -771,6 +813,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	public void setTextLines(String[] lines) throws Exception{
 		// we do not want to 'load' more than once!!!
 		if(lines==null)throw new NullPointerException("No text defined to initialize Mongoose schema "+getRepresentation(false)+" from.");
+		lastFieldsTextLines=new Vector<String>();
+		lastSubSchemasTextLines=new Vector<String>();
 		int lineCount=lines.length;
 		Utils.consoleprintln("Number of lines to process in initializing schema '"+getRepresentation(false)+"': "+lineCount+".");
 		if(lineCount>0){ // at least a single line with the subschema names
@@ -786,9 +830,11 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 					subSchemaName=line;
 					Utils.consoleprintln("Subschema of schema '"+getRepresentation(false)+"': '"+subSchemaName+"'.");
 					subSchema=new MongooseSchema(subSchemaName,this); // create the subschema with the private name
+					if(!lastSubSchemasTextLines.add(line))Utils.consoleprintln("ERROR: Failed to register subschema name definition line '"+line+"'.");
 					// get all following lines that are indented, let's allow indenting with any character regulated by the first character on the next line
 					if(lineIndex<lineCount-1){ // there is a next line
 						line=lines[lineIndex+1];
+						lastSubSchemasTextLines.add(line);
 						// technically all heading whitespace should be considered subschema lines
 						subSchemaLineWhitespace=Utils.getHeadingWhitespace(line); // this is what we want a subschema line to start with!!!
 						slw=subSchemaLineWhitespace.length();
@@ -802,6 +848,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 								if(lineIndex>=lineCount)break; // no further lines
 								line=lines[lineIndex+1];
 								if(!line.startsWith(subSchemaLineWhitespace))break; // NOT a subschema line
+								lastSubSchemasTextLines.add(line);
 							}
 							for(String subSchemaLine:subSchemaLines)Utils.consoleprintln("\tLine: '"+subSchemaLine+"'.");
 							// there will be at least one line in subSchemaLines (if we get here!!)
@@ -810,7 +857,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 					}
 					/////// already done by the constructor??? if(!subSchemas.add(subSchema))throw new Exception("Failed to register subschema '"+subSchemaName+"' with schema '"+getRepresentation(false)+"'.");
 				}else // a field definition line
-					fieldCollection.add(getFieldFromContents(line));
+					if(fieldCollection.add(getFieldFromContents(line))&&!lastFieldsTextLines.add(line))Utils.consoleprintln("ERROR: Failed to remember field definition line '"+line+"'.");
 			}
 			/* replacing:
 			String subSchemaLine=lines[0];
@@ -864,7 +911,13 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	}
 
 	// NOTE not to call setSynced() on all subschema, but instead call assumeSynced() as that method will also assume sync all of its subschema's like we want to as well!!!
-	void assumeSynced(){try{for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();}finally{setSynced(true);}}
+	void assumeSynced(){
+		try{
+			for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();
+		}finally{
+			setSynced(true);
+		}
+	}
 
 	// TODO we can keep the following stuff private as long as subclasses call setAssociatedFile/getAssociatedFile() to return the text file associated with them
 	private ITextLinesProcessor mongooseSchemaTextFileProcessor; // MDH@21OCT2018: does not need to be declared as a TextFile per se here (so subclasses can have other ones)
@@ -876,6 +929,9 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new File(getAssociatedFilename()));
 		return mongooseSchemaTextFileProcessor;
 	}
+	// MDH@25OCT2018: keep track of the last saved text lines
+	private String[] lastSavedTextLines=null;
+	public String[] getLastSavedTextLines(){return lastSavedTextLines;}
 	// MDH@21OCT2018: we can leave load() and save() the same as what they were, but override getTextLinesProducer() and getTextLinesConsumer() in subclasses
 	public final boolean load(){
 		// this is now relatively easy
@@ -885,7 +941,15 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		}catch(Exception ex){
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' loading the Mongoose schema design '"+name+"'.");
 		}
-		return isSynced();
+		boolean synced=isSynced();
+		if(synced){
+			lastSavedSubSchemasTextLines=lastSubSchemasTextLines;
+			lastSavedFieldsTextLines=lastFieldsTextLines;
+		}else{ // can't tell anymore...
+			lastSavedSubSchemasTextLines=null;
+			lastFieldsTextLines=null;
+		}
+		return synced;
 	}
 	public final boolean save(){
 		// this is now relatively easy
@@ -896,9 +960,18 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			getTextLinesConsumer().setTextLines(getTextLines());
 			assumeSynced();
 		}catch(Exception ex){
+			// assume failure in which case we should assume undeterminable different!!
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving the Mongoose schema design '"+name+"'.");
 		}
-		return isSynced();
+		boolean synced=isSynced();
+		if(synced){
+			lastSavedSubSchemasTextLines=lastSubSchemasTextLines;
+			lastSavedFieldsTextLines=lastFieldsTextLines;
+		}else{ // can't tell anymore...
+			lastSavedSubSchemasTextLines=null;
+			lastFieldsTextLines=null;
+		}
+		return synced;
 	}
 	// convenience methods
 	public int getIndexOfField(Field field){return(field!=null?fieldCollection.indexOf(field):-1);}

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 public class Utils{
 
@@ -98,6 +99,22 @@ public class Utils{
 		////System.out.println("'");
 		// replacing: while(i<l&&Character.isWhitespace(s.charAt(i)))i++;
 		return s.substring(0,i);
+	}
+
+	public static boolean equalText(String text1,String text2){
+		if(text1==null&&text2==null)return true;
+		if(text1==null||text2==null)return false;
+		if(text1.length()!=text2.length())return false;
+		return text1.equals(text2);
+	}
+	public static boolean equalTextLists(List<String> textLines1,List<String> textLines2){
+		if(textLines1==null&&textLines2==null)return true;
+		if(textLines1==null||textLines2==null)return false;
+		// neither false
+		int l=textLines1.size();
+		if(l!=textLines2.size())return false;
+		while(--l>=0&&equalText(textLines1.get(l),textLines2.get(l))); // as long as the lines are equal keep going
+		return(l<0); // the same when all lines were equal
 	}
 
 }

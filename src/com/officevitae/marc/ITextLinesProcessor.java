@@ -14,7 +14,10 @@ public interface ITextLinesProcessor extends ITextLinesContainer{
 		public TextFile(File file){super(file);}
 		// NOTE that the container does NOT keep the text files (as one would expect from a 'Container')
 		public void setTextLines(String[] textLines)throws Exception{
-			PrintWriter pw=new PrintWriter(getFile());
+			File file=getFile();
+			File parentFile=file.getParentFile();
+			if(parentFile!=null&&!parentFile.exists()&&!parentFile.mkdirs())throw new Exception("Failed to create directory '"+parentFile.getAbsolutePath()+"'.");
+			PrintWriter pw=new PrintWriter(file);
 			for(String textLine:textLines)pw.println(textLine);
 			pw.close();
 		}

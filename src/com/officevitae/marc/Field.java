@@ -10,6 +10,17 @@ public class Field{
 
 	public static final int ARRAY_FIELD=0,BOOLEAN_FIELD=1,BUFFER_FIELD=2,DATE_FIELD=3,DECIMAL128_FIELD=4,INTEGER_FIELD=5,MAP_FIELD=6,MIXED_FIELD=7,NUMBER_FIELD=8,OBJECTID_FIELD=9,STRING_FIELD=10;
 
+	// the index types available (in the given order) are for the user to select from
+	public static final String[] INDEX_TYPE_NAMES=new String[]{"","unique","index","sparse"}; // NOTE the names are fixed
+	/*
+	public enum IndexType{
+		UNIQUE(INDEX_TYPE_NAMES[1]),INDEX(INDEX_TYPE_NAMES[2]),SPARSE(INDEX_TYPE_NAMES[3]);
+		private String description;
+		IndexType(String description){this.description=description;}
+		public String toString(){return description;}
+	}
+	*/
+
 	// TODO come up with a better way!!!
 	private void setInfo(String info){
 		System.out.println("Field info: "+info);
@@ -92,6 +103,28 @@ public class Field{
 		}
 		public BigDecimal getValue(){return(isValid()?new BigDecimal(super.getText()):null);}
 	}
+	// MDH@29OCT2018: convenient to have a fixed range integer field literal
+	public class IntegerRangeValidatedFieldLiteral extends DependentValidatedFieldLiteral<Long>{
+		private long minValue=Long.MIN_VALUE,maxValue=Long.MAX_VALUE;
+		public IntegerRangeValidatedFieldLiteral(long minValue, long maxValue){
+			this.minValue=minValue;
+			this.maxValue=maxValue;
+		}
+		protected boolean isConsideredValid(){
+			boolean consideredValid=super.isConsideredValid();
+			if(consideredValid) {
+				System.out.println("\nChecking the validity of integer field literal "+super.getId()+".");
+				try{
+					long l=Long.parseLong(super.getText());
+					if(l<minValue||l>maxValue)consideredValid=false;
+				}catch(Exception ex){
+					consideredValid=false;
+				}
+			}
+			return consideredValid;
+		}
+		public Long getValue(){return(isValid()?Long.parseLong(super.getText()):null);}
+	}
 	// given that minLength and maxLength depend on one another we can make IntegerValidatedFieldLiteral depend on DependentValidatedFieldLiteral<Long> immediately
 	public class IntegerValidatedFieldLiteral extends DependentValidatedFieldLiteral<Long>{
 		private IntegerValidatedFieldLiteral minIntegerValidatedFieldLiteral=null,maxIntegerValidatedFieldLiteral=null;
@@ -111,15 +144,17 @@ public class Field{
 			return consideredValid;
 		}
 		public Long getValue(){return(isValid()?Long.parseLong(super.getText()):null);}
-		public void setMinIntegerValidatedFieldLiteral(IntegerValidatedFieldLiteral minIntegerValidatedFieldLiteral){
+		public IntegerValidatedFieldLiteral setMinIntegerValidatedFieldLiteral(IntegerValidatedFieldLiteral minIntegerValidatedFieldLiteral){
 			if(this.minIntegerValidatedFieldLiteral!=null)this.minIntegerValidatedFieldLiteral.removeValidatedFieldLiteralChangeListener(this);
 			this.minIntegerValidatedFieldLiteral=minIntegerValidatedFieldLiteral;
 			if(this.minIntegerValidatedFieldLiteral!=null)this.minIntegerValidatedFieldLiteral.addValidatedFieldLiteralChangeListener(this);
+			return this;
 		}
-		public void setMaxIntegerValidatedFieldLiteral(IntegerValidatedFieldLiteral minIntegerValidatedFieldLiteral){
+		public IntegerValidatedFieldLiteral setMaxIntegerValidatedFieldLiteral(IntegerValidatedFieldLiteral minIntegerValidatedFieldLiteral){
 			if(this.maxIntegerValidatedFieldLiteral!=null)this.maxIntegerValidatedFieldLiteral.removeValidatedFieldLiteralChangeListener(this);
 			this.maxIntegerValidatedFieldLiteral=minIntegerValidatedFieldLiteral;
 			if(this.maxIntegerValidatedFieldLiteral!=null)this.maxIntegerValidatedFieldLiteral.addValidatedFieldLiteralChangeListener(this);
+			return this;
 		}
 	}
 	public class MapValidatedFieldLiteral extends ValidatedFieldLiteral<Map>{
@@ -173,12 +208,14 @@ public class Field{
 	}
 	// a StringValidatedFieldLiteral like the default can depend on multiple other validated literal
 	public class StringValidatedFieldLiteral extends DependentValidatedFieldLiteral<String>{
+		private Set<String> options=null; // MDH@25OCT2018: let's allow specifying a list of options that the text should match!!
 		private IntegerValidatedFieldLiteral minLengthValidatedFieldLiteral,maxLengthValidatedFieldLiteral;
 		private StringArrayValidatedFieldLiteral valuesValidatedFieldLiteral;
 		private RegExpValidatedFieldLiteral regExpValidatedFieldLiteral;
 		protected boolean isConsideredValid(){
 			String text=super.getText();
 			boolean consideredValid=super.isConsideredValid();
+			if(consideredValid&&options!=null&&!options.contains(text))consideredValid=false;
 			// MDH@19OCT2018: I suppose that its easier to change isValid() so that when the thing is disabled it will return false although that's quite dangerous
 			if(consideredValid&&valuesValidatedFieldLiteral!=null&&!valuesValidatedFieldLiteral.isDisabled()&&valuesValidatedFieldLiteral.isValid()&&!Arrays.asList(valuesValidatedFieldLiteral.getValue()).contains(text))consideredValid=false;
 			if(consideredValid&&regExpValidatedFieldLiteral!=null&&!regExpValidatedFieldLiteral.isDisabled()&&regExpValidatedFieldLiteral.isValid()&&!text.matches(regExpValidatedFieldLiteral.getText()))consideredValid=false;
@@ -213,6 +250,8 @@ public class Field{
 			this.valuesValidatedFieldLiteral=valuesValidatedFieldLiteral;
 			if(this.valuesValidatedFieldLiteral!=null)this.valuesValidatedFieldLiteral.addValidatedFieldLiteralChangeListener(this);
 		}
+		public StringValidatedFieldLiteral(Set<String> options){if(options!=null&&!options.isEmpty())this.options=options;}
+		public StringValidatedFieldLiteral(){}
 		/////////public StringValidatedFieldLiteral(){super.setValid(true);} // force valid to True!!
 	} // anything goes as default!!!
 	// for keeping track of the values (enum) a String can have
@@ -302,12 +341,12 @@ public class Field{
 	void setChanged(boolean changed){
 		//// BAD IDEA because every change needs to be reported!!! if(this.changed==changed)return;
 		this.changed=changed;
-		if(!this.changed)lastLoadedTextRepresentation=getTextRepresentation(true); // setChanged() should be set to False whenever the field is saved successfully
+		if(!this.changed)lastLoadedTextRepresentation=getTextRepresentation(true,true); // setChanged() should be set to False whenever the field is saved successfully
 		for(IFieldChangeListener fieldChangeListener:fieldChangeListeners)try{fieldChangeListener.fieldChanged(this);}catch(Exception ex){}
 	}
 
 	void updateChanged(){
-		String textRepresentation=getTextRepresentation(true); // what would have been written (not what is displayed!!)
+		String textRepresentation=getTextRepresentation(true,true); // what would have been written (not what is displayed!!)
 		setChanged(!textRepresentation.equals(lastLoadedTextRepresentation));
 	}
 
@@ -322,6 +361,10 @@ public class Field{
 	IntegerValidatedFieldLiteral
 			minLengthLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral()).setField(this).setId("Minimum length"),
 			maxLengthLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral()).setField(this).setId("Maximum length");
+
+	// MDH@25OCT2018: we can make an integer validated literal for storing the index type number where 0 represents no index type (and is therefore NOT valid)
+	//                changed to be a String literal
+	StringValidatedFieldLiteral indexLiteral=(StringValidatedFieldLiteral)(new StringValidatedFieldLiteral(Set.of(INDEX_TYPE_NAMES))).setField(this).setId("Index");
 
 	IntegerValidatedFieldLiteral startAtLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral()).setField(this).setId("Start at"); // it's most likely that the default startAt value will be 1 for auto-increment Number fields!!
 
@@ -419,22 +462,32 @@ public class Field{
 		this.required=required;
 		updateChanged();
 	}
+	// MDH@25OCT2018: we can leave these flag methods in
 	public void setIndex(boolean index){
+		if(index)indexLiteral.setText(INDEX_TYPE_NAMES[1]);
+		/* replacing:
 		if(this.index==index)return;
 		this.index=index;
 		if(this.index){this.unique=false;this.sparse=false;}
+		*/
 		updateChanged();
 	}
 	public void setUnique(boolean unique){
+		if(unique)indexLiteral.setText(INDEX_TYPE_NAMES[2]);
+		/* replacing:
 		if(this.unique==unique)return;
 		this.unique=unique;
 		if(this.unique){this.sparse=false;this.index=false;}
+		*/
 		updateChanged();
 	}
 	public void setSparse(boolean sparse){
+		if(sparse)indexLiteral.setText(INDEX_TYPE_NAMES[3]);
+		/* replacing:
 		if(this.sparse==sparse)return;
 		this.sparse=sparse;
 		if(this.sparse){this.unique=false;this.index=false;}
+		*/
 		updateChanged();
 	}
 	public void setLowercase(boolean lowercase){
@@ -481,7 +534,7 @@ public class Field{
 	// this means that refText and defaultText will either be a non-empty String or null (at the start!!), a user is free to turn the refFlag/defaultFlag off of course
 	// we can basically still use the flags although probably it's more convenient to put the flags inside the different ValidatedFieldLiteral elements
 	// user should use the flags to turn on/off, if input invalid user can see the current value again by turning on the flag through the check box!!!
-	private boolean required=false,index=false,unique=false,sparse=false,lowercase=false,uppercase=false,trim=false;
+	private boolean required=false,lowercase=false,uppercase=false,trim=false;
 	// MDH@24SEP2018: some other general options we might set
 	private boolean select=false;
 
@@ -530,9 +583,11 @@ public class Field{
 
 	public boolean isRequired(){return(isAutoIncremented()?false:required);}
 	public boolean isSelect(){return select;}
+	/*
 	public boolean isIndex(){return(isAutoIncremented()?false:index);}
 	public boolean isUnique(){return(isAutoIncremented()?false:unique);}
 	public boolean isSparse(){return(isAutoIncremented()?false:sparse);}
+	*/
 	public boolean isLowercase(){return(type.equals(MongooseFieldType.STRING)?lowercase:false);}
 	public boolean isUppercase(){return(type.equals(MongooseFieldType.STRING)?uppercase:false);}
 	public boolean isTrim(){return(type.equals(MongooseFieldType.STRING)?trim:false);}
@@ -557,7 +612,15 @@ public class Field{
 		}
 		return "";
 	}
-	public String getTextRepresentation(boolean serialized){
+	// MDH@25OCT2018: convenient to have a separate method to return the field type representation which cuts off the wrapper that MapFieldType puts around it's representation
+	//                which is NOT needed at the top level
+	public String getTypeRepresentation(boolean internal){
+		String typeRepresentation=(internal?type.getDescription().toString():type.toString());
+		if(typeRepresentation.startsWith("{type:")&&typeRepresentation.endsWith("}"))return typeRepresentation.substring(6,typeRepresentation.length()-1).trim();
+		return typeRepresentation;
+	}
+	// MDH@25OCT2018: published means do not use the internal representation of the type
+	public String getTextRepresentation(boolean serialized,boolean internal){
 		// ok this depends on both the type and some of the flags what is to be returned!!!
 		// default/options/index all require that this thing is NOT autoincremented!!!
 		// it's easiest to put the asterisk at the end to indicate the change
@@ -572,7 +635,7 @@ public class Field{
 			sbRepresentation.append("["+(arrayElementType==null||MongooseFieldType.MIXED.equals(arrayElementType)?"":arrayElementType.toString())+"]"); // MDH@24OCT2018: switching to using the toString() on the type itself, no longer on the description of the type!!
 		else
 		*/
-		sbRepresentation.append(type.toString()); // MDH@24OCT2018: the type itself should know how to show itself
+		sbRepresentation.append(getTypeRepresentation(serialized?internal:true)); // MDH@24OCT2018: the type itself should know how to show itself
 
 		// NOTE as you can see the alias text is written even if undefined BUT in that case isDisabled() should return false, not true
 		sbRepresentation.append(getLiteralRepresentation("alias",serialized,aliasLiteral));
@@ -591,9 +654,15 @@ public class Field{
 		if(autoIncremented)sbRepresentation.append(getLiteralRepresentation("startAt",serialized,startAtLiteral));
 
 		// index flags
+		// of course, if the index literal is disabled, not to write the flag!!
+		// even better:
+		sbRepresentation.append(getLiteralRepresentation("indextype",serialized,indexLiteral));
+		// replacing: if(!indexLiteral.isDisabled()&&indexLiteral.isValid())sbRepresentation.append("\t-"+indexLiteral.getText()); // NOTE do NOT call getValue() because getValue() will enquote the text!!!
+		/* replacing:
 		if (isUnique())sbRepresentation.append("\t-unique");
 		if (isIndex())sbRepresentation.append("\t-index");
 		if (isSparse())sbRepresentation.append("\t-sparse");
+		*/
 
 		// type-specific stuff
 		if(!name.equalsIgnoreCase("_id")){ // don't allow a ref on something called _id
@@ -604,9 +673,9 @@ public class Field{
 
 		// String
 		if(type.equals(MongooseFieldType.STRING)) {
-			if (isLowercase()) sbRepresentation.append("\t-lowercase");
-			if (isUppercase()) sbRepresentation.append("\t-uppercase");
-			if (isTrim()) sbRepresentation.append("\t-trim");
+			if(isLowercase())sbRepresentation.append("\t-lowercase");
+			if(isUppercase())sbRepresentation.append("\t-uppercase");
+			if(isTrim())sbRepresentation.append("\t-trim");
 			sbRepresentation.append(getLiteralRepresentation("minlength",serialized,minLengthLiteral));
 			sbRepresentation.append(getLiteralRepresentation("maxlength",serialized,maxLengthLiteral));
 			sbRepresentation.append(getLiteralRepresentation("values",serialized,valuesLiteral)); // assuming I do NOT need to join what getText() returns

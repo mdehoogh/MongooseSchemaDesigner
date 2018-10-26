@@ -7,11 +7,28 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Stack;
+import java.util.Vector;
 
 /**
  * can be used to edit any text lines (like e.g. the field collection of a Mongoose Schema)
  */
-public class JTextLinesEditor extends JPanel{
+public class JTextLinesEditor extends JPanel implements IMutableTextLinesProducer{
+
+	private static final String LINE_SEPARATOR=System.lineSeparator();
+
+	// support for change listeners
+	private Vector<ChangeListener> changeListeners=new Vector<ChangeListener>();
+	public boolean addChangeListener(ChangeListener changeListener){return(changeListener!=null?changeListeners.contains(changeListener)||changeListeners.add(changeListener):false);}
+	public boolean removeChangeListener(ChangeListener changeListener){return(changeListener==null||!changeListeners.contains(changeListener)||changeListeners.remove(changeListener));}
+
+	private void informChangeListeners(){for(ChangeListener changeListener:changeListeners)try{changeListener.textLinesChanged(this);}catch(Exception ex){}}
+
+	// ALWAYS call setText when you want to set the text showing in textArea so the change listeners can be informed when that happens!!
+	private void setText(String text){
+		if(textArea.getText().equals(text))return;
+		textArea.setText(text);
+		informChangeListeners();
+	}
 
 	private class HistoryStack extends Stack<String>{
 		private boolean synced(){
@@ -29,7 +46,7 @@ public class JTextLinesEditor extends JPanel{
 		}
 		public void syncText(){
 			try{
-				textArea.setText(history.peek());
+				setText(history.peek());
 			}finally{
 				update();
 			}
@@ -49,7 +66,7 @@ public class JTextLinesEditor extends JPanel{
 			// if what we're pushing actually is what we already have
 			if(text!=null&&(empty()||!text.equals(this.peek()))){ // a new text to push on the stack
 				try{
-					textArea.setText(super.push(text));
+					setText(super.push(text));
 					result=textArea.getText();
 				}catch(Exception ex){
 				}finally{
@@ -61,7 +78,7 @@ public class JTextLinesEditor extends JPanel{
 		@Override
 		public String pop(){
 			String result=(empty()?null:super.pop());
-			textArea.setText(result);
+			setText(result);
 			update();
 			return result;
 		}
@@ -102,6 +119,7 @@ public class JTextLinesEditor extends JPanel{
 		textArea.addKeyListener(new KeyAdapter(){
 			@Override
 			public void keyReleased(KeyEvent e){
+				informChangeListeners(); // MDH@25OCT2018: assumed change to the text!!!
 				// allow remembering it if different from the last item in the history
 				history.update();
 			}
@@ -130,12 +148,11 @@ public class JTextLinesEditor extends JPanel{
 		add(contentsView=getContentsView());
 	}
 
-
 	// two methods for either updating from the container, or update the container from me
 	public boolean read(){
 		// i.e. start over with the
 		try{
-			textArea.setText(String.join("\n",textLinesProducer.getTextLines())); // update the view
+			setText(String.join("\n",textLinesProducer.getTextLines())); // update the view
 			history.clear();
 			remember(); // keep the current value in the history (so we can go back to it)
 			return true;
@@ -176,6 +193,14 @@ public class JTextLinesEditor extends JPanel{
 		setTextLinesConsumer(textLinesContainer);
 		setTextLinesProducer(textLinesContainer);
 	}
+
+	// ITextLinesProducer implementation
+	public String[] getTextLines()throws Exception{
+		// internally JTextArea uses \n as line separator (I think)
+		return textArea.getText().split("\n");
+	}
+	// end ITextLinesProducer implementation
+
 	/* replacing:
 	public void setTextLinesContainer(ITextLinesContainer textLinesContainer){
 		info("Switching to another text lines store.");

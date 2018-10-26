@@ -7,8 +7,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.beans.PropertyChangeListener;
 
-public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChangeListener, MongooseSchema.SyncListener{
+public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChangeListener, MongooseSchema.SyncListener,IMutableTextLinesProducer.ChangeListener{
 
 	private static final String TAG=MongooseSchemaDesignEditorView.class.getSimpleName();
 
@@ -30,7 +31,10 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	public void syncChanged(MongooseSchema mongooseSchema){
 		Utils.consoleprintln("Mongoose schema design editor responding to the sync status of the schema with representation '"+mongooseSchema.getRepresentation(true)+"'.");
 		// if this is the currently selected mongoose schema update the label!!!
-		if(mongooseSchema.equals(this.mongooseSchema))mongooseSchemaEntryLabel.setText("Schema "+mongooseSchema.getRepresentation(true));
+		if(mongooseSchema.equals(this.mongooseSchema)){
+			saveSchemaButton.setEnabled(!mongooseSchema.isSynced());
+			mongooseSchemaEntryLabel.setText("Schema "+mongooseSchema.getRepresentation(true));
+		}
 		else Utils.consoleprintln("NOTE: The Mongoose schema design that changed ("+mongooseSchema.getName()+") is not the currently selected Mongoose schema design"+(this.mongooseSchema!=null?"("+this.mongooseSchema.getName()+")":"")+".");
 	}
 	// end syncListener implementation
@@ -147,6 +151,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	private JComponent getSchemaFieldsView(){
 		JPanel fieldsEntryPanel=new JPanel(new BorderLayout());
 		JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // MDH@19OCT2018: switch to a horizontal split so we do not need to use the entire width of this subwindow for just showing the name
+		splitPane.setOneTouchExpandable(true); // allow collapsing the field list view with a single click
 		splitPane.setLeftComponent(getFieldListView());
 		splitPane.setRightComponent(fieldView=new FieldView());
 		/////////fieldView.setVisible(false); // initially no actually field selected or shown...
@@ -155,16 +160,24 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		// we can have a list of field names left ready to be edited?????
 		return fieldsEntryPanel;
 	}
-	private void saveTable(){
+	private void saveSchema(){
 		if(mongooseSchema!=null){
 			// there might be uncommitted text in the text lines editor
-			if(tabbedPane.getSelectedIndex()==0)if(!fieldsTextLinesEditor.write()){Utils.setInfo(this,"Can't save, due to failing to update the schema from the text.");}
-			mongooseSchema.save();
+			if(tabbedPane.getSelectedIndex()==0&&!fieldsTextLinesEditor.write())
+				Utils.setInfo(this,"Can't save, due to failing to update the schema from the text.");
+			else
+				mongooseSchema.save();
 		}else
 			Utils.setInfo(this,"Bug: No schema to save!");
 	}
-	private void publishTable(){
-		if(mongooseSchema!=null)mongooseSchema.publish();else Utils.setInfo(this,"Bug: No schema to publish!");
+	private void publishSchema(){
+		if(mongooseSchema!=null){
+			if(tabbedPane.getSelectedIndex()==0&&!fieldsTextLinesEditor.write())
+				Utils.setInfo(this,"Can't publish, due to failing to update the schema from the text.");
+			else
+				mongooseSchema.publish();
+		}else
+			Utils.setInfo(this,"Bug: No schema to publish!");
 	}
 	private boolean isExistingSubSchemaname(String subSchemaname){
 		DefaultComboBoxModel subSchemaComboBoxModel=(DefaultComboBoxModel)subSchemaComboBox.getModel();
@@ -214,30 +227,32 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		return addSubSchemaPanel;
 	}
 	*/
-	private JButton saveTableButton,publishTableButton;
+	private JButton saveSchemaButton,publishSchemaButton;
+	/*
 	private JComponent schemaButtonView;
 	private JComponent getSchemaButtonView(){
 		JPanel mongooseSchemaButtonPanel=new JPanel(new BorderLayout());
-		mongooseSchemaButtonPanel.add(saveTableButton=new JButton("Save"),BorderLayout.WEST);
+		mongooseSchemaButtonPanel.add(saveSchemaButton=new JButton("Save"),BorderLayout.WEST);
 		////////mongooseSchemaButtonPanel.add(getAddSubSchemaView());
 		Box buttonBox=Box.createHorizontalBox();
 		////////buttonBox.add(backButton=new JButton("Back"));
-		buttonBox.add(publishTableButton=SwingUtils.getButton("Publish",false,true,null));
+		buttonBox.add(publishSchemaButton=SwingUtils.getButton("Publish",false,true,null));
 		mongooseSchemaButtonPanel.add(buttonBox,BorderLayout.EAST);
-		saveTableButton.addActionListener(new ActionListener() {
+		saveSchemaButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				saveTable();
+				saveSchema();
 			}
 		});
-		publishTableButton.addActionListener(new ActionListener() {
+		publishSchemaButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				publishTable();
+				publishSchema();
 			}
 		});
 		return mongooseSchemaButtonPanel;
 	}
+	*/
 	private JComboBox subSchemaComboBox;
 	/*
 	private JComponent getSubSchemaSelectorView(){
@@ -290,20 +305,56 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		return schemaDesignPanel;
 	}
 	private JTextLinesEditor modelTextLinesEditor;
+	private JComponent saveModelView=null,saveSchemaView=null; // we need these views in order to be able to hide them???
+	private JComponent getSaveModelView(){
+		JPanel saveModelPanel=new JPanel(new BorderLayout());
+		saveModelPanel.add(publishSchemaButton=new JButton("Save"),BorderLayout.EAST);
+		publishSchemaButton.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){publishSchema();}});
+		return saveModelPanel;
+	}
+	private JComponent schemaModelView=null; // the one to show and/or hide!!!
 	private JComponent getSchemaModelView(){
 		JPanel schemaTextPanel=new JPanel(new BorderLayout());
 		schemaTextPanel.add(modelTextLinesEditor=new JTextLinesEditor());
+		schemaTextPanel.add(saveModelView=getSaveModelView(),BorderLayout.SOUTH);
 		return schemaTextPanel;
 	}
 	private JTextLinesEditor fieldsTextLinesEditor; // where we show the text of the Mongoose Schema
+	public void textLinesChanged(IMutableTextLinesProducer textLinesProducer){
+		if(textLinesProducer.equals(fieldsTextLinesEditor)){
+			if(this.mongooseSchema!=null){
+				try{
+					if(!this.mongooseSchema.unsavedWithFieldsTextLines(textLinesProducer.getTextLines())){
+						saveSchemaButton.setEnabled(false);
+						return;
+					}
+				}catch(Exception ex){}
+				// benefit of the double
+				saveSchemaButton.setEnabled(true);
+			}
+		}
+	}
+	private JComponent getSaveSchemaView(){
+		JPanel saveSchemaPanel=new JPanel(new BorderLayout());
+		saveSchemaPanel.add(saveSchemaButton=new JButton("Save"),BorderLayout.EAST);
+		saveSchemaButton.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){saveSchema();}});
+		return saveSchemaPanel;
+	}
 	private JComponent getSchemaTextView(){
 		JPanel schemaTextPanel=new JPanel(new BorderLayout());
 		schemaTextPanel.add(fieldsTextLinesEditor=new JTextLinesEditor());
+		schemaTextPanel.add(saveSchemaView=getSaveSchemaView(),BorderLayout.SOUTH);
 		return schemaTextPanel;
 	}
 	private JTabbedPane tabbedPane;
 	// updateSelectedTabView() to be called whenever the user select another tab, or when the selected mongoose schema changes!!
 	private void updateSelectedTabView(){
+		// MDH@25OCT2018: ascertain to have the right tabs
+		if(mongooseSchema!=null&&mongooseSchema.getParent()==null){
+			if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Model",schemaModelView);
+		}else{
+			if(tabbedPane.getTabCount()>=3)tabbedPane.remove(2);
+		}
 		switch(tabbedPane.getSelectedIndex()){
 			case 0:
 				// TODO is there a better way to do this??? because we only need to plug in another field collection if the schema changes!!!!
@@ -332,7 +383,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 					*/
 					/* TODO what to do when the schema failed to load successfully????
 					boolean aSubSchema=(this.mongooseSchema.getParent()!=null); // it's a subschema if the schema has a parent!!
-					//////////schemaButtonView.setVisible(!aSubSchema); // replacing publishTableButton.setVisible(!aSubSchema);
+					//////////schemaButtonView.setVisible(!aSubSchema); // replacing publishSchemaButton.setVisible(!aSubSchema);
 					*/
 					showSchemaFields();
 				}
@@ -344,16 +395,31 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				break;
 		}
 	}
+	////////private JSplitPane ioSplitPane,designSplitPane;
 	private JComponent getSchemaView(){
 		JPanel mongooseSchemaEntryPanel=new JPanel(new BorderLayout());
 		mongooseSchemaEntryLabel=new JLabel(); // SwingUtils.getButton("",true,true,SwingUtils.NARROW_BORDER);
 		// at the top we put the name of the schema BUT we now also need
 		mongooseSchemaEntryPanel.add(getSchemaHeaderView(),BorderLayout.NORTH);
+		/*
+		JSplitPane ioSplitPane=new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+		JSplitPane designSplitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		ioSplitPane.setOneTouchExpandable(true);
+		designSplitPane.setOneTouchExpandable(true);
+		designSplitPane.setLeftComponent(getSchemaTextView());
+		designSplitPane.setRightComponent(getSchemaDesignView());
+		ioSplitPane.setTopComponent(designSplitPane);
+		ioSplitPane.setBottomComponent(getSchemaModelView());
+		mongooseSchemaEntryPanel.add(ioSplitPane);
+		ioSplitPane.setDividerLocation(0.9d);
+		*/
+		// replacing:
 		tabbedPane=new JTabbedPane();
 		// initially when the schema is selected in the tree view we show the text only (before it's parsed when the Design view is shown!!!)
 		tabbedPane.addTab("Text",getSchemaTextView());
 		tabbedPane.addTab("Design",getSchemaDesignView());
-		tabbedPane.addTab("Model",getSchemaModelView());
+		schemaModelView=getSchemaModelView();
+		// now wait for a top-level Mongoose schema to be selected!!!		tabbedPane.addTab("Model",schemaModelView=getSchemaModelView());
 		tabbedPane.addChangeListener(new ChangeListener(){
 			@Override
 			public void stateChanged(ChangeEvent e){
@@ -361,7 +427,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			}
 		});
 		mongooseSchemaEntryPanel.add(tabbedPane);
-		mongooseSchemaEntryPanel.add(schemaButtonView=getSchemaButtonView(),BorderLayout.SOUTH); // MDH@19OCT2018: allow saving (and publishing) at any moment
+		/////////mongooseSchemaEntryPanel.add(schemaButtonView=getSchemaButtonView(),BorderLayout.SOUTH); // MDH@19OCT2018: allow saving (and publishing) at any moment
 		return mongooseSchemaEntryPanel;
 	}
 	// end GUI stuff
@@ -405,7 +471,8 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		// NOTE that this could possibly be a subschema
 		try{
 			if(this.mongooseSchema!=null){
-				if(tabbedPane.getSelectedIndex()==0) fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+				if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+				fieldsTextLinesEditor.removeChangeListener(this);
 				fieldsTextLinesEditor.setTextLinesContainer(null); // get rid of editing the current field collection...
 				modelTextLinesEditor.setTextLinesContainer(null);
 				/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
@@ -420,7 +487,9 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
 				modelTextLinesEditor.setTextLinesConsumer(this.mongooseSchema.getModelTextLinesConsumer());
-				if(tabbedPane.getSelectedIndex()==0) fieldsTextLinesEditor.read();
+				if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.read();
+				saveSchemaButton.setEnabled(!this.mongooseSchema.isSynced());
+				fieldsTextLinesEditor.addChangeListener(this); // any change to the text should result in checking whether or not this text differs from the last 'saved' text!!!
 				this.mongooseSchema.addSchemaSyncListener(this); // listen in to any changes to the sync property!!!
 				this.mongooseSchema.setFieldChangeListener(this);
 			}

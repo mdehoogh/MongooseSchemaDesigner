@@ -2,18 +2,31 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7d8604b0-53c8-41d6-b597-b302511ce5ba" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/com/officevitae/marc/FieldTypeSelectorView.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ICompositeFieldType.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/com/officevitae/marc/IMutableTextLinesProducer.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ArrayFieldType.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ArrayFieldType.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/a.msd" beforeDir="false" afterPath="$PROJECT_DIR$/a.msd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/f.msd" beforeDir="false" afterPath="$PROJECT_DIR$/f.msd" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$ArrayValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$ArrayValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$BooleanValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$BooleanValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$BufferValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$BufferValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$DateValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$DateValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$Decimal128ValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$Decimal128ValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$FunctionBodyValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$FunctionBodyValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$IntegerValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$IntegerValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$MapValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$MapValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$MixedValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$MixedValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$NonNegativeIntegerValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$NonNegativeIntegerValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$NumberValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$NumberValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$ObjectIdValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$ObjectIdValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$RegExpValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$RegExpValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$StringArrayValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$StringArrayValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$StringValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field$StringValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$1.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$10.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$10.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$11.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$11.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$12.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$12.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$13.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$13.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$14.class" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$15.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$10.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$11.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$12.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$13.class" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$2.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$3.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$4.class" afterDir="false" />
@@ -23,26 +36,39 @@
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$8.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$8.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$9.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView$9.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/FieldView.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ITextLinesConsumer.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ITextLinesConsumer.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor$1.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor$2.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor$3.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/JTextLinesEditor.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ITextLinesProcessor$TextFile.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ITextLinesProcessor$TextFile.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema$FieldCollection.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema$FieldCollection.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$3.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$4.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$5.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$6.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$6.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$7.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$7.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$FieldListModel.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$FieldListModel.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$4.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$5.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteral.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteral.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteralView$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteralView$1.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteralView$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteralView$2.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteralView.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ValidatedFieldLiteralView.class" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/p.msd" beforeDir="false" afterPath="$PROJECT_DIR$/p.msd" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/Field.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/Field.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesConsumer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesConsumer.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseFieldType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseFieldType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/Utils.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/Utils.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteral.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteral.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteralView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteralView.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -55,34 +81,35 @@
     <session id="-1393264772">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="10" />
-          <entry key="project.open.time.10" value="1" />
+          <entry key="project.closed" value="12" />
+          <entry key="project.open.time.10" value="2" />
           <entry key="project.open.time.11" value="3" />
           <entry key="project.open.time.12" value="3" />
           <entry key="project.open.time.13" value="2" />
+          <entry key="project.open.time.14" value="1" />
           <entry key="project.open.time.2" value="1" />
-          <entry key="project.opened" value="10" />
+          <entry key="project.opened" value="12" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="java" value="36" />
+          <entry key="java" value="49" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="JAVA" value="36" />
+          <entry key="JAVA" value="49" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="java" value="84151" />
+          <entry key="java" value="103363" />
           <entry key="txt" value="48" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="84151" />
+          <entry key="JAVA" value="103363" />
           <entry key="PLAIN_TEXT" value="48" />
         </counts>
       </usages-collector>
@@ -94,41 +121,61 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldTypeSelectorView.java">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="378">
-              <caret line="181" column="60" lean-forward="true" selection-start-line="181" selection-start-column="60" selection-end-line="181" selection-end-column="60" />
+            <state relative-caret-position="414">
+              <caret line="487" column="98" selection-start-line="487" selection-start-column="78" selection-end-line="487" selection-end-column="98" />
               <folding>
-                <element signature="imports" expanded="true" />
-                <element signature="e#7548#7572#0" expanded="true" />
+                <element signature="e#19643#19644#0" expanded="true" />
+                <element signature="e#19677#19678#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Field.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="334">
+              <caret line="350" column="5" lean-forward="true" selection-start-line="350" selection-start-column="5" selection-end-line="350" selection-end-column="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="2385">
+              <caret line="173" column="62" lean-forward="true" selection-start-line="173" selection-start-column="62" selection-end-line="173" selection-end-column="62" />
+              <folding>
+                <element signature="e#669#685#0" expanded="true" />
+                <element signature="e#460#461#0" expanded="true" />
+                <element signature="e#532#533#0" expanded="true" />
+                <element signature="e#2900#2901#0" expanded="true" />
+                <element signature="e#3023#3024#0" expanded="true" />
+                <element signature="e#3047#3048#0" expanded="true" />
+                <element signature="e#3112#3113#0" expanded="true" />
+                <element signature="e#6614#6615#0" expanded="true" />
+                <element signature="e#6661#6662#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Field.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="393">
-              <caret line="574" column="114" selection-start-line="574" selection-start-column="114" selection-end-line="574" selection-end-column="114" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ICompositeFieldType.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="75">
-              <caret line="5" column="1" selection-start-line="5" selection-start-column="1" selection-end-line="5" selection-end-column="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="300">
-              <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
+            <state relative-caret-position="360">
+              <caret line="26" column="143" selection-start-line="26" selection-start-column="143" selection-end-line="26" selection-end-column="143" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Utils.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="743">
+              <caret line="117" column="5" lean-forward="true" selection-start-line="117" selection-start-column="5" selection-end-line="117" selection-end-column="5" />
             </state>
           </provider>
         </entry>
@@ -136,35 +183,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="330">
-              <caret line="24" column="33" lean-forward="true" selection-start-line="24" selection-start-column="33" selection-end-line="24" selection-end-column="33" />
+            <state relative-caret-position="285">
+              <caret line="19" column="5" lean-forward="true" selection-start-line="19" selection-start-column="5" selection-end-line="19" selection-end-column="5" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IFieldType.java">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IMutableTextLinesProducer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="240">
-              <caret line="16" column="1" selection-start-line="16" selection-start-column="1" selection-end-line="16" selection-end-column="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseFieldType.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="834">
-              <caret line="70" column="36" lean-forward="true" selection-start-line="70" selection-start-column="36" selection-end-line="70" selection-end-column="36" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="926">
-              <caret line="416" column="88" selection-start-line="416" selection-start-column="88" selection-end-line="416" selection-end-column="88" />
+            <state relative-caret-position="210">
+              <caret line="14" column="1" lean-forward="true" selection-start-line="14" selection-start-column="1" selection-end-line="14" selection-end-column="1" />
             </state>
           </provider>
         </entry>
@@ -172,41 +201,32 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="348">
-              <caret line="571" column="5" lean-forward="true" selection-start-line="571" selection-start-column="5" selection-end-line="571" selection-end-column="5" />
+            <state relative-caret-position="283">
+              <caret line="581" column="113" lean-forward="true" selection-start-line="581" selection-start-column="113" selection-end-line="581" selection-end-column="113" />
               <folding>
                 <element signature="e#8036#8037#0" expanded="true" />
-                <element signature="e#8084#8085#0" expanded="true" />
-                <element signature="e#19069#19077#0" expanded="true" />
-                <element signature="e#25745#25753#0" expanded="true" />
-                <element signature="e#30200#30201#0" expanded="true" />
-                <element signature="e#30264#30265#0" expanded="true" />
+                <element signature="e#8080#8081#0" expanded="true" />
+                <element signature="e#41327#41335#0" expanded="true" />
+                <element signature="e#42233#42241#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesContainer.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="252">
-              <caret line="94" column="5" lean-forward="true" selection-start-line="94" selection-start-column="5" selection-end-line="94" selection-end-column="5" />
-              <folding>
-                <element signature="e#15039#15040#0" expanded="true" />
-                <element signature="e#15123#15124#0" expanded="true" />
-                <element signature="e#16242#16243#0" expanded="true" />
-                <element signature="e#16301#16302#0" expanded="true" />
-                <element signature="e#16532#16533#0" expanded="true" />
-                <element signature="e#16587#16588#0" expanded="true" />
-                <element signature="e#17460#17461#0" expanded="true" />
-                <element signature="e#17528#17529#0" expanded="true" />
-                <element signature="e#17652#17653#0" expanded="true" />
-                <element signature="e#17716#17717#0" expanded="true" />
-                <element signature="e#17841#17842#0" expanded="true" />
-                <element signature="e#17907#17908#0" expanded="true" />
-                <element signature="e#19311#19312#0" expanded="true" />
-                <element signature="e#19391#19392#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="150">
+              <caret line="12" selection-start-line="12" selection-end-line="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="315">
+              <caret line="22" column="9" lean-forward="true" selection-start-line="22" selection-start-column="9" selection-end-line="22" selection-end-column="9" />
             </state>
           </provider>
         </entry>
@@ -216,46 +236,47 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="Enum" />
+        <option value="Class" />
       </list>
     </option>
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>getFieldFrom</find>
-      <find>ComboBox</find>
-      <find>addItem(</find>
-      <find>subSchemaA</find>
-      <find>in up</find>
-      <find>in updating</find>
-      <find>load(</find>
-      <find>getAssociatedFilename</find>
+      <find>JSplitPane</find>
+      <find>indexLiteralView=</find>
+      <find>indexTypeLiteral</find>
+      <find>getIndex</find>
+      <find>g getTextRepre</find>
+      <find>setUnique</find>
+      <find>FIELD_FLAG_NAMES</find>
+      <find>Index:</find>
+      <find>isDisabled(</find>
+      <find>saving</find>
+      <find>getModelTextLinesConsumer(</find>
+      <find>in writing the mo</find>
+      <find>saveSchema</find>
+      <find>publishSchema</find>
+      <find>textA</find>
+      <find>textArea.setText</find>
+      <find>textArea=</find>
+      <find>save(</find>
+      <find>JTextLinesEditor</find>
+      <find>] getTextLines(</find>
+      <find>fieldsTextLinesEditr</find>
+      <find>textLinesC</find>
       <find>setMongooseSchema</find>
-      <find>setTextLines(</find>
-      <find>modelTextLinesEditor=</find>
-      <find>getModel</find>
-      <find>writeModel</find>
-      <find>&quot;Model&quot;</find>
-      <find>getModelTextLinesC</find>
-      <find>d update</find>
-      <find>getModelT</find>
-      <find>MSD:F</find>
-      <find>typeComboBox</find>
-      <find>typeComboBox.add</find>
-      <find>.addItem</find>
-      <find>fieldTypeSelectorView=</find>
-      <find>setArra</find>
-      <find>setSub</find>
-      <find>getFieldCont</find>
-      <find>g getTextRep</find>
-      <find>values</find>
-      <find>selectF</find>
-      <find>getTextLines</find>
-      <find>g getFieldContents</find>
+      <find>fieldCollection.add</find>
+      <find>getTextLines(</find>
+      <find>assumeSynced</find>
+      <find>getModelTextLinesPro</find>
+      <find>getModelTextLines(</find>
+      <find>getFieldF</find>
+      <find>getTextRep</find>
     </findStrings>
     <replaceStrings>
       <replace>Utils.consoleprintln(</replace>
+      <replace>SchemaButton</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -264,34 +285,37 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/Utils.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/IFieldType.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/SwingUtils.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesContainer.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaFactory.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptMongooseSchema.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/ICompositeFieldType.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesConsumer.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseCompositeFieldTypes.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/FieldTypeSelectorView.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseFieldType.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteralView.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteral.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesConsumer.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/IMutableTextLinesProducer.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/Utils.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/Field.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-11" />
-    <option name="y" value="24" />
-    <option name="width" value="2560" />
-    <option name="height" value="1350" />
+  <component name="ProjectFrameBounds">
+    <option name="x" value="111" />
+    <option name="y" value="23" />
+    <option name="width" value="2010" />
+    <option name="height" value="1233" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -299,8 +323,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="PackagesPane" />
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -327,6 +349,8 @@
           <select />
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -334,6 +358,7 @@
     <property name="project.structure.last.edited" value="SDKs" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.0" />
+    <property name="settings.editor.selected.configurable" value="preferences.sourceCode.Java" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -397,9 +422,9 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="23" width="2560" height="1350" extended-state="6" />
+    <frame x="111" y="23" width="2010" height="1233" extended-state="0" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8662921" visible="true" weight="0.18943606" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8662921" visible="true" weight="0.23069106" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -408,15 +433,15 @@
       <window_info id="Favorites" order="6" sideWeight="0.13370787" side_tool="true" weight="0.18803419" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.17806041" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.2337043" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.18667835" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.23312883" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Terminal" order="7" />
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Messages" order="10" weight="0.3290938" />
+      <window_info anchor="bottom" id="Messages" order="10" weight="0.32865906" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -434,6 +459,18 @@
     <MESSAGE value="Start of model read/write implementation" />
     <option name="LAST_COMMIT_MESSAGE" value="Start of model read/write implementation" />
   </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java</url>
+          <line>959</line>
+          <properties />
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptUtils.java">
       <provider selected="true" editor-type-id="text-editor">
@@ -444,13 +481,6 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IMongooseSchemaReader.java" />
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IMongooseSchemaWriter.java" />
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesContainer.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="12" selection-start-line="12" selection-end-line="12" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptMongooseSchema.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="434">
@@ -458,13 +488,6 @@
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="13" column="48" selection-start-line="13" selection-start-column="48" selection-end-line="13" selection-end-column="48" />
         </state>
       </provider>
     </entry>
@@ -489,20 +512,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Utils.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="240">
-          <caret line="19" column="5" selection-start-line="19" selection-start-column="5" selection-end-line="19" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="282">
-          <caret line="251" column="5" lean-forward="true" selection-start-line="251" selection-start-column="5" selection-end-line="251" selection-end-column="5" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProducer.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="60">
@@ -510,40 +519,14 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesConsumer.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseCompositeFieldTypes.java" />
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldTypeSelectorView.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="285">
-          <caret line="19" column="5" lean-forward="true" selection-start-line="19" selection-start-column="5" selection-end-line="19" selection-end-column="5" />
+        <state relative-caret-position="2655">
+          <caret line="181" column="60" selection-start-line="181" selection-start-column="60" selection-end-line="181" selection-end-column="60" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#213#214#0" expanded="true" />
-            <element signature="e#244#245#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-543">
-          <caret line="99" column="37" selection-start-line="99" selection-start-column="37" selection-end-line="99" selection-end-column="37" />
-          <folding>
-            <element signature="e#5550#5551#0" expanded="true" />
-            <element signature="e#5597#5598#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="926">
-          <caret line="416" column="88" selection-start-line="416" selection-start-column="88" selection-end-line="416" selection-end-column="88" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseCompositeFieldTypes.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="6" column="8" selection-start-line="6" selection-start-column="8" selection-end-line="6" selection-end-column="8" />
         </state>
       </provider>
     </entry>
@@ -554,43 +537,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="252">
-          <caret line="94" column="5" lean-forward="true" selection-start-line="94" selection-start-column="5" selection-end-line="94" selection-end-column="5" />
-          <folding>
-            <element signature="e#15039#15040#0" expanded="true" />
-            <element signature="e#15123#15124#0" expanded="true" />
-            <element signature="e#16242#16243#0" expanded="true" />
-            <element signature="e#16301#16302#0" expanded="true" />
-            <element signature="e#16532#16533#0" expanded="true" />
-            <element signature="e#16587#16588#0" expanded="true" />
-            <element signature="e#17460#17461#0" expanded="true" />
-            <element signature="e#17528#17529#0" expanded="true" />
-            <element signature="e#17652#17653#0" expanded="true" />
-            <element signature="e#17716#17717#0" expanded="true" />
-            <element signature="e#17841#17842#0" expanded="true" />
-            <element signature="e#17907#17908#0" expanded="true" />
-            <element signature="e#19311#19312#0" expanded="true" />
-            <element signature="e#19391#19392#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="24" column="33" lean-forward="true" selection-start-line="24" selection-start-column="33" selection-end-line="24" selection-end-column="33" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="22" lean-forward="true" selection-start-line="22" selection-end-line="22" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IFieldType.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="240">
@@ -598,43 +544,171 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldTypeSelectorView.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseFieldType.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="378">
-          <caret line="181" column="60" lean-forward="true" selection-start-line="181" selection-start-column="60" selection-end-line="181" selection-end-column="60" />
+        <state relative-caret-position="1050">
+          <caret line="70" column="36" selection-start-line="70" selection-start-column="36" selection-end-line="70" selection-end-column="36" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteralView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="292">
+          <caret line="24" column="32" selection-start-line="24" selection-start-column="24" selection-end-line="24" selection-end-column="32" />
           <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#7548#7572#0" expanded="true" />
+            <element signature="e#4584#4585#0" expanded="true" />
+            <element signature="e#4612#4613#0" expanded="true" />
+            <element signature="e#4654#4655#0" expanded="true" />
+            <element signature="e#4673#4674#0" expanded="true" />
+            <element signature="e#4742#4743#0" expanded="true" />
+            <element signature="e#4761#4762#0" expanded="true" />
+            <element signature="e#6077#6078#0" expanded="true" />
+            <element signature="e#6108#6109#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseFieldType.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldLiteral.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="834">
-          <caret line="70" column="36" lean-forward="true" selection-start-line="70" selection-start-column="36" selection-end-line="70" selection-end-column="36" />
+        <state relative-caret-position="90">
+          <caret line="6" column="22" selection-start-line="6" selection-start-column="22" selection-end-line="6" selection-end-column="22" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ValidatedFieldLiteral.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="165">
+          <caret line="11" column="34" selection-start-line="11" selection-start-column="34" selection-end-line="11" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="147">
+          <caret line="324" column="5" selection-start-line="324" selection-start-column="5" selection-end-line="324" selection-end-column="5" />
+          <folding>
+            <element signature="e#7863#7864#0" expanded="true" />
+            <element signature="e#7885#7886#0" expanded="true" />
+            <element signature="e#7955#7956#0" expanded="true" />
+            <element signature="e#7977#7978#0" expanded="true" />
+            <element signature="e#8188#8189#0" expanded="true" />
+            <element signature="e#8241#8242#0" expanded="true" />
+            <element signature="e#16527#16528#0" expanded="true" />
+            <element signature="e#16586#16587#0" expanded="true" />
+            <element signature="e#16817#16818#0" expanded="true" />
+            <element signature="e#16872#16873#0" expanded="true" />
+            <element signature="e#21666#21667#0" expanded="true" />
+            <element signature="e#21730#21731#0" expanded="true" />
+            <element signature="e#21927#21928#0" expanded="true" />
+            <element signature="e#21991#21992#0" expanded="true" />
+            <element signature="e#22327#22328#0" expanded="true" />
+            <element signature="e#22378#22379#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="995">
+          <caret line="345" column="66" selection-start-line="345" selection-start-column="66" selection-end-line="345" selection-end-column="66" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesConsumer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="135">
+          <caret line="10" column="35" lean-forward="true" selection-start-line="10" selection-start-column="35" selection-end-line="10" selection-end-column="35" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesContainer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="150">
+          <caret line="12" selection-start-line="12" selection-end-line="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProcessor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="22" column="9" lean-forward="true" selection-start-line="22" selection-start-column="9" selection-end-line="22" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IMutableTextLinesProducer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="210">
+          <caret line="14" column="1" lean-forward="true" selection-start-line="14" selection-start-column="1" selection-end-line="14" selection-end-column="1" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JTextLinesEditor.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="2385">
+          <caret line="173" column="62" lean-forward="true" selection-start-line="173" selection-start-column="62" selection-end-line="173" selection-end-column="62" />
+          <folding>
+            <element signature="e#669#685#0" expanded="true" />
+            <element signature="e#460#461#0" expanded="true" />
+            <element signature="e#532#533#0" expanded="true" />
+            <element signature="e#2900#2901#0" expanded="true" />
+            <element signature="e#3023#3024#0" expanded="true" />
+            <element signature="e#3047#3048#0" expanded="true" />
+            <element signature="e#3112#3113#0" expanded="true" />
+            <element signature="e#6614#6615#0" expanded="true" />
+            <element signature="e#6661#6662#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Utils.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="743">
+          <caret line="117" column="5" lean-forward="true" selection-start-line="117" selection-start-column="5" selection-end-line="117" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="414">
+          <caret line="487" column="98" selection-start-line="487" selection-start-column="78" selection-end-line="487" selection-end-column="98" />
+          <folding>
+            <element signature="e#19643#19644#0" expanded="true" />
+            <element signature="e#19677#19678#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="285">
+          <caret line="19" column="5" lean-forward="true" selection-start-line="19" selection-start-column="5" selection-end-line="19" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="348">
-          <caret line="571" column="5" lean-forward="true" selection-start-line="571" selection-start-column="5" selection-end-line="571" selection-end-column="5" />
+        <state relative-caret-position="283">
+          <caret line="581" column="113" lean-forward="true" selection-start-line="581" selection-start-column="113" selection-end-line="581" selection-end-column="113" />
           <folding>
             <element signature="e#8036#8037#0" expanded="true" />
-            <element signature="e#8084#8085#0" expanded="true" />
-            <element signature="e#19069#19077#0" expanded="true" />
-            <element signature="e#25745#25753#0" expanded="true" />
-            <element signature="e#30200#30201#0" expanded="true" />
-            <element signature="e#30264#30265#0" expanded="true" />
+            <element signature="e#8080#8081#0" expanded="true" />
+            <element signature="e#41327#41335#0" expanded="true" />
+            <element signature="e#42233#42241#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Field.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="393">
-          <caret line="574" column="114" selection-start-line="574" selection-start-column="114" selection-end-line="574" selection-end-column="114" />
+        <state relative-caret-position="334">
+          <caret line="350" column="5" lean-forward="true" selection-start-line="350" selection-start-column="5" selection-end-line="350" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/ArrayFieldType.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="360">
+          <caret line="26" column="143" selection-start-line="26" selection-start-column="143" selection-end-line="26" selection-end-column="143" />
         </state>
       </provider>
     </entry>

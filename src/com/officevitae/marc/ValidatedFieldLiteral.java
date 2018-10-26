@@ -9,7 +9,7 @@ import java.util.Vector;
 public abstract class ValidatedFieldLiteral<V> extends FieldLiteral<V>{
 	// allow for change listeners which we can tell that the literal was invalidated
 	private Vector<ValidatedFieldLiteralChangeListener> changeListeners=new Vector<ValidatedFieldLiteralChangeListener>(); // anybody can listen does not need to be a V instance!!
-	private boolean disabled=true; // MDH@63th birthday: I suppose we're going to track the enabled flag as well, to be controlled by the user with the checkbox!!
+	private boolean disabled=false; // MDH@63th birthday: I suppose we're going to track the enabled flag as well, to be controlled by the user with the checkbox!!
 	private String validText=null; // by keeping track of the last validText we know when to allow the user to turn on the check box manually even if the current text is invalid!!!
 	private boolean validated=false; // assume initially validated
 	private boolean valid=false; // assume invalid with the current text (default): an empty String
