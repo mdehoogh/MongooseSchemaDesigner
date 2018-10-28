@@ -34,7 +34,7 @@ public class Utils{
 
 	private static SimpleDateFormat DATE_SDF=new SimpleDateFormat("yyyy-m-d");
 
-	public static SimpleDateFormat TIMESTAMP_SDF=new SimpleDateFormat("dMMMyyyy");
+	public static SimpleDateFormat TIMESTAMP_SDF=new SimpleDateFormat("d MMMM yyyy");
 	public static String getTimestamp(){return TIMESTAMP_SDF.format(new Date());}
 
 	public static final String capitalize(String text){return(text==null||text.isEmpty()?"":text.substring(0,1).toUpperCase())+text.substring(1);}

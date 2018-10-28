@@ -186,9 +186,7 @@ public class JTextLinesEditor extends JPanel implements IMutableTextLinesProduce
 		this.textLinesProducer=textLinesProducer;
 		history.clear();
 	}
-	public void setTextLinesConsumer(ITextLinesConsumer textLinesConsumer){
-		this.textLinesConsumer=textLinesConsumer;
-	}
+	public void setTextLinesConsumer(ITextLinesConsumer textLinesConsumer){this.textLinesConsumer=textLinesConsumer;}
 	// not much to do now we have read() and write() in place and callable, and working!!!
 	public void setTextLinesContainer(ITextLinesContainer textLinesContainer){
 		setTextLinesConsumer(textLinesContainer);

@@ -8,6 +8,7 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeListener;
+import java.io.File;
 
 public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChangeListener, MongooseSchema.SyncListener,IMutableTextLinesProducer.ChangeListener{
 
@@ -32,7 +33,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		Utils.consoleprintln("Mongoose schema design editor responding to the sync status of the schema with representation '"+mongooseSchema.getRepresentation(true)+"'.");
 		// if this is the currently selected mongoose schema update the label!!!
 		if(mongooseSchema.equals(this.mongooseSchema)){
-			saveSchemaButton.setEnabled(!mongooseSchema.isSynced());
+			saveButton.setEnabled(!mongooseSchema.isSynced());
 			mongooseSchemaEntryLabel.setText("Schema "+mongooseSchema.getRepresentation(true));
 		}
 		else Utils.consoleprintln("NOTE: The Mongoose schema design that changed ("+mongooseSchema.getName()+") is not the currently selected Mongoose schema design"+(this.mongooseSchema!=null?"("+this.mongooseSchema.getName()+")":"")+".");
@@ -170,6 +171,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		}else
 			Utils.setInfo(this,"Bug: No schema to save!");
 	}
+	/*
 	private void publishSchema(){
 		if(mongooseSchema!=null){
 			if(tabbedPane.getSelectedIndex()==0&&!fieldsTextLinesEditor.write())
@@ -179,6 +181,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		}else
 			Utils.setInfo(this,"Bug: No schema to publish!");
 	}
+	*/
 	private boolean isExistingSubSchemaname(String subSchemaname){
 		DefaultComboBoxModel subSchemaComboBoxModel=(DefaultComboBoxModel)subSchemaComboBox.getModel();
 		int subSchemaIndex=subSchemaComboBoxModel.getSize();
@@ -227,18 +230,55 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		return addSubSchemaPanel;
 	}
 	*/
-	private JButton saveSchemaButton,publishSchemaButton;
+	private JButton saveButton;
+	private ITextLinesConsumer getExistingTextLinesConsumerFile(File file){
+		File parentFile=file.getParentFile();
+		if(parentFile!=null&&!parentFile.exists()&&!parentFile.mkdirs())return null;
+		return new ITextLinesConsumer.TextFile(file);
+	}
+	private void write(ITextLinesConsumer textLinesConsumer,ITextLinesProducer textLinesProducer){
+		try{
+			textLinesProducer.produceTextLines();
+			textLinesConsumer.setTextLines(textLinesProducer.getProducedTextLines());
+		}catch(Exception ex){
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving to "+textLinesConsumer.toString()+".");
+		}
+	}
+	private JComponent getSaveView(){
+		JPanel savePanel=new JPanel(new BorderLayout());
+		savePanel.add(saveButton=new JButton("Save"),BorderLayout.EAST);
+		saveButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				switch(tabbedPane.getSelectedIndex()){
+					case 0:
+						// update the fields collection first, before performing the normal write!!!
+						fieldsTextLinesEditor.write();
+					case 1:
+						if(mongooseSchema!=null&&!mongooseSchema.save())Utils.setInfo(this,"Failed to save schema '"+mongooseSchema.getName()+"'.");
+						break;
+					case 2:
+						// writing model, routes and controller
+						write(getExistingTextLinesConsumerFile(new File("./app/controllers",mongooseSchema.getName()+".controller.js")),controllerTextLinesEditor);
+						write(getExistingTextLinesConsumerFile(new File("./app/routes",mongooseSchema.getName()+".routes.js")),routesTextLinesEditor);
+						write(getExistingTextLinesConsumerFile(new File("./app/models",mongooseSchema.getName()+".model.js")),modelTextLinesEditor);
+						break;
+				}
+			}
+		});
+		return savePanel;
+	}
 	/*
 	private JComponent schemaButtonView;
 	private JComponent getSchemaButtonView(){
 		JPanel mongooseSchemaButtonPanel=new JPanel(new BorderLayout());
-		mongooseSchemaButtonPanel.add(saveSchemaButton=new JButton("Save"),BorderLayout.WEST);
+		mongooseSchemaButtonPanel.add(saveButton=new JButton("Save"),BorderLayout.WEST);
 		////////mongooseSchemaButtonPanel.add(getAddSubSchemaView());
 		Box buttonBox=Box.createHorizontalBox();
 		////////buttonBox.add(backButton=new JButton("Back"));
 		buttonBox.add(publishSchemaButton=SwingUtils.getButton("Publish",false,true,null));
 		mongooseSchemaButtonPanel.add(buttonBox,BorderLayout.EAST);
-		saveSchemaButton.addActionListener(new ActionListener() {
+		saveButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				saveSchema();
@@ -305,18 +345,20 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		return schemaDesignPanel;
 	}
 	private JTextLinesEditor modelTextLinesEditor;
-	private JComponent saveModelView=null,saveSchemaView=null; // we need these views in order to be able to hide them???
+	private JComponent saveView=null; // we need these views in order to be able to hide them???
+	/*
 	private JComponent getSaveModelView(){
 		JPanel saveModelPanel=new JPanel(new BorderLayout());
 		saveModelPanel.add(publishSchemaButton=new JButton("Save"),BorderLayout.EAST);
 		publishSchemaButton.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){publishSchema();}});
 		return saveModelPanel;
 	}
+	*/
 	private JComponent schemaModelView=null; // the one to show and/or hide!!!
 	private JComponent getSchemaModelView(){
 		JPanel schemaTextPanel=new JPanel(new BorderLayout());
 		schemaTextPanel.add(modelTextLinesEditor=new JTextLinesEditor());
-		schemaTextPanel.add(saveModelView=getSaveModelView(),BorderLayout.SOUTH);
+		///////schemaTextPanel.add(saveModelView=getSaveModelView(),BorderLayout.SOUTH);
 		return schemaTextPanel;
 	}
 	private JTextLinesEditor fieldsTextLinesEditor; // where we show the text of the Mongoose Schema
@@ -325,34 +367,58 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			if(this.mongooseSchema!=null){
 				try{
 					if(!this.mongooseSchema.unsavedWithFieldsTextLines(textLinesProducer.getProducedTextLines())){
-						saveSchemaButton.setEnabled(false);
+						saveButton.setEnabled(false);
 						return;
 					}
 				}catch(Exception ex){}
 				// benefit of the double
-				saveSchemaButton.setEnabled(true);
+				saveButton.setEnabled(true);
 			}
 		}
 	}
 	private JComponent getSaveSchemaView(){
 		JPanel saveSchemaPanel=new JPanel(new BorderLayout());
-		saveSchemaPanel.add(saveSchemaButton=new JButton("Save"),BorderLayout.EAST);
-		saveSchemaButton.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){saveSchema();}});
+		saveSchemaPanel.add(saveButton=new JButton("Save"),BorderLayout.EAST);
+		saveButton.addActionListener(new ActionListener(){public void actionPerformed(ActionEvent e){saveSchema();}});
 		return saveSchemaPanel;
 	}
 	private JComponent getSchemaTextView(){
 		JPanel schemaTextPanel=new JPanel(new BorderLayout());
 		schemaTextPanel.add(fieldsTextLinesEditor=new JTextLinesEditor());
-		schemaTextPanel.add(saveSchemaView=getSaveSchemaView(),BorderLayout.SOUTH);
+		////////schemaTextPanel.add(saveSchemaView=getSaveSchemaView(),BorderLayout.SOUTH);
 		return schemaTextPanel;
+	}
+	private JComponent outputView;
+	private JTextLinesEditor routesTextLinesEditor,controllerTextLinesEditor;
+	private JComponent getSchemaRoutesView(){
+		JPanel schemaRoutesPanel=new JPanel(new BorderLayout());
+		schemaRoutesPanel.add(routesTextLinesEditor=new JTextLinesEditor());
+		return schemaRoutesPanel;
+	}
+	private JComponent getSchemaControllerView(){
+		JPanel schemaControllerPanel=new JPanel(new BorderLayout());
+		schemaControllerPanel.add(controllerTextLinesEditor=new JTextLinesEditor());
+		return schemaControllerPanel;
+	}
+	private JComponent getOutputView(){
+		JPanel outputPanel=new JPanel(new BorderLayout());
+		JTabbedPane outputTabbedPane=new JTabbedPane();
+		outputTabbedPane.addTab("Model",getSchemaModelView());
+		outputTabbedPane.addTab("Routes",getSchemaRoutesView());
+		outputTabbedPane.addTab("Controller",getSchemaControllerView());
+		outputPanel.add(outputTabbedPane);
+		return outputPanel;
 	}
 	private JTabbedPane tabbedPane;
 	// updateSelectedTabView() to be called whenever the user select another tab, or when the selected mongoose schema changes!!
+	private int lastSelectedTabIndex=-1;
 	private void updateSelectedTabView(){
 		// MDH@25OCT2018: ascertain to have the right tabs
 		if(mongooseSchema!=null&&mongooseSchema.getParent()==null){
-			if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Model",schemaModelView);
+			if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Output",outputView);
+			saveView.setVisible(true);
 		}else{
+			saveView.setVisible(false);
 			if(tabbedPane.getTabCount()>=3)tabbedPane.remove(2);
 		}
 		switch(tabbedPane.getSelectedIndex()){
@@ -363,6 +429,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				//      well showing would suffice
 				try{
 					fieldsTextLinesEditor.read(); // replacing:	fieldsTextLinesEditor.setTextLinesContainer(mongooseSchema.getFieldCollection());
+					lastSelectedTabIndex=0;
 				}catch(Exception ex){
 					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' obtaining the schema definition.");
 				}
@@ -386,12 +453,19 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 					//////////schemaButtonView.setVisible(!aSubSchema); // replacing publishSchemaButton.setVisible(!aSubSchema);
 					*/
 					showSchemaFields();
+					lastSelectedTabIndex=1;
 				}
 				break;
 			case 2:
 				// force a read so we will see the most recent model text lines
-				if(mongooseSchema!=null)
+				if(mongooseSchema!=null){
+					// I have to update the schema (fields) with the contents of the editor, if the editor view is now showing
+					if(lastSelectedTabIndex==0)fieldsTextLinesEditor.write();
 					modelTextLinesEditor.read();
+					routesTextLinesEditor.read();
+					controllerTextLinesEditor.read();
+				}
+				lastSelectedTabIndex=2;
 				break;
 		}
 	}
@@ -418,7 +492,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		// initially when the schema is selected in the tree view we show the text only (before it's parsed when the Design view is shown!!!)
 		tabbedPane.addTab("Text",getSchemaTextView());
 		tabbedPane.addTab("Design",getSchemaDesignView());
-		schemaModelView=getSchemaModelView();
+		outputView=getOutputView();
 		// now wait for a top-level Mongoose schema to be selected!!!		tabbedPane.addTab("Model",schemaModelView=getSchemaModelView());
 		tabbedPane.addChangeListener(new ChangeListener(){
 			@Override
@@ -427,11 +501,11 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			}
 		});
 		mongooseSchemaEntryPanel.add(tabbedPane);
-		/////////mongooseSchemaEntryPanel.add(schemaButtonView=getSchemaButtonView(),BorderLayout.SOUTH); // MDH@19OCT2018: allow saving (and publishing) at any moment
+		mongooseSchemaEntryPanel.add(saveView=getSaveView(),BorderLayout.SOUTH); // MDH@19OCT2018: allow saving (and publishing) at any moment
 		return mongooseSchemaEntryPanel;
 	}
 	// end GUI stuff
-	private JComponent mongooseSchemaEntryView=null;
+	//////private JComponent mongooseSchemaEntryView=null;
 	private JLabel mongooseSchemaEntryLabel;
 	/*
 	private void showSubSchemas(){
@@ -486,9 +560,17 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
+				routesTextLinesEditor.setTextLinesProducer(mongooseSchema.getRoutesTextLinesProducer());
+				controllerTextLinesEditor.setTextLinesProducer(mongooseSchema.getControllerTextLinesProducer());
+				// TODO do we need this?????
 				modelTextLinesEditor.setTextLinesConsumer(this.mongooseSchema.getModelTextLinesConsumer());
-				if(tabbedPane.getSelectedIndex()==0)fieldsTextLinesEditor.read();
-				saveSchemaButton.setEnabled(!this.mongooseSchema.isSynced());
+
+				switch(tabbedPane.getSelectedIndex()){
+					case 0:fieldsTextLinesEditor.read();break;
+					case 1:break;
+					case 2:break;
+				}
+				saveButton.setEnabled(!this.mongooseSchema.isSynced());
 				fieldsTextLinesEditor.addChangeListener(this); // any change to the text should result in checking whether or not this text differs from the last 'saved' text!!!
 				this.mongooseSchema.addSchemaSyncListener(this); // listen in to any changes to the sync property!!!
 				this.mongooseSchema.setFieldChangeListener(this);
@@ -504,7 +586,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	public MongooseSchemaDesignEditorView(){
 		super(new CardLayout());
 		add(new JLabel("The selected schema will show here!"),"NoSchema");
-		add(mongooseSchemaEntryView=getSchemaView(),"Schema");
+		add(getSchemaView(),"Schema");
 	}
 
 }
