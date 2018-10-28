@@ -152,7 +152,8 @@ public class JTextLinesEditor extends JPanel implements IMutableTextLinesProduce
 	public boolean read(){
 		// i.e. start over with the
 		try{
-			setText(String.join("\n",textLinesProducer.getTextLines())); // update the view
+			textLinesProducer.produceTextLines();
+			setText(String.join("\n",textLinesProducer.getProducedTextLines())); // update the view
 			history.clear();
 			remember(); // keep the current value in the history (so we can go back to it)
 			return true;
@@ -195,10 +196,9 @@ public class JTextLinesEditor extends JPanel implements IMutableTextLinesProduce
 	}
 
 	// ITextLinesProducer implementation
-	public String[] getTextLines()throws Exception{
-		// internally JTextArea uses \n as line separator (I think)
-		return textArea.getText().split("\n");
-	}
+	String[] textLines=null;
+	public String[] getProducedTextLines(){return textLines;}
+	public void produceTextLines()throws Exception{textLines=textArea.getText().split("\n");}
 	// end ITextLinesProducer implementation
 
 	/* replacing:

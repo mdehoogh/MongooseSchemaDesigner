@@ -324,7 +324,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		if(textLinesProducer.equals(fieldsTextLinesEditor)){
 			if(this.mongooseSchema!=null){
 				try{
-					if(!this.mongooseSchema.unsavedWithFieldsTextLines(textLinesProducer.getTextLines())){
+					if(!this.mongooseSchema.unsavedWithFieldsTextLines(textLinesProducer.getProducedTextLines())){
 						saveSchemaButton.setEnabled(false);
 						return;
 					}

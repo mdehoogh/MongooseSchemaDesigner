@@ -18,8 +18,11 @@ public interface ITextLinesContainer extends ITextLinesProducer,ITextLinesConsum
 			super.clear();
 			if(textLines.length>0)super.addAll(Arrays.asList(textLines));
 		}
-		public String[] getTextLines()throws Exception{
-			return (String[])super.toArray(new String[super.size()]);
+		public void produceTextLines()throws Exception{
+			textLines=(String[])super.toArray(new String[super.size()]);
+		}
+		public String[] getTextLines(){
+			return textLines;
 		}
 	}
 

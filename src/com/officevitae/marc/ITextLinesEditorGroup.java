@@ -28,7 +28,8 @@ public interface ITextLinesEditorGroup extends ITextLinesContainer{
 				try{
 					// update the current version of the text lines from the current text lines editor!!
 					// the text lines editor SHOULD return null if it didn't edit the text lines at all!!!
-					String[] textLines=(this.currentTextLinesEditor!=null?this.currentTextLinesEditor.getTextLines():null);
+					currentTextLinesEditor.produceTextLines();
+					String[] textLines=currentTextLinesEditor.getProducedTextLines();
 					if(textLines!=null)this.textLines=textLines; // remember the last known (changed) text lines
 					if(textLinesEditor!=null)textLinesEditor.setTextLines(this.textLines);
 					currentTextLinesEditor=textLinesEditor;
@@ -43,12 +44,12 @@ public interface ITextLinesEditorGroup extends ITextLinesContainer{
 		public void setTextLines(String[] textLines){
 			// typically these text lines should go to the current text lines editor??
 		}
-		public String[] getTextLines()throws Exception{
+		public void produceTextLines()throws Exception{
 			// first update what we currently have if need be
-			String[] textLines=(currentTextLinesEditor!=null?currentTextLinesEditor.getTextLines():null);
-			if(textLines!=null)this.textLines=textLines;
-			return this.textLines;
+			currentTextLinesEditor.produceTextLines();
+			this.textLines=currentTextLinesEditor.getProducedTextLines();
 		}
+		public String[] getProducedTextLines(){return textLines;}
 	}
 
 }

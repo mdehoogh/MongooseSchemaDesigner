@@ -349,8 +349,9 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 			}
 		}
 	}
+	// setTextLines is not overriding anything anymore...
 	@Override
-	public void setTextLines(String[] textLines) throws Exception{
+	protected void parseTextLines(String[] textLines)throws Exception{
 		if(textLines==null)return; // no change apparently
 		try{
 			tokenSequenceStack=new Stack<>();
@@ -723,12 +724,17 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 				c:{type:Number,min:1.0,max:0.0},
 			});
 	 */
+	private String[] textLines=null;
 	@Override
-	public String[] getTextLines(){
-		// now pretty simple
-		if(tokenSequenceStack.isEmpty())return null; // no lines available!!!
-		Stack<String> textLines=tokenSequenceStack.firstElement().getTextLines();
-		return (textLines.isEmpty()?new String[]{}:(String[])textLines.toArray(new String[textLines.size()]));
+	public String[] getProducedTextLines(){return textLines;}
+	@Override
+	public void produceTextLines()throws Exception{
+		if(textLines==null){
+			if(!tokenSequenceStack.isEmpty()){
+				Stack<String> textLinesStack=tokenSequenceStack.firstElement().getTextLines();
+				textLines=(textLinesStack.isEmpty()?new String[]{}:(String[])textLinesStack.toArray(new String[textLinesStack.size()]));
+			}
+		}
 	}
 
 }

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Vector;
 
 // MDH@16OCT2018: any Mongoose Schema can also be used as field type (i.e. when it is a subschema!!!)
-public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLinesContainer{
+public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLinesProducer{
 
 	private static final int DEFAULT_TYPE_INDEX=7;
 	// MDH@25OCT2018: index, sparse and unique flags now removed (as they are not mutually exclusive)
@@ -33,11 +33,12 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			super.clear();
 			for(String textLine:textLines)add(getFieldFromContents(textLine));
 		}
-		public String[] getTextLines(){
-			String[] textLines=new String[this.size()];
+		String[] textLines=null;
+		public void produceTextLines()throws Exception{
+			textLines=new String[this.size()];
 			int fieldIndex=0;for(Field field:this)textLines[fieldIndex++]=getFieldContents(field);
-			return textLines;
 		}
+		public String[] getProducedTextLines(){return textLines;}
 		public boolean doneEditing(){return true;}
 	}
 	public FieldCollection fieldCollection=new FieldCollection();
@@ -192,8 +193,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		this.name=name;
 		if(parentSchema!=null)
 			setParent(parentSchema);
-		else
-			load();
+		else // load the contents of the schema using the associated text file lines producer (to start with)
+			load(getTextLinesProducer());
 		// MDH@15OCT2018: the automatic _id field can only be disabled on a parentless schema
 		if(!fieldCollection.containsFieldWithName("_id")&&!fieldCollection.add(new Field("_id").setType(MongooseFieldType.OBJECTID).setDisabable(this.parentSchema!=null)))
 			Utils.setInfo(this,"ERROR: Failed to add automatic _id field to schema '"+getRepresentation(false)+"'.");
@@ -258,7 +259,11 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	private ITextLinesProducer modelTextLinesProducer=null;
 	ITextLinesProducer getModelTextLinesProducer(){
 		if(modelTextLinesProducer==null)
-			modelTextLinesProducer=new ITextLinesProducer(){public String[] getTextLines() throws Exception{return getModelTextLines();};};
+			modelTextLinesProducer=new ITextLinesProducer(){
+				String[] modelTextLines;
+				public void produceTextLines()throws Exception{modelTextLines=getModelTextLines();}
+				public String[] getProducedTextLines(){return modelTextLines;}
+			};
 		return modelTextLinesProducer;
 	}
 	ITextLinesConsumer getModelTextLinesConsumer(){
@@ -570,7 +575,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		}
 		// writing the model can now be achieved by passing the model text lines produces to the model text lines consumer (which is the model file)
 		try{
-			getModelTextLinesConsumer().setTextLines(getModelTextLinesProducer().getTextLines()); // to write the model!!!
+			getModelTextLinesConsumer().setTextLines(getModelTextLinesProducer().getProducedTextLines()); // to write the model!!!
 		}catch(Exception ex){
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' in writing the model file.");
 		}
@@ -771,7 +776,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		for(MongooseSchema subSchema:subSchemas){
 			subSchemaName=subSchema.getName();
 			if(!allSubSchemaTextLines.add(subSchemaName))throw new Exception("Failed to add the name of subschema '"+subSchema.getName()+"'.");
-			subSchemaTextLines=subSchema.getTextLines();
+			subSchemaTextLines=subSchema.getProducedTextLines();
 			// we have to indent all the returned text lines
 			for(String subSchemaTextLine:subSchemaTextLines)
 				if(!allSubSchemaTextLines.add("\t"+subSchemaTextLine))
@@ -785,15 +790,18 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return(lastFieldsTextLines=fieldsTextLines);
 	}
 	// ITextLinesContainer implementation
-	public String[] getTextLines() throws Exception{
-		if(parentSchema==null)if(isSynced())return null; // nothing changed, so return null (MDH@19OCT2018: but only when a main schema, subschema's shouldn't be that fresh!!)
-		// initialize textLines to return with the text lines of all subschema's
-		Vector<String> textLines=new Vector<String>();
-		textLines.addAll(getSubSchemasTextLines()); // adding all the subschemas text lines
-		textLines.addAll(getFieldsTextLines()); // adding all the fields text lines
-		// if nothing changed, since we started on editing this thing, return null, otherwise get the current representation and split it!!
-		return(textLines.isEmpty()?new String[]{}:textLines.toArray(new String[textLines.size()]));
+	public void produceTextLines()throws Exception{
+		//////if(parentSchema==null)if(isSynced())return null; // nothing changed, so return null (MDH@19OCT2018: but only when a main schema, subschema's shouldn't be that fresh!!)
+		///if(textLines==null){ // no current contents known
+			// initialize textLines to return with the text lines of all subschema's
+			Vector<String> textLinesVector=new Vector<String>();
+			textLinesVector.addAll(getSubSchemasTextLines()); // adding all the subschemas text lines
+			textLinesVector.addAll(getFieldsTextLines()); // adding all the fields text lines
+			textLines=(textLinesVector.isEmpty()?new String[]{}:textLinesVector.toArray(new String[textLinesVector.size()]));
+		///}
 	}
+	public String[] getProducedTextLines(){return textLines;}
+	// end ITextLinesContainer implementation
 
 	// keep track of the last saved fields text lines and subschemas text lines separately
 	private List<String> lastSavedFieldsTextLines=null,lastSavedSubSchemasTextLines=null;
@@ -803,19 +811,14 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		return!Utils.equalTextLists(fieldsTextLines==null||fieldsTextLines.length==0?null:Arrays.asList(fieldsTextLines),lastSavedFieldsTextLines);
 	}
 
-	////////public boolean doneEditing(){return true;}
-	// MDH@15OCT2018: load() returns True when something was actually loaded in which case _id does not need to be added!!!
-	// MDH@17OCT2018: there's no need to actually load() from the file (through the ITextLinesProducer.File instance)
-	// MDH@18OCT2018: this is going to be a bit more complicated, as we also include the subschema definitions in the same text lines
-	//                subschema's should be defined BEFORE being used actually in the fields definitions
-	//                although technically they can be combined
-	//                we can distinguish them because fields start with + or - so anything that doesn't rules out
-	public void setTextLines(String[] lines) throws Exception{
+	private String[] textLines=null; // are locally produced (or loaded) text lines...
+
+	protected void parseTextLines(String[] textLines)throws Exception{
 		// we do not want to 'load' more than once!!!
-		if(lines==null)throw new NullPointerException("No text defined to initialize Mongoose schema "+getRepresentation(false)+" from.");
+		///////if(textLines==null)throw new NullPointerException("No text defined to initialize Mongoose schema "+getRepresentation(false)+" from.");
 		lastFieldsTextLines=new Vector<String>();
 		lastSubSchemasTextLines=new Vector<String>();
-		int lineCount=lines.length;
+		int lineCount=(textLines!=null?textLines.length:0);
 		Utils.consoleprintln("Number of lines to process in initializing schema '"+getRepresentation(false)+"': "+lineCount+".");
 		if(lineCount>0){ // at least a single line with the subschema names
 			String line,subSchemaName,subSchemaLineWhitespace;
@@ -823,7 +826,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			MongooseSchema subSchema;
 			int slw;
 			for(int lineIndex=0;lineIndex<lineCount;lineIndex++){
-				line=lines[lineIndex].trim(); // trimming because at the top level all lines should not start with tabs (as subschema lines do)
+				line=textLines[lineIndex].trim(); // trimming because at the top level all lines should not start with tabs (as subschema lines do)
 				Utils.consoleprintln("Processing line #"+(lineIndex+1)+" ("+line+") of schema '"+getRepresentation(false)+"'.");
 				if(line.length()==0||line.charAt(0)=='#'||line.startsWith("//"))continue; // skip comment lines
 				if(line.charAt(0)!='-'&&line.charAt(0)!='+'){ // a subschema (name) line
@@ -833,7 +836,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 					if(!lastSubSchemasTextLines.add(line))Utils.consoleprintln("ERROR: Failed to register subschema name definition line '"+line+"'.");
 					// get all following lines that are indented, let's allow indenting with any character regulated by the first character on the next line
 					if(lineIndex<lineCount-1){ // there is a next line
-						line=lines[lineIndex+1];
+						line=textLines[lineIndex+1];
 						lastSubSchemasTextLines.add(line);
 						// technically all heading whitespace should be considered subschema lines
 						subSchemaLineWhitespace=Utils.getHeadingWhitespace(line); // this is what we want a subschema line to start with!!!
@@ -846,77 +849,34 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 								lineIndex++;
 								if(!subSchemaLines.add(line.substring(slw)))throw new Exception("Failed to register a text line defining sub schema "+subSchema.getRepresentation(false)+".");
 								if(lineIndex>=lineCount)break; // no further lines
-								line=lines[lineIndex+1];
+								line=textLines[lineIndex+1];
 								if(!line.startsWith(subSchemaLineWhitespace))break; // NOT a subschema line
-								lastSubSchemasTextLines.add(line);
+								if(!lastSubSchemasTextLines.add(line))throw new Exception("Failed to register a text line defining sub schema "+subSchema.getRepresentation(false));
 							}
 							for(String subSchemaLine:subSchemaLines)Utils.consoleprintln("\tLine: '"+subSchemaLine+"'.");
 							// there will be at least one line in subSchemaLines (if we get here!!)
-							subSchema.setTextLines((String[])subSchemaLines.toArray(new String[subSchemaLines.size()]));
+							// MDH@28OCT2017: setTextLines() has now been removed because setTextLines() would remember the text lines
+							//                therefore a MongooseSchema does not need to be a consumer anymore... and setTextLines() not implemented!!!
+							subSchema.parseTextLines((String[])subSchemaLines.toArray(new String[subSchemaLines.size()]));
 						}
 					}
 					/////// already done by the constructor??? if(!subSchemas.add(subSchema))throw new Exception("Failed to register subschema '"+subSchemaName+"' with schema '"+getRepresentation(false)+"'.");
 				}else // a field definition line
-					if(fieldCollection.add(getFieldFromContents(line))&&!lastFieldsTextLines.add(line))Utils.consoleprintln("ERROR: Failed to remember field definition line '"+line+"'.");
-			}
-			/* replacing:
-			String subSchemaLine=lines[0];
-			if(!subSchemaLine.trim().isEmpty()){
-				Utils.consoleprintln("Parsing subschemas from '"+subSchemaLine+"' of schema '"+name+"'.");
-				for(String subSchemaName: subSchemaLine.split("\t")) new MongooseSchema(subSchemaName,this);
-			}
-			String fieldLine;
-			for(int lineIndex=1;lineIndex<lineCount;lineIndex++){
-				fieldLine=lines[lineIndex].trim();
-				if(fieldLine.length()>0&&fieldLine.charAt(0)!='#') this.add(getFieldFromContents(fieldLine).setSchema(this));
-			}
-			*/
-		}
-			/* replacing:
-			// if the file doesn't exist, can't become synced!!!
-			boolean somethingloaded=false;
-			File file=new File("./"+getRepresentation(false)+".msd"); // extension means short for Mongoose Schema Design
-			if(file.exists()){
-				try{
-					// if the file does not exist we're definitely NOT synced
-					BufferedReader br=new BufferedReader(new FileReader(file));
-					// read the names of the subschema's so we can load them as well, which should be present on the first line
-					String subSchemaLine=br.readLine();
-					if(subSchemaLine!=null){ // at least one line!!
-						somethingloaded=true; // i.e. we should have lines in lines!!!
-						lines=new ITextProvider.Lines(); // I suppose we may assume we should collect
-						if(!lines.addLine(subSchemaLine))lines=null; // if this fails subSchemaLine will be null and a NullPointerException will occur!!
-						// now we managed to read a line we may assume
-						// from the names of the subschema's we may create the MongooseSchema instances
-						// however, we're calling load in the constructor before parent is set in which case the name of the files won't come out right, so we need to set the parent immediately
-						// in the constructor
-						// each line contains the definition of a single field
-						String fieldline=br.readLine();
-						while(fieldline!=null&&!fieldline.isEmpty()){
-							if(lines!=null&&!lines.addLine(fieldline))lines=null; // failing to actually register the line read!!
-							if(fieldline.length()>0&&fieldline.charAt(0)!='#')this.add(getFieldFromContents(fieldline).setSchema(this));
-							fieldline=br.readLine();
-						}
-					}
-					br.close();
-					setSynced(true);
-				}catch(Exception ex){
-					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' in reading table "+name+".");
-				}
+					if(!fieldCollection.add(getFieldFromContents(line))||!lastFieldsTextLines.add(line))
+						throw new Exception("Failed to store the field definition of schema '"+name+"' from text '"+line+"'.");
 			}
 		}
-		// TODO how about status of lines????
-		return somethingloaded;
-		*/
 	}
-
+	////////public boolean doneEditing(){return true;}
+	// MDH@15OCT2018: load() returns True when something was actually loaded in which case _id does not need to be added!!!
+	// MDH@17OCT2018: there's no need to actually load() from the file (through the ITextLinesProducer.File instance)
+	// MDH@18OCT2018: this is going to be a bit more complicated, as we also include the subschema definitions in the same text lines
+	//                subschema's should be defined BEFORE being used actually in the fields definitions
+	//                although technically they can be combined
+	//                we can distinguish them because fields start with + or - so anything that doesn't rules out
 	// NOTE not to call setSynced() on all subschema, but instead call assumeSynced() as that method will also assume sync all of its subschema's like we want to as well!!!
 	void assumeSynced(){
-		try{
-			for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();
-		}finally{
-			setSynced(true);
-		}
+		try{for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();}finally{setSynced(true);}
 	}
 
 	// TODO we can keep the following stuff private as long as subclasses call setAssociatedFile/getAssociatedFile() to return the text file associated with them
@@ -933,45 +893,68 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 	private String[] lastSavedTextLines=null;
 	public String[] getLastSavedTextLines(){return lastSavedTextLines;}
 	// MDH@21OCT2018: we can leave load() and save() the same as what they were, but override getTextLinesProducer() and getTextLinesConsumer() in subclasses
-	public final boolean load(){
-		// this is now relatively easy
+	// MDH@27OCT2018: do we want getTextLines() to raise an Exception without knowing the partial loaded list????
+	//                can we do both with a single call? NO how about produceTextLines which might return an Exception if something goes wrong
+	//                loadException() or parseException() indicate that something might've gone wrong reading and parsing the design
+	private Exception loadException=null,parseException=null,saveException=null;
+	public final boolean load(ITextLinesProducer textLinesProducer){
+		// this is a retry of 'syncing' what's stored on disk and what we know to be the textLines internally...
+		synced=false;
+		textLines=null;
+		loadException=null;
+		parseException=null;
 		try{
-			setTextLines(getTextLinesProducer().getTextLines());
-			assumeSynced();
+			textLinesProducer.produceTextLines();
+			// remember the produced text lines (we're NOT expecting any errors here)
 		}catch(Exception ex){
-			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' loading the Mongoose schema design '"+name+"'.");
+			loadException=ex;
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' obtaining the text lines to initialize Mongoose schema design '"+name+"' with.");
 		}
-		boolean synced=isSynced();
-		if(synced){
+		try{
+			// we need to remember the text lines as parseTextLines() doesn't!!!!
+			textLines=textLinesProducer.getProducedTextLines();
+			parseTextLines(textLines);
+		}catch(Exception ex){
+			parseException=ex;
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' initializing Mongoose schema design '"+name+"'.");
+		}
+		if(loadException==null&&parseException==null){
+			assumeSynced();
 			lastSavedSubSchemasTextLines=lastSubSchemasTextLines;
 			lastSavedFieldsTextLines=lastFieldsTextLines;
-		}else{ // can't tell anymore...
-			lastSavedSubSchemasTextLines=null;
-			lastFieldsTextLines=null;
+			return true;
 		}
-		return synced;
+		lastSavedSubSchemasTextLines=null;
+		lastSavedFieldsTextLines=null;
+		return false;
+	}
+	public final void write(ITextLinesConsumer textLinesConsumer)throws Exception{
+		produceTextLines();
+		textLinesConsumer.setTextLines(getProducedTextLines()); // if no text lines consumer defined, use the default one
 	}
 	public final boolean save(){
 		// this is now relatively easy
 		// CAREFUL NOW, if this is a subschema, we're going to return what the parent says, which is a very convenient method to also get the root schema saved (and all its subschema's as well!)
 		// NOTE that this way only root schema's will try to load themselves from disk
 		if(parentSchema!=null)return parentSchema.save();
+		saveException=null;
+		synced=false; // this is a sync attempt
 		try{
-			getTextLinesConsumer().setTextLines(getTextLines());
-			assumeSynced();
+			write(getTextLinesConsumer()); // if no text lines consumer defined, use the default one
 		}catch(Exception ex){
+			saveException=ex;
 			// assume failure in which case we should assume undeterminable different!!
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving the Mongoose schema design '"+name+"'.");
 		}
-		boolean synced=isSynced();
-		if(synced){
+		if(saveException==null){
+			assumeSynced();
 			lastSavedSubSchemasTextLines=lastSubSchemasTextLines;
 			lastSavedFieldsTextLines=lastFieldsTextLines;
-		}else{ // can't tell anymore...
-			lastSavedSubSchemasTextLines=null;
-			lastFieldsTextLines=null;
+			return true;
 		}
-		return synced;
+		lastSavedSubSchemasTextLines=null;
+		lastSavedFieldsTextLines=null;
+		return false;
 	}
 	// convenience methods
 	public int getIndexOfField(Field field){return(field!=null?fieldCollection.indexOf(field):-1);}
