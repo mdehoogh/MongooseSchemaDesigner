@@ -3,16 +3,35 @@ package com.officevitae.marc;
 import java.io.File;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 public class Utils{
 
+	// MDH@29OCT2018: keep track of the info messages per source
+	private static Map<Object,Vector<String>> infoMessagesMap=new HashMap<Object,Vector<String>>();
+	public interface InfoMessageListener{
+		Object getSource();
+		void infoMessagesChanged();
+	}
+	public static Vector<InfoMessageListener> infoMessageListeners=new Vector<InfoMessageListener>();
+	private static void informInfoMessageListeners(Object source){
+		for(InfoMessageListener infoMessageListener:infoMessageListeners)if(source.equals(infoMessageListener.getSource()))
+			try{infoMessageListener.infoMessagesChanged();}catch(Exception ex){}
+	}
+	public static boolean addInfoMessageListener(InfoMessageListener infoMessageListener){return(infoMessageListener!=null?infoMessageListeners.contains(infoMessageListener)||infoMessageListeners.add(infoMessageListener):null);}
+	public static boolean removeInfoMessageListener(InfoMessageListener infoMessageListener){return(infoMessageListener!=null?!infoMessageListeners.contains(infoMessageListener)||infoMessageListeners.remove(infoMessageListener):false);}
+	public static boolean hasInfoMessages(Object source){return(infoMessagesMap.containsKey(source)&&!infoMessagesMap.get(source).isEmpty());}
+	public static List<String> getInfoMessages(Object source){return(infoMessagesMap.containsKey(source)?Collections.unmodifiableList(infoMessagesMap.get(source)):null);}
+	public static void removeInfoMessages(Object source){if(infoMessagesMap.containsKey(source))infoMessagesMap.get(source).clear();informInfoMessageListeners(source);}
 	// IInfoViewer stuff
 	private static IInfoViewer INFO_VIEWER=null;
 	static void setInfoViewer(IInfoViewer infoViewer){INFO_VIEWER=infoViewer;}
 	public static void setInfo(Object source,String info){
 		if(info==null)return;
+		if(source!=null){
+			if(!infoMessagesMap.containsKey(source))infoMessagesMap.put(source,new Vector<String>());
+			if(infoMessagesMap.get(source).add(TIME_SDF.format(new Date())+"\t"+info))informInfoMessageListeners(source);
+		}
 		String sourcerep=(source!=null?source.toString():null);
 		if(INFO_VIEWER!=null)
 			INFO_VIEWER.setInfo(sourcerep,info);
@@ -33,7 +52,7 @@ public class Utils{
 	}
 
 	private static SimpleDateFormat DATE_SDF=new SimpleDateFormat("yyyy-m-d");
-
+	private static SimpleDateFormat TIME_SDF=new SimpleDateFormat("HH:mm:ss");
 	public static SimpleDateFormat TIMESTAMP_SDF=new SimpleDateFormat("d MMMM yyyy");
 	public static String getTimestamp(){return TIMESTAMP_SDF.format(new Date());}
 

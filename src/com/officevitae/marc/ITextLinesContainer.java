@@ -11,19 +11,14 @@ public interface ITextLinesContainer extends ITextLinesProducer,ITextLinesConsum
 
 	/////////boolean doneEditing(); // ask politely to stop editing when so required...
 
-	public class Base extends ITextLinesProducer.Base implements ITextLinesContainer{
+	public class Sequential extends ITextLinesProducer.Sequential implements ITextLinesContainer{
 		private String[] textLines=null; // means nothing to provide
 		public void setTextLines(String[] textLines) throws Exception{
 			if(textLines==null)throw new NullPointerException("Undefined text lines not allowed.");
-			super.clear();
-			if(textLines.length>0)super.addAll(Arrays.asList(textLines));
+			super.clear();if(textLines.length>0)super.addAll(Arrays.asList(textLines));
 		}
-		public void produceTextLines()throws Exception{
-			textLines=(String[])super.toArray(new String[super.size()]);
-		}
-		public String[] getTextLines(){
-			return textLines;
-		}
+		public void produceTextLines()throws Exception{textLines=(String[])super.toArray(new String[super.size()]);}
+		public String[] getTextLines(){return textLines;}
 	}
 
 }

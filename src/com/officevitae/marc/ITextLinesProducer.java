@@ -10,58 +10,54 @@ public interface ITextLinesProducer{
 	void produceTextLines() throws Exception; // to be called before calling getTextLines() throwing an Exception is something goes wrong
 	String[] getProducedTextLines();
 
-	// Lines provides text through a series of lines
-	public class Base extends Vector<String> implements ITextLinesProducer{
+	// the Base implementation simply holds the String[] collection for safe-keeping
+	public class Base implements ITextLinesProducer{
 		// returning line when succeeded in adding the line!!!
-		public boolean addLine(String line){
-			// don't add null lines!!!
-			return (line!=null&&super.add(line));
-		}
-
+		private String[] textLines=null;
+		protected ITextLinesProducer setProducedTextLines(String[] producedTextLines){textLines=producedTextLines;return this;}
+		public Base(){}
+		public Base(String[] textLines){this.textLines=textLines;}
 		// ITextProvider implementation
-		public void produceTextLines() throws Exception{
-		}
+		public void produceTextLines() throws Exception{}
+		public String[] getProducedTextLines(){return textLines;}
+	}
 
+	// Lines provides text through a series of lines
+	public abstract class Sequential extends Vector<String> implements ITextLinesProducer{
+		// returning line when succeeded in adding the line!!!
+		public boolean addLine(String line){return (line!=null&&super.add(line));}
+		// ITextProvider implementation
+		public abstract void produceTextLines() throws Exception; // doesn't produce anything itself
+		// getPropertyTextLines() is probably not called more than once
 		public String[] getProducedTextLines(){
-			if(super.isEmpty()) return new String[]{};
-			return (String[])this.toArray(new String[this.size()]);
+			return(super.isEmpty()?new String[]{}:(String[])this.toArray(new String[this.size()]));
 		}
+		// call equalsTextList to compare the produced text lines (as kept as Vector) with another list!!
+		public boolean equalsTextList(java.util.List<String> textLinesList){return Utils.equalTextLists(textLinesList,this);}
 	}
 
 	// if the text lines originate from a text file, use File
 	// essentially if the file presented does not exist or can not be read null will be returned!!!
 	// if we do not want
-	public class TextFile extends Base{
-		private boolean linesRead=false;
+	public class TextFile extends Sequential{
+		private boolean linesToRead=false;
 		private java.io.File file=null;
-
 		// allow access to data from subclasses (like
-		protected File getFile(){
-			return file;
-		}
-
-		public TextFile(File file){
-			this.file=file;
-			if(this.file==null||!this.file.exists()) linesRead=true; // if the file does not exist, we pretend to have read all lines, so an empty array of lines will be returned!!
-		}
-
-		// overriding the base implementation to be able to JIT obtain the text lines (i.e. when required)
-		// returning null when something goes wrong...
+		protected File getFile(){return file;}
+		public TextFile(File file){this.file=file;} // call super() under the hood
 		@Override
 		public void produceTextLines() throws Exception{
-			// we should only return null if the file exists but somehow failed to be read completely
-			super.clear(); // get rid of all lines we requested so far (possibly a retry of reading the file lines)
-			if(file.exists()){
+			super.clear(); // clearing whether or not the file exists or not (because we'd be waisting storage then)
+			linesToRead=(this.file!=null||this.file.exists());
+			if(linesToRead){
 				BufferedReader br=new BufferedReader(new FileReader(file));
 				String line=br.readLine();
-				while(line!=null){
-					if(!super.addLine(line))break;
-					line=br.readLine();
-				}
+				while(line!=null){if(!super.add(line))break;line=br.readLine();}
 				br.close(); // convenient to close the file even if we fail to store all text lines!!!
 				if(line!=null)throw new Exception("Unable to produce all text lines.");
 			}
 		}
+		public String[] getProducedTextLines(){return(linesToRead?super.getProducedTextLines():null);}
 	}
 
 }

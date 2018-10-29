@@ -10,7 +10,7 @@ import java.awt.event.*;
 import java.beans.PropertyChangeListener;
 import java.io.File;
 
-public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChangeListener, MongooseSchema.SyncListener,IMutableTextLinesProducer.ChangeListener{
+public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChangeListener, MongooseSchema.SyncListener,IMutableTextLinesProducer.ChangeListener,Utils.InfoMessageListener{
 
 	private static final String TAG=MongooseSchemaDesignEditorView.class.getSimpleName();
 
@@ -25,6 +25,13 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	private ITextLinesEditorGroup mongooseSchemaTextLinesEditorGroup=new ITextLinesEditorGroup.Base();
 
 	private MongooseSchema mongooseSchema=null;
+
+	// Utils.InfoMessageListener implementation
+	public Object getSource(){return this.mongooseSchema;}
+	public void infoMessagesChanged(){
+		showInfoButton.setEnabled(Utils.hasInfoMessages(getSource()));
+	}
+	// end Utils.InfoMessageListener implementation
 
 	private JList fieldList;
 
@@ -244,8 +251,32 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving to "+textLinesConsumer.toString()+".");
 		}
 	}
+	private JButton showInfoButton;
+	private InfoMessageViewer infoMessageViewer=null;
+	JFrame showInfoFrame=null;
+	private void showInfo(){
+		if(showInfoFrame==null){
+			showInfoFrame=new JFrame();
+			showInfoFrame.getContentPane().setLayout(new BorderLayout());
+			showInfoFrame.getContentPane().add(infoMessageViewer=new InfoMessageViewer());
+			showInfoFrame.setSize(1024,768);
+			showInfoFrame.setLocationRelativeTo(null); // center
+			showInfoFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		}
+		// ascertain to show the right messages (that of the current Mongoose schema!)
+		infoMessageViewer.setSource(mongooseSchema);
+		showInfoFrame.setTitle("Schema "+mongooseSchema.getName()+" information messages");
+		showInfoFrame.setVisible(true);
+	}
 	private JComponent getSaveView(){
 		JPanel savePanel=new JPanel(new BorderLayout());
+		savePanel.add(showInfoButton=new JButton("Show info"),BorderLayout.WEST);
+		showInfoButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				showInfo();
+			}
+		});
 		savePanel.add(saveButton=new JButton("Save"),BorderLayout.EAST);
 		saveButton.addActionListener(new ActionListener(){
 			@Override
@@ -552,11 +583,13 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
 				this.mongooseSchema.deleteSchemaSyncListener(this);
 				this.mongooseSchema.setFieldChangeListener(null);
+				showInfoButton.setEnabled(false);
 			}
 			this.mongooseSchema=mongooseSchema;
 			////////schemaButtonView.setVisible(this.mongooseSchema!=null&&this.mongooseSchema.getParent()==null); // TODO should we put this somewhere else??? unless we allow saving any schema even it's a subschema!!!
 			updateSelectedTabView(); // MDH@17OCT2018: we have to ascertain that the Mongoose Schema is up to date for showing in the currently showing tab page
 			if(this.mongooseSchema!=null){
+				showInfoButton.setEnabled(Utils.hasInfoMessages(this.mongooseSchema));
 				fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
@@ -585,6 +618,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	public String toString(){return "Office Vitae Mongoose Schema Editor";}
 	public MongooseSchemaDesignEditorView(){
 		super(new CardLayout());
+		Utils.addInfoMessageListener(this);
 		add(new JLabel("The selected schema will show here!"),"NoSchema");
 		add(getSchemaView(),"Schema");
 	}

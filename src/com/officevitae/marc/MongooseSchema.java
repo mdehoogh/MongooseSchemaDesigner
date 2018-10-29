@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Vector;
 
 // MDH@16OCT2018: any Mongoose Schema can also be used as field type (i.e. when it is a subschema!!!)
-public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLinesProducer{
+public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLinesProducer{
 
 	private static final int DEFAULT_TYPE_INDEX=7;
 	// MDH@25OCT2018: index, sparse and unique flags now removed (as they are not mutually exclusive)
@@ -194,12 +194,18 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 		if(parentSchema!=null)
 			setParent(parentSchema);
 		else // load the contents of the schema using the associated text file lines producer (to start with)
-			load(getTextLinesProducer());
+			load();
 		// MDH@15OCT2018: the automatic _id field can only be disabled on a parentless schema
 		if(!fieldCollection.containsFieldWithName("_id")&&!fieldCollection.add(new Field("_id").setType(MongooseFieldType.OBJECTID).setDisabable(this.parentSchema!=null)))
 			Utils.setInfo(this,"ERROR: Failed to add automatic _id field to schema '"+getRepresentation(false)+"'.");
 	}
 	public MongooseSchema(String name){this(name,null);} // a main schema (not a subschema!!)
+
+	// MDH@29OCT2018: instead of 'knowing' something changed we check it by constructing the text output and comparing it with what was retrieved
+	private void checkSynced(){
+		if(loadException!=null)return; // no need to check because synced is False now...
+		// if the file did not exist, there's no need to check as well
+	}
 
 	public void fieldChanged(Field field){
 		if(!fieldCollection.contains(field))return;
@@ -213,8 +219,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType, ITextLin
 			if(field.equals(autoIncrementedField)) autoIncrementedField=null;
 		}
 		// MDH@15OCT2018 BUG FIX: only do the following IFF field.isChanged() is True!!!
-		if(field.isChanged())
-			setSynced(false);
+		if(field.isChanged())checkSynced(); // replacing:setSynced(false);
 	}
 
 	// exposes if requested the list of types
@@ -1012,26 +1017,56 @@ module.exports=(app)=>{
 	//                can we do both with a single call? NO how about produceTextLines which might return an Exception if something goes wrong
 	//                loadException() or parseException() indicate that something might've gone wrong reading and parsing the design
 	private Exception loadException=null,parseException=null,saveException=null;
-	public final boolean load(ITextLinesProducer textLinesProducer){
+	// a Schema is saveable, if it was loaded successfully...
+	public boolean isSaveable(){return(loadException==null);}
+	public final boolean load(){
 		// this is a retry of 'syncing' what's stored on disk and what we know to be the textLines internally...
 		synced=false;
 		textLines=null;
 		loadException=null;
 		parseException=null;
+		getTextLinesProducer();
+		File newFile=null; // any new file we need to write what was obtained...
 		try{
-			textLinesProducer.produceTextLines();
+			mongooseSchemaTextFileProcessor.produceTextLines();
 			// remember the produced text lines (we're NOT expecting any errors here)
 		}catch(Exception ex){
 			loadException=ex;
-			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' obtaining the text lines to initialize Mongoose schema design '"+name+"' with.");
+			String associatedFilename=getAssociatedFilename();
+			Utils.setInfo(this,"ERROR: '"+loadException.getLocalizedMessage()+"' in reading the contents of file '"+associatedFilename+"' of schema '"+name+"'.");
+			// we can try to get rid of this exception if we rename the original file (as it is), so it's contents can be retained!!!
+			// solution temporary is to rename the input file, write what we read to the file with the same name
+			String newFilenamePrefix=associatedFilename.substring(0,associatedFilename.lastIndexOf("."));
+			// the problem is finding a unique input name fast enough, how about using Fibonacci I suppose we can use any random integer BUT we want a larger random integer
+			// how about keeping track of the largest number assigned so far??? NO, let's leave it to the user to get rid of the copies
+			int renameFileIndex=0;
+			while(true){
+				renameFileIndex+=1;
+				newFile=new File(newFilenamePrefix+"."+renameFileIndex+".msd");
+				if(!newFile.exists())break;
+			}
+			File associatedFile=((ITextLinesProcessor.TextFile)mongooseSchemaTextFileProcessor).getFile();
+			if(!associatedFile.renameTo(newFile)){ // rename failed
+				newFile=null; // can't remove loadException, therefore the schema will NOT be saveable
+				Utils.setInfo(this,"ERROR: Failed to move the original contents of the file of schema '"+name+"' to '"+newFile.getAbsolutePath()+"'.");
+			}else
+				Utils.setInfo(this,"WARNING: As a precaution the original contents of the file of schema '"+name+"' was moved to '"+newFile.getAbsolutePath()+"'.");
 		}
 		try{
 			// we need to remember the text lines as parseTextLines() doesn't!!!!
-			textLines=textLinesProducer.getProducedTextLines();
+			textLines=mongooseSchemaTextFileProcessor.getProducedTextLines();
 			parseTextLines(textLines);
 		}catch(Exception ex){
 			parseException=ex;
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' initializing Mongoose schema design '"+name+"'.");
+		}
+		// if newFile is defined, the original file was renamed, and we should write the lines we did read, if we succeed loadException will be removed to make the file moveable...
+		if(newFile!=null){ // which means loadException was set to
+			try{
+				mongooseSchemaTextFileProcessor.setTextLines(textLines);
+				loadException=null;
+			}catch(Exception ex){
+			}
 		}
 		if(loadException==null&&parseException==null){
 			assumeSynced();
