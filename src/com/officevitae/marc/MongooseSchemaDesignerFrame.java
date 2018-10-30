@@ -48,18 +48,27 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         infoLabel.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mousePressed(MouseEvent e){
-				infoLabel.setText(" ");
+				Utils.setInfo(MongooseSchemaDesignerFrame.this," ");
 			}
 		});
         infoLabel.setForeground(Color.BLUE);
-        return infoPanel;
+        JButton infoButton;
+        infoPanel.add(infoButton=new JButton("Show info log"),BorderLayout.EAST);
+		infoButton.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent event){SwingUtils.showInfoFrame(MongooseSchemaDesignerFrame.this,"Information messages log");}
+		});
+		return infoPanel;
     }
 
     // IInfoViewer implementation
     public void setInfo(String source,String info){
         String infoNow=infoLabel.getText().trim();
-        if(!infoNow.isEmpty())Utils.consoleprintln((source!=null?source:"Info")+": "+infoNow);
-        infoLabel.setText(info==null||info.isEmpty()?" ":info);
+        if(!infoNow.isEmpty())Utils.consoleprintln("Info: "+infoNow); // pass along to the log
+		if(info!=null&&!info.isEmpty()){
+			infoLabel.setText(info);
+			if(source==null||!source.equals(toString()))Utils.storeInfo(this,(source==null?"Info":source)+": "+info); // if it wasn't me store in my log
+		}else
+			infoLabel.setText(" ");
     }
     // end IInfoViewer implementation
 
@@ -85,10 +94,10 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		((DefaultTreeModel)mongooseSchemasTree.getModel()).reload(); /////nodeStructureChanged(selectedMongooseSchemaNode);
 		mongooseSchemasTree.setSelectionPath(treePath);
 	}
-    private TreePath getANewMongooseSchemaTreePath(String name,MongooseSchema parent){
+    private TreePath getANewMongooseSchemaTreePath(String name,MongooseSchema parent,MongooseSchemaCollection collection){
     	TreePath treePath=null;
         try {
-            MongooseSchema newMongooseSchema=(parent!=null?new MongooseSchema(name,parent):MongooseSchemaFactory.getANewMongooseSchema(name)); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
+            MongooseSchema newMongooseSchema=(parent!=null?new MongooseSchema(name,parent,collection):MongooseSchemaFactory.getANewMongooseSchema(name,collection)); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
             // NOTE call getMongooseSchemaTreeNode() because it will automatically append the subschema tree nodes as well!!!
             DefaultMutableTreeNode newMongooseSchemaTreeNode=getMongooseSchemaTreeNode(newMongooseSchema);
             selectedMongooseSchemaNode.add(newMongooseSchemaTreeNode);
@@ -98,10 +107,10 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         }
         return null;
     }
-	private TreePath getANewJavaScriptMongooseSchemaTreePath(String name,JavaScriptMongooseSchema parent){
+	private TreePath getANewJavaScriptMongooseSchemaTreePath(String name,JavaScriptMongooseSchema parent,MongooseSchemaCollection collection){
 		TreePath treePath=null;
 		try {
-			JavaScriptMongooseSchema newMongooseSchema=(parent!=null?new JavaScriptMongooseSchema(name,parent):MongooseSchemaFactory.getANewJavaScriptMongooseSchema(name)); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
+			JavaScriptMongooseSchema newMongooseSchema=(parent!=null?new JavaScriptMongooseSchema(name,parent,collection):MongooseSchemaFactory.getANewJavaScriptMongooseSchema(name,collection)); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
 			// NOTE call getMongooseSchemaTreeNode() because it will automatically append the subschema tree nodes as well!!!
 			DefaultMutableTreeNode newMongooseSchemaTreeNode=getMongooseSchemaTreeNode(newMongooseSchema);
 			selectedMongooseSchemaNode.add(newMongooseSchemaTreeNode);
@@ -137,12 +146,14 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 				String newSchemaName;
 				for(String newSchemaNameText:newSchemaNameTexts){
 					newSchemaName=newSchemaNameText.trim();
-					if(newSchemaName.isEmpty())continue;
-					if(!isExistingSchemaName(newSchemaName,selectedMongooseSchema)){
-						newSchemaTreePath=getANewMongooseSchemaTreePath(newSchemaName,selectedMongooseSchema);
-						if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
+					if(newSchemaName.isEmpty()) continue;
+					if(newSchemaName.indexOf('.')<0){
+						if(!isExistingSchemaName(newSchemaName,selectedMongooseSchema)){
+							newSchemaTreePath=getANewMongooseSchemaTreePath(newSchemaName,selectedMongooseSchema,null);
+							if(newSchemaTreePath!=null) lastCreatedSchemaTreePath=newSchemaTreePath;
+						}else Utils.setInfo(this,"Schema '"+newSchemaName+"' not created: it already exists.");
 					}else
-						Utils.setInfo(this,"Schema '"+newSchemaName+"' not created: it already exists.");
+						Utils.setInfo(this,"New schema name '"+newSchemaName+"' skipped: it contains an invalid period character.");
 				}
 				// selecting the new tree path will result in a new schema to be selected and evaluate all names entered and determine whether to enable/disable the button
 				// theoretically we should leave the button enabled if we fail to actually create any new tree paths, so benefit of the doubt!!!!
@@ -200,7 +211,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     */
     // MDH@15OCT2018: preferable to use a Tree view instead of a list so we can also show subschema's!!!
     private JTree mongooseSchemasTree=null;
-    private DefaultMutableTreeNode schemasTreeRootNode=new DefaultMutableTreeNode("Schemas");
+    private DefaultMutableTreeNode schemasTreeRootNode=new DefaultMutableTreeNode(new MongooseSchemaCollection(".")); // indicate the schemas folder itself
     private DefaultMutableTreeNode selectedMongooseSchemaNode=schemasTreeRootNode;
 
     // MongooseSchema.SyncListener implementation
@@ -230,9 +241,13 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			StringBuilder noNewSchemaNames=new StringBuilder();
 			boolean aNewSchemaName;
 			for(String newSchemaName:newSchemaNamesText.split(",")){
-				if(newSchemaName.trim().isEmpty())continue; // skip missing schema names!!
-				aNewSchemaName=!isExistingSchemaName(newSchemaName.trim(),mongooseSchema);
-				if(aNewSchemaName)anyNewSchemaName=true;else noNewSchemaNames.append(", "+newSchemaName.trim());
+				if(newSchemaName.trim().isEmpty()) continue; // skip missing schema names!!
+				if(newSchemaName.indexOf('.')<0){
+					aNewSchemaName=!isExistingSchemaName(newSchemaName.trim(),mongooseSchema);
+					if(aNewSchemaName) anyNewSchemaName=true;
+					else noNewSchemaNames.append(", "+newSchemaName.trim());
+				}else
+					Utils.setInfo(this,"Schema name '"+newSchemaName+"' skipped, as it contains an invalid period character.");
 			}
 			if(noNewSchemaNames.length()>2){
 				String noNewSchemaNamesText=noNewSchemaNames.substring(2);
@@ -259,6 +274,8 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 	}
     private JComponent getMongooseSchemaTreeView(){
         JPanel mongooseSchemaListPanel=SwingUtils.getTitledPanel(null);
+        JLabel schemasLabel;
+        mongooseSchemaListPanel.add(schemasLabel=new JLabel("Schemas"),BorderLayout.NORTH);schemasLabel.setFont(schemasLabel.getFont().deriveFont(Font.BOLD));
         ////////mongooseSchemaListPanel.add(SwingUtils.getLeftAlignedView(SwingUtils.getButton("Schemas",true,true, SwingUtils.NARROW_BORDER)),BorderLayout.NORTH);
         mongooseSchemasTreeScrollPane=new JScrollPane(mongooseSchemasTree=new JTree(new DefaultTreeModel(schemasTreeRootNode)));
         ////////mongooseSchemasTree.setUI(new CustomTreeUI());
@@ -314,6 +331,59 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         //////////panel.add(getButtonView(),BorderLayout.SOUTH);
         return panel;
     }
+
+    // MDH@30OCT2018: let's associate directories in subfolder schemas with schema collections
+
+	private TreePath readMongooseSchemas(DefaultMutableTreeNode mongooseSchemaCollectionTreeNode){
+    	// 1. populate the tree node with the schema's in the folder associated with the Mongoose schema collection
+		// NOTE the schema's themselves will take care of reading any subschema's
+		TreePath lastSchemaTreePath=null;
+		MongooseSchemaCollection mongooseSchemaCollection=((MongooseSchemaCollection)mongooseSchemaCollectionTreeNode.getUserObject());
+		File mongooseSchemaCollectionFolder=mongooseSchemaCollection.getAssociatedFolder();
+		File[] schemaFiles=mongooseSchemaCollectionFolder.listFiles(new FilenameFilter(){
+			@Override
+			public boolean accept(File dir,String name){
+				return name.endsWith(".msd")&&name.indexOf('.')==name.lastIndexOf('.'); // NOT a copy of a schema with only one period in it!!
+			}
+		});
+		if(schemaFiles!=null&&schemaFiles.length>0){
+			selectedMongooseSchemaNode=mongooseSchemaCollectionTreeNode; // getANewMongooseSchemaTreePath hangs its new node under the selectedMongooseSchemaNode!!!
+			TreePath newSchemaTreePath;
+			String schemaName;
+			for(File schemaFile:schemaFiles)if(!schemaFile.isDirectory()){
+				boolean canRead=false;
+				try{
+					if(schemaFile.canRead())
+						canRead=true;
+					else
+						Utils.setInfo(this,"Cannot create the schema defined in '"+schemaFile.getAbsolutePath()+"': it is not readable.");
+				}catch(Exception ex){
+					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' checking the readability of '"+schemaFile.getAbsolutePath()+"'.");
+				}
+				if(canRead){
+					schemaName=schemaFile.getName().substring(0,schemaFile.getName().indexOf('.'));
+					newSchemaTreePath=getANewMongooseSchemaTreePath(schemaName,null,mongooseSchemaCollection);
+					if(newSchemaTreePath!=null)lastSchemaTreePath=newSchemaTreePath;
+				}
+			}
+		}
+		// 2. iterate over all subfolders and do the same
+		File[] subfolders=mongooseSchemaCollectionFolder.listFiles(File::isDirectory);
+		String subfolderName;
+		Utils.consoleprintln("Number of subfolders: "+subfolders.length+".");
+		for(File subfolder:subfolders){
+			try{
+				subfolderName=subfolder.getName();
+				Utils.consoleprintln("Subfolder: '"+subfolderName+"' ("+subfolder.getCanonicalPath()+").");
+				mongooseSchemaCollection=new MongooseSchemaCollection(subfolder.getName()); // the subfolder name
+				DefaultMutableTreeNode subfolderTreeNode=new DefaultMutableTreeNode(mongooseSchemaCollection);
+				mongooseSchemaCollectionTreeNode.add(subfolderTreeNode);
+				readMongooseSchemas(subfolderTreeNode);
+			}catch(Exception ex){}
+		}
+		return lastSchemaTreePath;
+	}
+
     private PrintStream console=null;
     public MongooseSchemaDesignerFrame(){
         this.getContentPane().add(getView());
@@ -335,7 +405,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
                         mongooseSchema=((MongooseSchema)((DefaultMutableTreeNode)schemasTreeRootNode.getChildAt(schemaIndex)).getUserObject());
                         if(!mongooseSchema.isSynced())mongooseSchema.save();
                     }catch(Exception ex){
-                        System.out.println("ERROR: '"+ex.getLocalizedMessage()+"' saving schema "+mongooseSchema.getName()+".");
+                        Utils.consoleprintln("ERROR: '"+ex.getLocalizedMessage()+"' saving"+(mongooseSchema!=null?" schema "+mongooseSchema.getName():"")+".");
                     }
                     if(mongooseSchema!=null&&!mongooseSchema.isSynced())unsavedMongooseSchemaNames.insertElementAt(mongooseSchema.getName(),0);
                     mongooseSchema=null;
@@ -366,26 +436,20 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		System.out.println("Start of a Office Vitae Mongoose Schema Designer session.");
 
 		// read any (top-level) schema definitions, and remember the last created schema tree path for selection
-		TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
+		File jarPath=Utils.getPath();
+		Utils.consoleprintln("Current path: "+jarPath);
 
-		// NOTE the schema's themselves will take care of reading any subschema's
-        File[] schemaFiles=new File(".").listFiles(new FilenameFilter(){
-            @Override
-            public boolean accept(File dir,String name){
-                return name.endsWith(".msd")&&name.indexOf('.')==name.lastIndexOf('.'); // NOT a subschema!!
-            }
-        });
-        if(schemaFiles!=null&&schemaFiles.length>0){
-			String schemaName;
-			for(File schemaFile:schemaFiles)if(!schemaFile.isDirectory()&&schemaFile.canRead()){
-				schemaName=schemaFile.getName().substring(0,schemaFile.getName().indexOf('.'));
-				newSchemaTreePath=getANewMongooseSchemaTreePath(schemaName,null);
-				if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
-			}
-		}
+		TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
+		// iterate over all subdirectories in the schemas subfolder
+		File schemasFolder=((MongooseSchemaCollection)schemasTreeRootNode.getUserObject()).getAssociatedFolder();
+		if(schemasFolder.exists()||schemasFolder.mkdirs())
+			lastCreatedSchemaTreePath=readMongooseSchemas(schemasTreeRootNode);
+		else
+			Utils.setInfo(this,"ERROR: Failed to access schemas folder '"+schemasFolder.getAbsolutePath()+"'.");
 
 		// external (JavaScript) model files we want to import automatically
-		File[] jsschemaFiles=new File("./app/models").listFiles(new FilenameFilter(){
+		MongooseSchemaCollection mongooseSchemaCollection=new MongooseSchemaCollection("app/models");
+		File[] jsschemaFiles=new File("app/models").listFiles(new FilenameFilter(){
 			@Override
 			public boolean accept(File dir,String name){
 				// any JavaScript file published by this app starts with ovmsd (short for Office Vitae Mongoose Schema Designer), and should NOT be included!!!!
@@ -394,10 +458,21 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		});
 		if(jsschemaFiles!=null&&jsschemaFiles.length>0){
 			String jsschemaName;
-			for(File jsschemaFile:jsschemaFiles)if(!jsschemaFile.isDirectory()&&jsschemaFile.canRead()){
-				jsschemaName=jsschemaFile.getName().substring(0,jsschemaFile.getName().indexOf('.'));
-				newSchemaTreePath=getANewJavaScriptMongooseSchemaTreePath(jsschemaName,null);
-				if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
+			for(File jsschemaFile:jsschemaFiles)if(!jsschemaFile.isDirectory()){
+				boolean canRead=false;
+				try{
+					if(jsschemaFile.canRead())
+						canRead=true;
+					else
+						Utils.setInfo(this,"Cannot create the schema defined in '"+jsschemaFile.getAbsolutePath()+"': it is not readable.");
+				}catch(Exception ex){
+					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' checking the readability of '"+jsschemaFile.getAbsolutePath()+"'.");
+				}
+				if(canRead){
+					jsschemaName=jsschemaFile.getName().substring(0,jsschemaFile.getName().indexOf('.'));
+					newSchemaTreePath=getANewJavaScriptMongooseSchemaTreePath(jsschemaName,null,mongooseSchemaCollection);
+					if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
+				}
 			}
 		}
 		if(lastCreatedSchemaTreePath!=null)selectTreePath(lastCreatedSchemaTreePath);

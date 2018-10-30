@@ -48,7 +48,7 @@ public interface ITextLinesProducer{
 		@Override
 		public void produceTextLines() throws Exception{
 			super.clear(); // clearing whether or not the file exists or not (because we'd be waisting storage then)
-			linesToRead=(this.file!=null||this.file.exists());
+			linesToRead=(this.file!=null&&this.file.exists());
 			if(linesToRead){
 				BufferedReader br=new BufferedReader(new FileReader(file));
 				String line=br.readLine();

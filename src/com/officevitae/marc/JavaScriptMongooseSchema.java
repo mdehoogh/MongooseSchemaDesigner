@@ -16,8 +16,8 @@ public class JavaScriptMongooseSchema extends MongooseSchema{
 	}
 
 	// obviously the parent needs to be a JavaScriptMongooseSchema as well!!!
-	public JavaScriptMongooseSchema(String name,JavaScriptMongooseSchema parentSchema){
-		super(name,parentSchema);
+	public JavaScriptMongooseSchema(String name,JavaScriptMongooseSchema parentSchema,MongooseSchemaCollection collection){
+		super(name,parentSchema,collection);
 	}
 
 	private class TokenAdditionException extends Exception{

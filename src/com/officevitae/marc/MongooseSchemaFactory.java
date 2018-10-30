@@ -8,20 +8,20 @@ import java.util.Vector;
 public class MongooseSchemaFactory {
 
 	private static Map<String,MongooseSchema> mongooseSchemaMap=new HashMap<String,MongooseSchema>();
-	public static MongooseSchema getANewMongooseSchema(String schemaName){
+	public static MongooseSchema getANewMongooseSchema(String schemaName,MongooseSchemaCollection collection){
 		if(mongooseSchemaMap.containsKey(schemaName)){
 			if(mongooseSchemaMap.get(schemaName) instanceof JavaScriptMongooseSchema)return null;
 		}else
-			mongooseSchemaMap.put(schemaName,new MongooseSchema(schemaName));
+			mongooseSchemaMap.put(schemaName,new MongooseSchema(schemaName,collection));
 		return mongooseSchemaMap.get(schemaName);
 	}
 	// MDH@23OCT2018: special consideration for returning JavaScriptMongooseSchema's
 	//                NOTE could've created a separate JavaScriptMongooseSchemaFactory BUT we do NOT want schema's from both types with the same name!!!!
-	public static JavaScriptMongooseSchema getANewJavaScriptMongooseSchema(String schemaName){
+	public static JavaScriptMongooseSchema getANewJavaScriptMongooseSchema(String schemaName,MongooseSchemaCollection collection){
 		if(mongooseSchemaMap.containsKey(schemaName)){
 			if(!(mongooseSchemaMap.get(schemaName) instanceof JavaScriptMongooseSchema)) return null;
 		}else
-			mongooseSchemaMap.put(schemaName,new JavaScriptMongooseSchema(schemaName,null));
+			mongooseSchemaMap.put(schemaName,new JavaScriptMongooseSchema(schemaName,null,collection));
 		return (JavaScriptMongooseSchema)mongooseSchemaMap.get(schemaName);
 	}
 

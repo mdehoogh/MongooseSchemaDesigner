@@ -521,6 +521,9 @@ public class Field{
 		this.select=select;
 		updateChanged();
 	}
+	private String tag="";
+	public String getTag(){return tag;}
+	public void setTag(String tag){if(tag==null)return;if(tag.equals(this.tag))return;this.tag=tag;setChanged(true);}
 
 	// MDH@18OCT2018: knows the collection it belongs to...
 	private MongooseSchema.FieldCollection fieldCollection=null;
@@ -640,16 +643,18 @@ public class Field{
 		// NOTE as you can see the alias text is written even if undefined BUT in that case isDisabled() should return false, not true
 		sbRepresentation.append(getLiteralRepresentation("alias",serialized,aliasLiteral));
 
+		if(tag!=null&&!tag.trim().isEmpty())sbRepresentation.append("\t$"+tag); // MDH@30OCT2018
+
 		// when serializing always to store the actual text stored, otherwise only when we have a valid default!!
 		sbRepresentation.append(getLiteralRepresentation("default",serialized,defaultLiteral));
 
 		// if auto incremented no need to set the required flag (as it is definitely NOT required in creating the record!!!)
-		if(!autoIncremented)if(required)sbRepresentation.append("\t-required");
+		if(!autoIncremented)if(required)sbRepresentation.append("\trequired");
             /* startAt now determines whether or not a field is an auto-increment field!!!
             else
                 sbRepresentation.append("\t-autoincremented");
             */
-		if(select)sbRepresentation.append("\t-select");
+		if(select)sbRepresentation.append("\tselect");
 
 		if(autoIncremented)sbRepresentation.append(getLiteralRepresentation("startAt",serialized,startAtLiteral));
 
@@ -673,9 +678,8 @@ public class Field{
 
 		// String
 		if(type.equals(MongooseFieldType.STRING)) {
-			if(isLowercase())sbRepresentation.append("\t-lowercase");
-			if(isUppercase())sbRepresentation.append("\t-uppercase");
-			if(isTrim())sbRepresentation.append("\t-trim");
+			if(isLowercase())sbRepresentation.append("\tlowercase");else if(isUppercase())sbRepresentation.append("\tuppercase");
+			if(isTrim())sbRepresentation.append("\ttrim");
 			sbRepresentation.append(getLiteralRepresentation("minlength",serialized,minLengthLiteral));
 			sbRepresentation.append(getLiteralRepresentation("maxlength",serialized,maxLengthLiteral));
 			sbRepresentation.append(getLiteralRepresentation("values",serialized,valuesLiteral)); // assuming I do NOT need to join what getText() returns

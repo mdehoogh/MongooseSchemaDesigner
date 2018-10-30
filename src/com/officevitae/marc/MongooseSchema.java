@@ -129,7 +129,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 	// MDH@24OCT2018: convenience method to be able to add a subschema if it's not there already, or otherwise create a new one and add it
 	MongooseSchema newSubSchemaCalled(String subSchemaName){
 		for(MongooseSchema subSchema:subSchemas)if(subSchema.getName().equalsIgnoreCase(subSchemaName))return subSchema;
-		MongooseSchema subSchema=new MongooseSchema(subSchemaName,this);
+		MongooseSchema subSchema=new MongooseSchema(subSchemaName,this,null); // subschema's are NOT part of a collection!!
 		return(addSubSchema(subSchema)?subSchema:null);
 	}
 	boolean removeSubSchema(MongooseSchema subSchema){
@@ -181,16 +181,26 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 		return (tableSyncListener!=null?!tableSyncListeners.contains(tableSyncListener)||tableSyncListeners.remove(tableSyncListener):false);
 	}
 
+	private String tag="";
+	public void setTag(String tag){
+		if(tag==null)return;
+		if(tag.equals(this.tag))return;
+		this.tag=tag;
+		setSynced(false);
+	}
+	public String getTag(){return tag;}
+
 	// as we require that associatedFile is initialized in the constructor, subclasses cannot call my constructor, but may call initialize and checkFieldCollection()
 	// alternatively passing the associatedFile into the constructor is perhaps also a good idea
 	protected String getAssociatedFilename(){
-		return "."+File.separator+name+".msd";
+		return name+".msd";
 	}
 
 	// where to load a subschema from depends on the parent!!
 	protected MongooseSchema(){}
-	public MongooseSchema(String name,MongooseSchema parentSchema){
+	public MongooseSchema(String name,MongooseSchema parentSchema,MongooseSchemaCollection collection){
 		this.name=name;
+		this.collection=collection;
 		if(parentSchema!=null)
 			setParent(parentSchema);
 		else // load the contents of the schema using the associated text file lines producer (to start with)
@@ -199,7 +209,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 		if(!fieldCollection.containsFieldWithName("_id")&&!fieldCollection.add(new Field("_id").setType(MongooseFieldType.OBJECTID).setDisabable(this.parentSchema!=null)))
 			Utils.setInfo(this,"ERROR: Failed to add automatic _id field to schema '"+getRepresentation(false)+"'.");
 	}
-	public MongooseSchema(String name){this(name,null);} // a main schema (not a subschema!!)
+	public MongooseSchema(String name,MongooseSchemaCollection collection){this(name,null,collection);} // a main schema (not a subschema!!)
 
 	// MDH@29OCT2018: instead of 'knowing' something changed we check it by constructing the text output and comparing it with what was retrieved
 	private void checkSynced(){
@@ -554,25 +564,23 @@ module.exports=(app)=>{
 				if(field.isRequired())fieldTextRepresentation.append(",required:true");
 				if(field.isSelect())fieldTextRepresentation.append(",select:true");
 				// general options
-				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled()) fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
+				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled())fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
 				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
 				// type-specific options
 				IFieldType fieldType=field.getType();
 				if(fieldType instanceof MongooseFieldType) switch(((MongooseFieldType)fieldType).ordinal()){
 					case Field.DATE_FIELD:
-						if(!field.minDateLiteral.isDisabled()&&field.minDateLiteral.isValid()) fieldTextRepresentation.append(",min:"+field.minDateLiteral.getValue());
-						if(!field.maxDateLiteral.isDisabled()&&field.maxDateLiteral.isValid()) fieldTextRepresentation.append(",max:"+field.maxDateLiteral.getValue());
+						if(!field.minDateLiteral.isDisabled()&&field.minDateLiteral.isValid())fieldTextRepresentation.append(",min:"+field.minDateLiteral.getValue());
+						if(!field.maxDateLiteral.isDisabled()&&field.maxDateLiteral.isValid())fieldTextRepresentation.append(",max:"+field.maxDateLiteral.getValue());
 						break;
 					case Field.NUMBER_FIELD:
-						if(!field.minNumberLiteral.isDisabled()&&field.minNumberLiteral.isValid())
-							fieldTextRepresentation.append(",min:"+field.minNumberLiteral.getValue());
-						if(!field.maxNumberLiteral.isDisabled()&&field.maxNumberLiteral.isValid())
-							fieldTextRepresentation.append(",max:"+field.maxNumberLiteral.getValue());
+						if(!field.minNumberLiteral.isDisabled()&&field.minNumberLiteral.isValid())fieldTextRepresentation.append(",min:"+field.minNumberLiteral.getValue());
+						if(!field.maxNumberLiteral.isDisabled()&&field.maxNumberLiteral.isValid())fieldTextRepresentation.append(",max:"+field.maxNumberLiteral.getValue());
 						break;
 					case Field.STRING_FIELD:
-						if(field.isLowercase()) fieldTextRepresentation.append(",lowercase:true");
-						else if(field.isUppercase()) fieldTextRepresentation.append(",uppercase:true");
-						if(field.isTrim()) fieldTextRepresentation.append(",trim:true");
+						if(field.isLowercase())fieldTextRepresentation.append(",lowercase:true");
+						else if(field.isUppercase())fieldTextRepresentation.append(",uppercase:true");
+						if(field.isTrim())fieldTextRepresentation.append(",trim:true");
 						if(!field.minLengthLiteral.isDisabled()&&field.minLengthLiteral.isValid())
 							fieldTextRepresentation.append("minlength:"+field.minLengthLiteral.getValue());
 						if(!field.maxLengthLiteral.isDisabled()&&field.maxLengthLiteral.isValid())
@@ -584,10 +592,11 @@ module.exports=(app)=>{
 			}else autoIncrementedField=field;
 			fieldName=field.getName()/*.toLowerCase()*/;
 			int firstColonPos=fieldTextRepresentation.indexOf(":");
+			String fieldTag=field.getTag(); // MDH@30OCT2018: like to see the tag written as comment as well!!
 			if(firstColonPos!=fieldTextRepresentation.lastIndexOf(":")) // not just the the type is present in the field text representation
-				modelSchemaCreationLines.add(mongooseSchemaDeclarationPrefix+fieldName+":{"+fieldTextRepresentation.toString()+"},");
+				modelSchemaCreationLines.add(mongooseSchemaDeclarationPrefix+fieldName+":{"+fieldTextRepresentation.toString()+"},"+(fieldTag!=null&&!fieldTag.isEmpty()?" // "+fieldTag:""));
 			else // just the type is present and we can use the shorthand notation
-				modelSchemaCreationLines.add(mongooseSchemaDeclarationPrefix+fieldName+fieldTextRepresentation.substring(firstColonPos)+",");
+				modelSchemaCreationLines.add(mongooseSchemaDeclarationPrefix+fieldName+fieldTextRepresentation.substring(firstColonPos)+","+(fieldTag!=null&&!fieldTag.isEmpty()?" // "+fieldTag:""));
 			///////fieldTextRepresentation.append(" /*MSD:F*/"); // marks a MSD field line
 		}
 		StringBuilder optionsTextRepresentation=new StringBuilder(mongooseSchemaDeclarationPrefix.substring(1)+"}");
@@ -601,15 +610,15 @@ module.exports=(app)=>{
 		if(autoIncrementedField!=null){
 			modelSchemaCreationLines.add("");
 			// NO LONGER REQUIRED WITH mongoose-plugin-autoinc: pw.println("// DO NOT FORGET TO initialize THE PLUGIN IN YOUR app.js WITH mongoose.connection!");
-			modelSchemaCreationLines.add("const autoIncrement=require('mongoose-plugin-autoinc');"); // MDH@24SEP2018: switched to an updated version of mongoose-auto-increment (which is 3 years old and requires a version 4 of Mongoose)
+			modelSchemaCreationLines.add("import { autoIncrement } from 'mongoose-plugin-autoinc';"); // MDH@24SEP2018: switched to an updated version of mongoose-auto-increment (which is 3 years old and requires a version 4 of Mongoose)
 			modelSchemaCreationLines.add(name.toLowerCase()+"Schema.plugin(autoIncrement,{model:'"+Utils.capitalize(name)+"',field:'"+autoIncrementedField.getName()+"',startAt:"+autoIncrementedField.startAtLiteral.getValue()+",incrementBy:1});");
 			// being able to reset the counter would be nice, for which we need the connection and apparently mongoose.connection holds the connection (see app.js)
 			// TODO figure out when exactly the reset occurs????
-			modelSchemaCreationLines.add("/* TO RESET AUTO-INCREMENT FIELD "+autoIncrementedField.getName()+" SAVE AN EMPTY INSTANCE, LIKE THIS:");
-			modelSchemaCreationLines.add("const "+Utils.capitalize(name)+"=mongoose.model('"+Utils.capitalize(name)+"',"+Utils.capitalize(name)+"Schema);"); // mongoose.model will use the default mongoose connection i.e. mongoose.connection!!!
-			modelSchemaCreationLines.add(name+"=new "+Utils.capitalize(name)+"();"); // get an instance
-			modelSchemaCreationLines.add(name+".save(function(err){"+name+".nextCount(function(err,count){"+name+".resetCount(function(err,nextCount){});});});");
-			modelSchemaCreationLines.add("*/");
+			///modelSchemaCreationLines.add("/* TO RESET AUTO-INCREMENT FIELD "+autoIncrementedField.getName()+" SAVE AN EMPTY INSTANCE, LIKE THIS:");
+			///modelSchemaCreationLines.add("const "+Utils.capitalize(name)+"=mongoose.model('"+Utils.capitalize(name)+"',"+Utils.capitalize(name)+"Schema);"); // mongoose.model will use the default mongoose connection i.e. mongoose.connection!!!
+			///modelSchemaCreationLines.add(name+"=new "+Utils.capitalize(name)+"();"); // get an instance
+			///modelSchemaCreationLines.add(name+".save(function(err){"+name+".nextCount(function(err,count){"+name+".resetCount(function(err,nextCount){});});});");
+			///modelSchemaCreationLines.add("*/");
 		}
 		return modelSchemaCreationLines;
 	}
@@ -628,11 +637,11 @@ module.exports=(app)=>{
 		modelTextLines.add(" * Generated by: Office Vitae Mongoose Schema Designer");
 		modelTextLines.add(" * At: "+Utils.getTimestamp());
 		modelTextLines.add(" * Author: <Enter your name here>");
-		modelTextLines.add(" * Contents: Mongoose schema "+name.toLowerCase());
+		if(tag!=null&&!tag.trim().isEmpty())modelTextLines.add(" * Description: "+tag); // the tag provides us with a description...
 		modelTextLines.add(" */");
 		modelTextLines.add("");
 		modelTextLines.add("const mongoose=require('mongoose');");
-		modelTextLines.add("const mongooseLong=require('mongoose-long');");
+		modelTextLines.add("require('mongoose-long')(mongoose);"); // Long (=integer) support
 		modelTextLines.add("");
 		// write all subschema (and myself of course)
 		modelTextLines.addAll(getModelSchemaCreationLines());
@@ -710,15 +719,16 @@ module.exports=(app)=>{
 		if(fieldTypeName.isEmpty())return MongooseFieldType.MIXED; // e.g. as generic array element type!!!
 		if(fieldTypeName.equalsIgnoreCase("array")) return MongooseFieldType.ARRAY;
 		//////////if(fieldTypeName.equalsIgnoreCase("auto incremented integer"))return FieldType.AUTO_INCREMENT;
-		if(fieldTypeName.equalsIgnoreCase("boolean")||fieldTypeName.equals("Schema.Types.Boolean"))return MongooseFieldType.BOOLEAN;
-		if(fieldTypeName.equalsIgnoreCase("buffer")||fieldTypeName.equals("Schema.Types.Buffer"))return MongooseFieldType.BUFFER;
-		if(fieldTypeName.equalsIgnoreCase("date")||fieldTypeName.equals("Schema.Types.Date"))return MongooseFieldType.DATE;
-		if(fieldTypeName.equalsIgnoreCase("decimal128")||fieldTypeName.equals("Schema.Types.Decimal128"))return MongooseFieldType.DECIMAL128;
-		if(fieldTypeName.equalsIgnoreCase("map")||fieldTypeName.equals("Schema.Types.Map"))return MongooseFieldType.MAP;
-		if(fieldTypeName.equalsIgnoreCase("mixed")||fieldTypeName.equals("Schema.Types.Mixed"))return MongooseFieldType.MIXED;
-		if(fieldTypeName.equalsIgnoreCase("number")||fieldTypeName.equals("Schema.Types.Number"))return MongooseFieldType.NUMBER;
-		if(fieldTypeName.equalsIgnoreCase("objectid")||fieldTypeName.equals("Schema.Types.ObjectId"))return MongooseFieldType.OBJECTID;
-		if(fieldTypeName.equalsIgnoreCase("string")||fieldTypeName.equals("Schema.Types.String"))return MongooseFieldType.STRING;
+		if(fieldTypeName.equalsIgnoreCase("boolean")||fieldTypeName.equals("mongoose.Schema.Types.Boolean"))return MongooseFieldType.BOOLEAN;
+		if(fieldTypeName.equalsIgnoreCase("buffer")||fieldTypeName.equals("mongoose.Schema.Types.Buffer"))return MongooseFieldType.BUFFER;
+		if(fieldTypeName.equalsIgnoreCase("date")||fieldTypeName.equals("mongoose.Schema.Types.Date"))return MongooseFieldType.DATE;
+		if(fieldTypeName.equalsIgnoreCase("decimal128")||fieldTypeName.equals("mongoose.Schema.Types.Decimal128"))return MongooseFieldType.DECIMAL128;
+		if(fieldTypeName.equalsIgnoreCase("long")||fieldTypeName.equals("mongoose.Schema.Types.Long"))return MongooseFieldType.INTEGER;
+		if(fieldTypeName.equalsIgnoreCase("map")||fieldTypeName.equals("mongoose.Schema.Types.Map"))return MongooseFieldType.MAP;
+		if(fieldTypeName.equalsIgnoreCase("mixed")||fieldTypeName.equals("mongoose.Schema.Types.Mixed"))return MongooseFieldType.MIXED;
+		if(fieldTypeName.equalsIgnoreCase("number")||fieldTypeName.equals("mongoose.Schema.Types.Number"))return MongooseFieldType.NUMBER;
+		if(fieldTypeName.equalsIgnoreCase("objectid")||fieldTypeName.equals("mongoose.Schema.Types.ObjectId"))return MongooseFieldType.OBJECTID;
+		if(fieldTypeName.equalsIgnoreCase("string")||fieldTypeName.equals("mongoose.Schema.Types.String"))return MongooseFieldType.STRING;
 		return null;
 	}
 	private IFieldType getFieldType(String fieldTypeName){
@@ -765,12 +775,11 @@ module.exports=(app)=>{
 				field.setEnabled(nametypeParts[0].charAt(0)=='+');
 				String fieldPropertyName, fieldPropertyValue;
 				boolean first=true;
-				for(String contentPart: contentParts){
-					if(first==true){
-						first=false;
-						continue;
-					} // skip first element (processed before)
-					if(contentPart.trim().isEmpty()) continue;
+				for(String contentPart:contentParts){
+					if(first==true){first=false;continue;} // skip first element (processed before)
+					if(contentPart.trim().isEmpty())continue;
+					// MDH@30OCT2018: anything starting with $ is considered a tag...
+					if(contentPart.charAt(0)=='$'){setTag(contentPart.substring(1));continue;}
 					equalPos=contentPart.indexOf('=');
 					if(equalPos>1){ // not a flag
 						// the first character indicates the flag
@@ -820,8 +829,8 @@ module.exports=(app)=>{
 							field.maxNumberLiteral.setText(fieldPropertyValue);
 						}else
 							Utils.setInfo(this,"ERROR: Invalid field property name '"+fieldPropertyName+"' in field property assignment '"+contentPart+"'.");
-					}else if(contentPart.charAt(0)=='-'){ // something that is a flag
-						switch(FIELD_FLAG_NAMES.indexOf(contentPart.substring(1))){
+					}else /////if(contentPart.charAt(0)=='-'){ // something that is a flag
+						switch(FIELD_FLAG_NAMES.indexOf(contentPart)){
 							case 0:
 								field.setRequired(true);
 								break;
@@ -835,9 +844,9 @@ module.exports=(app)=>{
 								field.setTrim(true);
 								break;
 							default:
-								Utils.setInfo(this,"ERROR: Invalid field property flag '"+contentPart.substring(1)+".");
+								Utils.setInfo(this,"ERROR: Invalid field property flag '"+contentPart+"'.");
 						}
-					}
+					/////}
 				}
 			}
 		}
@@ -915,6 +924,7 @@ module.exports=(app)=>{
 		///if(textLines==null){ // no current contents known
 			// initialize textLines to return with the text lines of all subschema's
 			Vector<String> textLinesVector=new Vector<String>();
+			if(tag!=null&&!tag.trim().isEmpty())textLinesVector.add("$"+tag); // MDH@30OCT2018: write the tag line as the first line
 			textLinesVector.addAll(getSubSchemasTextLines()); // adding all the subschemas text lines
 			textLinesVector.addAll(getFieldsTextLines()); // adding all the fields text lines
 			textLines=(textLinesVector.isEmpty()?new String[]{}:textLinesVector.toArray(new String[textLinesVector.size()]));
@@ -949,10 +959,11 @@ module.exports=(app)=>{
 				line=textLines[lineIndex].trim(); // trimming because at the top level all lines should not start with tabs (as subschema lines do)
 				Utils.consoleprintln("Processing line #"+(lineIndex+1)+" ("+line+") of schema '"+getRepresentation(false)+"'.");
 				if(line.length()==0||line.charAt(0)=='#'||line.startsWith("//"))continue; // skip comment lines
+				if(line.charAt(0)=='$')setTag(line.substring(1));else // any line starting with a dollar sign is considered the tag!!
 				if(line.charAt(0)!='-'&&line.charAt(0)!='+'){ // a subschema (name) line
 					subSchemaName=line;
 					Utils.consoleprintln("Subschema of schema '"+getRepresentation(false)+"': '"+subSchemaName+"'.");
-					subSchema=new MongooseSchema(subSchemaName,this); // create the subschema with the private name
+					subSchema=new MongooseSchema(subSchemaName,this,null); // create the subschema with the private name
 					if(!lastSubSchemasTextLines.add(line))Utils.consoleprintln("ERROR: Failed to register subschema name definition line '"+line+"'.");
 					// get all following lines that are indented, let's allow indenting with any character regulated by the first character on the next line
 					if(lineIndex<lineCount-1){ // there is a next line
@@ -999,15 +1010,27 @@ module.exports=(app)=>{
 		try{for(MongooseSchema subSchema:subSchemas)subSchema.assumeSynced();}finally{setSynced(true);}
 	}
 
+	// possibly part of a collection associated with a directory...
+	private MongooseSchemaCollection collection=null;
+	public void setCollection(MongooseSchemaCollection mongooseSchemaCollection){collection=mongooseSchemaCollection;}
+
 	// TODO we can keep the following stuff private as long as subclasses call setAssociatedFile/getAssociatedFile() to return the text file associated with them
 	private ITextLinesProcessor mongooseSchemaTextFileProcessor; // MDH@21OCT2018: does not need to be declared as a TextFile per se here (so subclasses can have other ones)
+	private File associatedFile=null;
+	private void createMongooseSchemaTextFileProcessor(){
+		File associatedFolder=(collection!=null?collection.getAssociatedFolder():null);
+		associatedFile=new File(associatedFolder,getAssociatedFilename());
+		// if the associated file does not exist and is not writable we definitely know we will not be able to save the schema!!
+		if(associatedFile.exists()&&!associatedFile.canWrite())
+			Utils.setInfo(this,"WARNING: Will not be able to save schema '"+name+"': the associated file '"+associatedFile.getAbsolutePath()+"' is not writable!");
+		mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(associatedFile);
+	}
 	private ITextLinesProducer getTextLinesProducer(){
-		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new File(getAssociatedFilename()));
-		return mongooseSchemaTextFileProcessor;
+		// if the file exists, it should be readabl
+		if(mongooseSchemaTextFileProcessor==null)createMongooseSchemaTextFileProcessor();return mongooseSchemaTextFileProcessor;
 	}
 	private ITextLinesConsumer getTextLinesConsumer(){
-		if(mongooseSchemaTextFileProcessor==null)mongooseSchemaTextFileProcessor=new ITextLinesProcessor.TextFile(new File(getAssociatedFilename()));
-		return mongooseSchemaTextFileProcessor;
+		if(mongooseSchemaTextFileProcessor==null)createMongooseSchemaTextFileProcessor();return mongooseSchemaTextFileProcessor;
 	}
 	// MDH@25OCT2018: keep track of the last saved text lines
 	private String[] lastSavedTextLines=null;
@@ -1018,7 +1041,14 @@ module.exports=(app)=>{
 	//                loadException() or parseException() indicate that something might've gone wrong reading and parsing the design
 	private Exception loadException=null,parseException=null,saveException=null;
 	// a Schema is saveable, if it was loaded successfully...
-	public boolean isSaveable(){return(loadException==null);}
+	public boolean isSaveable(){
+		// this is the best I can do
+		// - should NOT be a subschema
+		// - should have an associated file
+		// - which either does not exist, or when it exists, should not failed to load and is writeable!!!
+		return(this.parentSchema==null&&associatedFile!=null&&(!associatedFile.exists()||(loadException==null&&associatedFile.canWrite())));
+	}
+
 	public final boolean load(){
 		// this is a retry of 'syncing' what's stored on disk and what we know to be the textLines internally...
 		synced=false;

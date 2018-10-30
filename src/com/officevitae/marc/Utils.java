@@ -1,5 +1,6 @@
 package com.officevitae.marc;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
@@ -23,15 +24,29 @@ public class Utils{
 	public static boolean hasInfoMessages(Object source){return(infoMessagesMap.containsKey(source)&&!infoMessagesMap.get(source).isEmpty());}
 	public static List<String> getInfoMessages(Object source){return(infoMessagesMap.containsKey(source)?Collections.unmodifiableList(infoMessagesMap.get(source)):null);}
 	public static void removeInfoMessages(Object source){if(infoMessagesMap.containsKey(source))infoMessagesMap.get(source).clear();informInfoMessageListeners(source);}
+
+	public static File getPath(){
+		try{
+			return new File(ClassLoader.getSystemClassLoader().getResource(".").getPath());
+			////////return new File(Utils.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getPath();
+		}catch(Exception ex){}
+		return null;
+	}
+
 	// IInfoViewer stuff
 	private static IInfoViewer INFO_VIEWER=null;
 	static void setInfoViewer(IInfoViewer infoViewer){INFO_VIEWER=infoViewer;}
+	public static void storeInfo(Object source,String info){
+		if(source==null||info==null||info.trim().isEmpty())return;
+		if(!infoMessagesMap.containsKey(source))infoMessagesMap.put(source,new Vector<String>());
+		try{
+			infoMessagesMap.get(source).add(0,TIME_SDF.format(new Date())+"\t"+info);
+			informInfoMessageListeners(source);
+		}catch(Exception ex){}
+	}
 	public static void setInfo(Object source,String info){
 		if(info==null)return;
-		if(source!=null){
-			if(!infoMessagesMap.containsKey(source))infoMessagesMap.put(source,new Vector<String>());
-			if(infoMessagesMap.get(source).add(TIME_SDF.format(new Date())+"\t"+info))informInfoMessageListeners(source);
-		}
+		storeInfo(source,info);
 		String sourcerep=(source!=null?source.toString():null);
 		if(INFO_VIEWER!=null)
 			INFO_VIEWER.setInfo(sourcerep,info);

@@ -11,6 +11,23 @@ import java.util.Enumeration;
 
 public class SwingUtils{
 
+	private static JFrame showInfoFrame=null;
+	private static InfoMessageViewer infoMessageViewer=null;
+	public static void showInfoFrame(Object source,String title){
+		if(showInfoFrame==null){
+			showInfoFrame=new JFrame();
+			showInfoFrame.getContentPane().setLayout(new BorderLayout());
+			showInfoFrame.getContentPane().add(infoMessageViewer=new InfoMessageViewer());
+			showInfoFrame.setSize(1024,768);
+			showInfoFrame.setLocationRelativeTo(null); // center
+			showInfoFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		}
+		// ascertain to show the right messages (that of the current Mongoose schema!)
+		infoMessageViewer.setSource(source);
+		showInfoFrame.setTitle(title);
+		showInfoFrame.setVisible(true);
+	}
+
 	public static JPanel getTitledPanel(String title){
 		JPanel titledPanel=new JPanel(new BorderLayout());
 		if(title!=null)titledPanel.setBorder(new TitledBorder(title));

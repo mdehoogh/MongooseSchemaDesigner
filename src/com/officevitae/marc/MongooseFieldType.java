@@ -3,7 +3,8 @@ package com.officevitae.marc;
 // MDH@16OCT2018: because the user can expand the basic field types with its own field types (by defining subschemas)
 public enum MongooseFieldType implements IFieldType{
 
-	ARRAY("Array"),BOOLEAN("Boolean"),BUFFER("Buffer"),DATE("Date"),DECIMAL128("Decimal128"),INTEGER("Integer"),MAP("Map"),MIXED("Mixed"),NUMBER("Number"),OBJECTID("ObjectId"),STRING("String");
+	// MDH@30OCT2018: it's INTEGER but it should use the Long extension to the schema types provided by mongoose-long
+	ARRAY("Array"),BOOLEAN("Boolean"),BUFFER("Buffer"),DATE("Date"),DECIMAL128("Decimal128"),INTEGER("Long"),MAP("Map"),MIXED("Mixed"),NUMBER("Number"),OBJECTID("ObjectId"),STRING("String");
 
 	// we need a fixed (and final) description object, so we create it only once
 	private final Description description;
@@ -69,6 +70,6 @@ public enum MongooseFieldType implements IFieldType{
 	}
 	*/
 	// end IFieldType implementation
-	public String toString(){return "Schema.Types."+description.toString();} // TODO have to think about this though!!!
+	public String toString(){return "mongoose.Schema.Types."+description.toString();} // use the full name (assuming the mongoose object is indeed called 'mongoose' as returned by the require('mongoose') call)
 
 }

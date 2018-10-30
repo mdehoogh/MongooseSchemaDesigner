@@ -18,7 +18,7 @@ public class InfoMessageViewer extends JPanel implements Utils.InfoMessageListen
 		super(new BorderLayout());
 		Utils.addInfoMessageListener(this); // listen in to any changes...
 		add(infoMessagesTextArea=new JTextArea());
-		infoMessagesTextArea.setEnabled(false);
+		////////infoMessagesTextArea.setEnabled(false);
 		JPanel buttonPanel=new JPanel();
 		buttonPanel.add(clearButton=new JButton("Clear"));
 		clearButton.addActionListener(new ActionListener(){
@@ -36,7 +36,11 @@ public class InfoMessageViewer extends JPanel implements Utils.InfoMessageListen
 		this.source=source;
 		if(this.source!=null){
 			clearButton.setEnabled(this.source!=null&&Utils.hasInfoMessages(this.source));
-			infoMessagesTextArea.setText(String.join("\n",Utils.getInfoMessages(this.source)));
+			try{
+				infoMessagesTextArea.setText(String.join("\n",Utils.getInfoMessages(this.source)));
+			}catch(Exception ex){
+				infoMessagesTextArea.setText("");
+			}
 			Utils.addInfoMessageListener(this); // inform me about any changes...
 		}else
 			infoMessagesTextArea.setText("");

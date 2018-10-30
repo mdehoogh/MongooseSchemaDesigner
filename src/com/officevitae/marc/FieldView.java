@@ -4,10 +4,7 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.event.*;
 import java.util.Date;
 import java.util.List;
 
@@ -32,9 +29,12 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	private FieldTypeSelectorView fieldTypeSelectorView; // replacing: private JComboBox typeComboBox;
 	// whenever the selected field type changes, we determine which views to show
 	public void fieldTypeChanged(FieldTypeSelectorView fieldTypeSelectorView,IFieldType selectedFieldType){
+		Utils.setInfo(this,"Type of field '"+field.getName()+"' of schema '"+field.getCollection().getSchema().getName()+"' changed to "+selectedFieldType.getDescription().toString()+".");
 		field.setType(selectedFieldType); // update the type of the current field
+		showField();
+		/*
 		// TODO distrust whether setType succeeds????
-		autoIncrementView.setVisible(selectedFieldType.equals(MongooseFieldType.NUMBER)); // if it's a Number it could be an auto-increment field...
+		////////autoIncrementView.setVisible(selectedFieldType.equals(MongooseFieldType.NUMBER)); // if it's a Number it could be an auto-increment field...
 		// we can have options if not an auto-increment field!!!
 		optionsView.setVisible(!field.isAutoIncremented()); // at this moment on the required check box is on the options view so all these options are not applicable at that point!!
 		indexLiteralView.setVisible(!field.isAutoIncremented()); // indexView replaced by indexLiteralView
@@ -45,17 +45,19 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		refView.setVisible(selectedFieldType.equals(MongooseFieldType.OBJECTID)); // an ObjectId can refer to another object (table)
 		/////////autoIncrementView.setVisible(field.type.equals(FieldType.AUTO_INCREMENT)); // an auto incremented integer can have a startAt value
 		// what else? a lot of views should not be visible when auto increment integer is selected!!
+		*/
 	}
 
 	private JCheckBox requiredCheckBox,selectCheckBox;
 	// the check boxes associated with the flags of the optional options
 	//////////private JCheckBox defaultCheckBox,minNumberCheckBox,maxNumberCheckBox,minDateCheckBox,maxDateCheckBox,startAtCheckBox,valuesCheckBox;
-	private JComponent autoIncrementView,optionsView,functionsView/*,indexView*/,stringOptionsView,numberOptionsView,dateOptionsView,refView,arrayElementTypeView;
+	private JComponent /*autoIncrementView,*/optionsView,functionsView/*,indexView*/,stringOptionsView,numberOptionsView,dateOptionsView,refView/*,arrayElementTypeView*/;
 	private void showType(){
 		// MDH@24OCT2018: now using a FieldTypeSelectorView for taking care of selecting a type...
 		 // replacing: typeComboBox.setSelectedItem(field.getType()); // most convenient way to speed up stuff
 		fieldTypeSelectorView.selectFieldType(field.getType());
 	}
+	public String toString(){return(field!=null?"View of field '"+field.getName()+"'":"Field view");}
 	/*
 	private void updateStartAtView(boolean updateText){
 		if(updateText)startAtLiteralView.setText(field.startAtLiteral.getText());
@@ -148,11 +150,15 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		aliasLiteralView.setValidatedFieldLiteral(field.aliasLiteral);
 		aliasLiteralView.setVisible(true);
 	}
+
+	private void showTag(){fieldTagTextField.setText(field.getTag());} // MDH@30OCT2018
+
 	private void hideField(){
 		((CardLayout)getLayout()).show(this,"NoField");
 	}
 	private void showField(){
 		try{
+			showTag();
 			showAliasView(); // TODO can an auto-increment column have an alias????
 
 			boolean references=field.isReferencing();
@@ -171,9 +177,13 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 				arrayElementTypeView.setVisible(false);
 			*/
 			// I suppose anything that is numeric can be auto-incremented!!
-			if(!references&&(type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.INTEGER)))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
+			// can't tell exactly but Number fields seem to be the only auto-incremental fields (with the used library)
+			if(type.equals(MongooseFieldType.NUMBER))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
 
-			if(!autoincremented&&!field.getName().equalsIgnoreCase("_id")&&(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)))showRefView();else if(refLiteralView!=null)refView.setVisible(false);
+			if(!autoincremented&&!field.getName().equalsIgnoreCase("_id")&&(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)))
+				showRefView();
+			else
+				if(refView!=null)refView.setVisible(false);
 
 			if(!autoincremented)showIndexOptions();else indexLiteralView.setVisible(false); // TODO can a reference be used as index????
 
@@ -221,7 +231,10 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	// end MongooseSchema.SubSchemaListener implementation
 	public void setField(Object field){
 		// MDH@24OCT2018 removing: removeSubSchemaFieldTypes(typeComboBoxModel);
-		try{this.field.getCollection().getSchema().removeSubSchemaListener(this);}catch(Exception ex){}
+		try{
+			fieldTagTextField.setText("");
+			this.field.getCollection().getSchema().removeSubSchemaListener(this);
+		}catch(Exception ex){}
 		this.field=(field!=null&&field instanceof Field?(Field)field:null);
 		if(this.field!=null){
 			try{
@@ -241,7 +254,8 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	}
 	// MDH@24OCT2018 removing: private DefaultComboBoxModel typeComboBoxModel;
 	private JComponent getTypeView(){
-		if(fieldTypeSelectorView==null)fieldTypeSelectorView=new FieldTypeSelectorView().setPrefix("Type: ").setFieldTypeChangeListener(this);
+		if(fieldTypeSelectorView==null)
+			fieldTypeSelectorView=new FieldTypeSelectorView().setPrefix("Type: ").setFieldTypeChangeListener(this);
 		return fieldTypeSelectorView;
 		/*
 		JPanel typePanel=SwingUtils.getTitledPanel(null);
@@ -416,6 +430,17 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		lengthsPanel.add(lengthsBox);
 		return lengthsPanel;
 	}
+	public JComponent getTrimView(){
+		JPanel trimPanel=new JPanel(new BorderLayout());
+		trimPanel.add(trimCheckBox=new JCheckBox("Trim"),BorderLayout.WEST);
+		trimCheckBox.addChangeListener(new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				field.setTrim(trimCheckBox.isSelected());
+			}
+		});
+		return trimPanel;
+	}
 	public JComponent getStringOptionsView(){
 		JPanel stringPanel=SwingUtils.getTitledPanel("");
 		stringPanel.add(SwingUtils.getLabelView("String options"),BorderLayout.NORTH);
@@ -444,19 +469,13 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 			}
 		});
 		ButtonGroup buttonGroup=new ButtonGroup();buttonGroup.add(caseSensitiveRadioButton);buttonGroup.add(lowercaseRadioButton);buttonGroup.add(uppercaseRadioButton);
-		stringBox.add(trimCheckBox=new JCheckBox("Trim"));
-		trimCheckBox.addChangeListener(new ChangeListener() {
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				field.setTrim(trimCheckBox.isSelected());
-			}
-		});
 		// we can put any values in the middle
 		northStringPanel.add(stringBox,BorderLayout.WEST);
 		// and min length and max length
 		/////////northStringPanel.add(getLengthsView(),BorderLayout.EAST);
 		Box stringVerticalBox=Box.createVerticalBox();
 		stringVerticalBox.add(northStringPanel);
+		stringVerticalBox.add(getTrimView());
 		stringVerticalBox.add(getLengthsView());
 		stringVerticalBox.add(getStringValuesView());
 		stringVerticalBox.add(getMatchView());
@@ -475,12 +494,25 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	}
 	public JComponent getDateOptionsView(){
 		JPanel datePanel=SwingUtils.getTitledPanel("");
-		datePanel.add(SwingUtils.getLabelView("Date options"),BorderLayout.NORTH);
-		datePanel.setLayout(new GridLayout(2,1));
+		datePanel.setLayout(new GridLayout(3,1));
+		datePanel.add(SwingUtils.getLabelView("Date options"));
 		///////maxDateLiteralView.setVisible(false);
 		datePanel.add(minDateLiteralView=new ValidatedFieldLiteralView<Date>("Minimum date: "));
 		datePanel.add(maxDateLiteralView=new ValidatedFieldLiteralView<Date>("Maximum date: "));
 		return datePanel;
+	}
+	private JTextField fieldTagTextField;
+	private JComponent getTagView(){
+		JPanel tagPanel=new JPanel(new BorderLayout());
+		tagPanel.add(new JLabel("Description: "),BorderLayout.WEST);
+		tagPanel.add(fieldTagTextField=new JTextField());
+		fieldTagTextField.addKeyListener(new KeyAdapter(){
+			@Override
+			public void keyReleased(KeyEvent e){
+				field.setTag(fieldTagTextField.getText());
+			}
+		});
+		return tagPanel;
 	}
 	private JLabel fieldNameLabel;
 	public FieldView(){
@@ -491,6 +523,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		// let's not show the name????
 		Box fieldBox=Box.createVerticalBox();
 		fieldBox.add(SwingUtils.getLeftAlignedView(fieldNameLabel));
+		fieldBox.add(getTagView());
 		fieldBox.add(getTypeView());
 		// MDH@24OCT2018 removing: fieldBox.add(arrayElementTypeView=getArrayElementTypeView()); // MDH@16OCT2018: only to be shown when type Array is selected, so a user can select the array element type
 		fieldBox.add(startAtLiteralView=getStartAtView()); // right below the type where a person can define whether to be auto-incrementing...
@@ -503,6 +536,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		fieldBox.add(numberOptionsView=getNumberOptionsView());
 		fieldBox.add(stringOptionsView=getStringOptionsView());
 		fieldBox.add(dateOptionsView=getDateOptionsView());
+		// should we be hiding all type-specific stuff??
 		fieldPanel.add(fieldBox,BorderLayout.NORTH);
 		add(fieldPanel,"Field");
 		/////////((CardLayout)getLayout()).show(getParent(),"NoField");
