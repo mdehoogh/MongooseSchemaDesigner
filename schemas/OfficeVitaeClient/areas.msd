@@ -1,7 +1,8 @@
+$Name of area
 +_id:ObjectId
-+name:String	$Name of area	required	+indextype=unique
++name:String	required	+indextype=unique
 +label:String	required
-+areatype_id:ObjectId
++areatype_id:ObjectId	+ref=areatypes
 +timezone:String
 +latitude:Number
 +longitude:Number

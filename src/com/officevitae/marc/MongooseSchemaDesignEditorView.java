@@ -444,60 +444,36 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	// updateSelectedTabView() to be called whenever the user select another tab, or when the selected mongoose schema changes!!
 	private int lastSelectedTabIndex=-1;
 	private void updateSelectedTabView(){
-		// MDH@25OCT2018: ascertain to have the right tabs
-		if(mongooseSchema!=null&&mongooseSchema.getParent()==null){
-			if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Output",outputView);
-			saveView.setVisible(true);
-		}else{
-			saveView.setVisible(false);
-			if(tabbedPane.getTabCount()>=3)tabbedPane.remove(2);
-		}
-		switch(tabbedPane.getSelectedIndex()){
-			case 1: // Text mode
-				// TODO is there a better way to do this??? because we only need to plug in another field collection if the schema changes!!!!
-				// NOTE suppose the contents of the container changes (i.e. is volatile) it may have changed elsewhere without us knowing and we need to validate!!!
-				//      so validate() means determining if the contents changed, and if it did push it on the history stack (and show it)
-				//      well showing would suffice
-				try{
-					fieldsTextLinesEditor.read(); // replacing:	fieldsTextLinesEditor.setTextLinesContainer(mongooseSchema.getFieldCollection());
-					lastSelectedTabIndex=0;
-				}catch(Exception ex){
-					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' obtaining the schema definition.");
-				}
-				break;
-			case 0: // Design mode
-				// TODO we should only do the following if the schemaTextArea's text actually changed!!!
-				// MDH@17OCT2018: we force a load so that what we see actually represents the text loaded (if any)
-				if(mongooseSchema!=null){
+		// ASSERT mongooseSchema should NOT be null!!
+		int selectedTabIndex=tabbedPane.getSelectedIndex();
+		try{
+			// MDH@25OCT2018: ascertain to have the right tabs
+			switch(selectedTabIndex){
+				case 1: // Text mode
+					// nothing wrong with ALWAYS doing that, even if we come from the Output tab (which might be selected when switching Mongoose schemas!!!)
+					fieldsTextLinesEditor.read();
+					break;
+				case 0: // Design mode
+					// TODO we should only do the following if the schemaTextArea's text actually changed!!!
+					// MDH@17OCT2018: we force a load so that what we see actually represents the text loaded (if any)
 					// disconnecting the fields text lines editor from the field collection will update the field collection accordingly (if something changed there)
 					// so we will get to see the proper fields and all!!!
-					fieldsTextLinesEditor.write();// replacing: fieldsTextLinesEditor.setTextLinesContainer(null);
-					/* MDH@18OCT2018: we shouldn't be loading!!!!
-					try{
-						mongooseSchema.load();
-					}catch(Exception ex){
-						Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' initializing the schema design.");
-					}
-					*/
-					/* TODO what to do when the schema failed to load successfully????
-					boolean aSubSchema=(this.mongooseSchema.getParent()!=null); // it's a subschema if the schema has a parent!!
-					//////////schemaButtonView.setVisible(!aSubSchema); // replacing publishSchemaButton.setVisible(!aSubSchema);
-					*/
+					if(lastSelectedTabIndex==1)fieldsTextLinesEditor.write(); // Text mode -> Design mode
 					showSchemaFields();
-					lastSelectedTabIndex=1;
-				}
-				break;
-			case 2:
-				// force a read so we will see the most recent model text lines
-				if(mongooseSchema!=null){
+					break;
+				case 2:
+					// force a read so we will see the most recent model text lines
 					// I have to update the schema (fields) with the contents of the editor, if the editor view is now showing
-					if(lastSelectedTabIndex==0)fieldsTextLinesEditor.write();
+					if(lastSelectedTabIndex==1)fieldsTextLinesEditor.write(); // update the Mongoose schema from the text
 					modelTextLinesEditor.read();
 					routesTextLinesEditor.read();
 					controllerTextLinesEditor.read();
-				}
-				lastSelectedTabIndex=2;
-				break;
+					break;
+			}
+		}catch(Exception ex){
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' switching tabs.");
+		}finally{
+			lastSelectedTabIndex=selectedTabIndex;
 		}
 	}
 	////////private JSplitPane ioSplitPane,designSplitPane;
@@ -560,8 +536,10 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		newFieldTextField.setText("");
 		newFieldButton.setEnabled(false);
 	}
-	private void showMongooseSchema(){
+	private void respondToANewMongooseSchema(){
 		if(this.mongooseSchema!=null){
+			lastSelectedTabIndex=0; // assuming the schema itself is up to date (but the text or the output might NOT)
+			updateSelectedTabView();
 			Utils.setInfo(this,"Showing schema '"+this.mongooseSchema.getRepresentation(false)+"'.");
 			/////////backButton.setVisible(aSubSchema);
 			// we're actually editing the fields and NOT the entire schema (with subschemas included!!!)
@@ -575,6 +553,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	public void setMongooseSchema(MongooseSchema mongooseSchema){
 		// NOTE that this could possibly be a subschema
 		try{
+			// finish up the current Mongoose schema
 			if(this.mongooseSchema!=null){
 				if(tabbedPane.getSelectedIndex()==1)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
 				fieldsTextLinesEditor.removeChangeListener(this);
@@ -587,23 +566,20 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				schemaTagTextArea.setText("");
 			}
 			this.mongooseSchema=mongooseSchema;
-			////////schemaButtonView.setVisible(this.mongooseSchema!=null&&this.mongooseSchema.getParent()==null); // TODO should we put this somewhere else??? unless we allow saving any schema even it's a subschema!!!
-			updateSelectedTabView(); // MDH@17OCT2018: we have to ascertain that the Mongoose Schema is up to date for showing in the currently showing tab page
 			if(this.mongooseSchema!=null){
+				boolean showOutputTab=(this.mongooseSchema.getParent()==null);
+				saveView.setVisible(showOutputTab);
+				if(showOutputTab)if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Output",outputView);else;
+				else if(tabbedPane.getTabCount()>=3)tabbedPane.remove(2);
 				schemaTagTextArea.setText(this.mongooseSchema.getTag());
 				showInfoButton.setEnabled(Utils.hasInfoMessages(this.mongooseSchema));
 				fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
-				routesTextLinesEditor.setTextLinesProducer(mongooseSchema.getRoutesTextLinesProducer());
-				controllerTextLinesEditor.setTextLinesProducer(mongooseSchema.getControllerTextLinesProducer());
+				routesTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getRoutesTextLinesProducer());
+				controllerTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getControllerTextLinesProducer());
 				// TODO do we need this?????
 				modelTextLinesEditor.setTextLinesConsumer(this.mongooseSchema.getModelTextLinesConsumer());
-				switch(tabbedPane.getSelectedIndex()){
-					case 1:fieldsTextLinesEditor.read();break;
-					case 0:break;
-					case 2:break;
-				}
 				// the Save button should be enabled when showing the Output tab, or when the mongoose schema is both saveable and not considered synced right now...
 				saveButton.setEnabled(tabbedPane.getSelectedIndex()==2||(this.mongooseSchema.isSaveable()&&!this.mongooseSchema.isSynced()));
 				fieldsTextLinesEditor.addChangeListener(this); // any change to the text should result in checking whether or not this text differs from the last 'saved' text!!!
@@ -613,7 +589,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		}catch(Exception ex){
 			Utils.consoleprintln("ERROR: '"+ex.getLocalizedMessage()+"' updating the Mongoose schema editor view to show a new Mongoose schema.");
 		}finally{
-			showMongooseSchema();
+			respondToANewMongooseSchema();
 		}
 	}
 	public MongooseSchema getMongooseSchema(){return mongooseSchema;} // exposes the associated mongoose schema!!!

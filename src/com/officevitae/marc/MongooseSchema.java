@@ -1040,16 +1040,15 @@ module.exports=(app)=>{
 	//                can we do both with a single call? NO how about produceTextLines which might return an Exception if something goes wrong
 	//                loadException() or parseException() indicate that something might've gone wrong reading and parsing the design
 	private Exception loadException=null,parseException=null,saveException=null;
-	// a Schema is saveable, if it was loaded successfully...
+	private boolean isWriteable(){try{return associatedFile.canWrite();}catch(Exception ex){}return false;}
 	public boolean isSaveable(){
 		// this is the best I can do
 		// - should NOT be a subschema
-		// - should have an associated file
-		// - which either does not exist, or when it exists, should not failed to load and is writeable!!!
-		return(this.parentSchema==null&&associatedFile!=null&&(!associatedFile.exists()||(loadException==null&&associatedFile.canWrite())));
+		// - should have an associated file that exists (will be created by load if need be)
+		// - and when it exists (as it should) it should be writable!!
+		return(this.parentSchema==null&&associatedFile!=null&&associatedFile.exists()&&loadException==null&&isWriteable());
 	}
-
-	public final boolean load(){
+	private final boolean load(){
 		// this is a retry of 'syncing' what's stored on disk and what we know to be the textLines internally...
 		synced=false;
 		textLines=null;
@@ -1058,12 +1057,19 @@ module.exports=(app)=>{
 		getTextLinesProducer();
 		File newFile=null; // any new file we need to write what was obtained...
 		try{
-			mongooseSchemaTextFileProcessor.produceTextLines();
-			// remember the produced text lines (we're NOT expecting any errors here)
+			if(associatedFile.exists())
+				mongooseSchemaTextFileProcessor.produceTextLines();
+			else if(associatedFile.createNewFile())
+				textLines=new String[]{};
+			else
+				loadException=new Exception("Unable to create the associated file.");
 		}catch(Exception ex){
 			loadException=ex;
+			Utils.setInfo(this,"ERROR: '"+loadException.getLocalizedMessage()+"' in load schema '"+name+"'.");
+		}
+		// if we have an associated file AND it does exist, we may be able to make it saveable by renaming it, and that way make it saveable!!!
+		if(!isSaveable()&&associatedFile.exists()){
 			String associatedFilename=getAssociatedFilename();
-			Utils.setInfo(this,"ERROR: '"+loadException.getLocalizedMessage()+"' in reading the contents of file '"+associatedFilename+"' of schema '"+name+"'.");
 			// we can try to get rid of this exception if we rename the original file (as it is), so it's contents can be retained!!!
 			// solution temporary is to rename the input file, write what we read to the file with the same name
 			String newFilenamePrefix=associatedFilename.substring(0,associatedFilename.lastIndexOf("."));
@@ -1073,14 +1079,15 @@ module.exports=(app)=>{
 			while(true){
 				renameFileIndex+=1;
 				newFile=new File(newFilenamePrefix+"."+renameFileIndex+".msd");
-				if(!newFile.exists())break;
+				if(!newFile.exists()) break;
 			}
-			File associatedFile=((ITextLinesProcessor.TextFile)mongooseSchemaTextFileProcessor).getFile();
 			if(!associatedFile.renameTo(newFile)){ // rename failed
 				newFile=null; // can't remove loadException, therefore the schema will NOT be saveable
 				Utils.setInfo(this,"ERROR: Failed to move the original contents of the file of schema '"+name+"' to '"+newFile.getAbsolutePath()+"'.");
-			}else
+			}else{
+				loadException=null;
 				Utils.setInfo(this,"WARNING: As a precaution the original contents of the file of schema '"+name+"' was moved to '"+newFile.getAbsolutePath()+"'.");
+			}
 		}
 		try{
 			// we need to remember the text lines as parseTextLines() doesn't!!!!
