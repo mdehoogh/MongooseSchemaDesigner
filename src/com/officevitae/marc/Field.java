@@ -215,7 +215,8 @@ public class Field{
 		protected boolean isConsideredValid(){
 			String text=super.getText();
 			boolean consideredValid=super.isConsideredValid();
-			if(consideredValid&&options!=null&&!options.contains(text))consideredValid=false;
+			if(options!=null)return(consideredValid?options.contains(text):false); // if options are defined, they determine whether the presented text is valid!!
+			// replacing: if(consideredValid&&options!=null&&!options.contains(text))consideredValid=false;
 			// MDH@19OCT2018: I suppose that its easier to change isValid() so that when the thing is disabled it will return false although that's quite dangerous
 			if(consideredValid&&valuesValidatedFieldLiteral!=null&&!valuesValidatedFieldLiteral.isDisabled()&&valuesValidatedFieldLiteral.isValid()&&!Arrays.asList(valuesValidatedFieldLiteral.getValue()).contains(text))consideredValid=false;
 			if(consideredValid&&regExpValidatedFieldLiteral!=null&&!regExpValidatedFieldLiteral.isDisabled()&&regExpValidatedFieldLiteral.isValid()&&!text.matches(regExpValidatedFieldLiteral.getText()))consideredValid=false;
@@ -250,7 +251,11 @@ public class Field{
 			this.valuesValidatedFieldLiteral=valuesValidatedFieldLiteral;
 			if(this.valuesValidatedFieldLiteral!=null)this.valuesValidatedFieldLiteral.addValidatedFieldLiteralChangeListener(this);
 		}
-		public StringValidatedFieldLiteral(Set<String> options){if(options!=null&&!options.isEmpty())this.options=options;}
+		public StringValidatedFieldLiteral(Set<String> options){
+			if(options!=null&&!options.isEmpty()){
+				this.options=options;
+			}
+		}
 		public StringValidatedFieldLiteral(){}
 		/////////public StringValidatedFieldLiteral(){super.setValid(true);} // force valid to True!!
 	} // anything goes as default!!!
@@ -543,6 +548,7 @@ public class Field{
 
 	public Field(String name){
 		this.name=name;
+		indexLiteral.setText(INDEX_TYPE_NAMES[0]); // MDH@30OCT2018: we might need this...
 	}
 
 	public String getName(){return name;}

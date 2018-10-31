@@ -96,6 +96,7 @@ public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFie
 			textField.setEnabled(false); // waiting for a validated literal!!
 		}else{
 			super.add(comboBox=new JComboBox(new DefaultComboBoxModel(options)));
+			/////////comboBox.insertItemAt("",0); // user should be allowed to not select an option (because options are the valid options!!)
 			comboBox.addItemListener(new ItemListener(){
 				@Override
 				public void itemStateChanged(ItemEvent e){
