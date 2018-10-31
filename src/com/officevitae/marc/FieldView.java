@@ -20,7 +20,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	// a lot of ValidatedFieldLiteralView's!!!
 	private ValidatedFieldLiteralView<Double> minNumberLiteralView,maxNumberLiteralView;
 	private ValidatedFieldLiteralView<Long> minLengthLiteralView,maxLengthLiteralView,startAtLiteralView;
-	private ValidatedFieldLiteralView<Date> minDateLiteralView,maxDateLiteralView;
+	private ValidatedFieldLiteralView<String> minDateLiteralView,maxDateLiteralView;
 	private ValidatedFieldLiteralView<String[]> valuesLiteralView;
 	private ValidatedFieldLiteralView<String> defaultLiteralView,matchLiteralView,aliasLiteralView,getLiteralView,setLiteralView,validateLiteralView,refLiteralView,indexLiteralView;
 
@@ -497,8 +497,8 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		datePanel.setLayout(new GridLayout(3,1));
 		datePanel.add(SwingUtils.getLabelView("Date options"));
 		///////maxDateLiteralView.setVisible(false);
-		datePanel.add(minDateLiteralView=new ValidatedFieldLiteralView<Date>("Minimum date: "));
-		datePanel.add(maxDateLiteralView=new ValidatedFieldLiteralView<Date>("Maximum date: "));
+		datePanel.add(minDateLiteralView=new ValidatedFieldLiteralView<String>("Minimum date: "));
+		datePanel.add(maxDateLiteralView=new ValidatedFieldLiteralView<String>("Maximum date: "));
 		return datePanel;
 	}
 	private JTextField fieldTagTextField;

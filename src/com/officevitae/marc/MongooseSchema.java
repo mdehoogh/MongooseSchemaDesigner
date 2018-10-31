@@ -565,7 +565,8 @@ module.exports=(app)=>{
 				if(field.isSelect())fieldTextRepresentation.append(",select:true");
 				// general options
 				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled())fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
-				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
+				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())
+					fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
 				// type-specific options
 				IFieldType fieldType=field.getType();
 				if(fieldType instanceof MongooseFieldType) switch(((MongooseFieldType)fieldType).ordinal()){

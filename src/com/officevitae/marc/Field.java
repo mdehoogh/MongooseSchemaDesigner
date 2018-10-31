@@ -58,7 +58,7 @@ public class Field{
 		}
 	}
 	// given that minDate and maxDate depend on one another we directly descend DateValidatedFieldLiteral from DependentValidatedFieldLiteral
-	public class DateValidatedFieldLiteral extends DependentValidatedFieldLiteral<Date>{
+	public class DateValidatedFieldLiteral extends DependentValidatedFieldLiteral<String>{
 		// can be invalidated by a minimum and/or a maximum validated literal
 		private DateValidatedFieldLiteral minDateValidatedFieldLiteral=null,maxDateValidatedFieldLiteral=null;
 		protected boolean isConsideredValid(){
@@ -74,8 +74,12 @@ public class Field{
 			}
 			return consideredValid;
 		}
-		public Date getValue(){
-			return(isValid()?new Date(super.getText()):null);
+		public String getValue(){
+			if(!isValid())return null;
+			String dateText=super.getText();
+			if(dateText.equals("Date.now"))return dateText; // as is
+			// assuming the text represents something that Date can understand
+			return "new Date('"+dateText+"')"; // I suppose any date should be enquoted??
 		}
 		public void setMinDateValidatedFieldLiteral(DateValidatedFieldLiteral minDateValidatedFieldLiteral){
 			if(this.minDateValidatedFieldLiteral!=null)this.minDateValidatedFieldLiteral.removeValidatedFieldLiteralChangeListener(this);
@@ -548,7 +552,7 @@ public class Field{
 
 	public Field(String name){
 		this.name=name;
-		indexLiteral.setText(INDEX_TYPE_NAMES[0]); // MDH@30OCT2018: we might need this...
+		///////indexLiteral.setText(INDEX_TYPE_NAMES[0]); // MDH@30OCT2018: we might need this...
 	}
 
 	public String getName(){return name;}
@@ -611,13 +615,20 @@ public class Field{
 	}
 
 	// MDH@18OCT2018: we do NOT want undefined (empty) properties to show up unless they are enabled..
+	// MDH@31OCT2018: given that the default disabled flag is now false, it should be just the other way round
+	//                i.e. always show when disabled is true (-)
+	//                I suppose that even if the literal is invalid we want to set the text from it
 	public String getLiteralRepresentation(String literalName,boolean serializing,ValidatedFieldLiteral literal){
 		String literalRepresentation=literal.getText();
 		if(literalRepresentation!=null){
+			/*
+			if(!literal.isDisabled()||serializing||literal.isValid())
+				return "\t"+(serializing?(literal.isDisabled()?"-":"+"):"")+literalName+"="+literalRepresentation;
+			*/
 			// if not disabled i.e. enabled prefix a + if serializing, otherwise the literal needs to be valid
-			if(!literal.isDisabled())return(serializing||literal.isValid()?"\t"+(serializing?"+":"")+literalName+"="+literalRepresentation:"");
-			// a disabled literal (the default), we're not returning anything unless we serializing
-			if(serializing)if(!literalRepresentation.isEmpty())return "\t-"+literalName+"="+literalRepresentation;
+			if(literal.isDisabled())return(serializing||literal.isValid()?"\t"+(serializing?"-":"")+literalName+"="+literalRepresentation:"");
+			// an enabled literal (the default), we're not returning anything unless we serializing
+			if(serializing)if(!literalRepresentation.isEmpty())return "\t+"+literalName+"="+literalRepresentation;
 		}
 		return "";
 	}
