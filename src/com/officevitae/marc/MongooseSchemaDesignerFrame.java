@@ -97,7 +97,8 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     private TreePath getANewMongooseSchemaTreePath(String name,MongooseSchema parent,MongooseSchemaCollection collection){
     	TreePath treePath=null;
         try {
-            MongooseSchema newMongooseSchema=(parent!=null?new MongooseSchema(name,parent,collection):MongooseSchemaFactory.getANewMongooseSchema(name,collection)); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
+        	// MDH@31OCT2018: I do not think we need MongooseSchemaFactory anymore as a schema is also part of a collection
+            MongooseSchema newMongooseSchema=new MongooseSchema(name,parent,collection); // MDH@08OCT2018: go through the factory because that is used to retrieve the names of the mongoose schema's available!!!
             // NOTE call getMongooseSchemaTreeNode() because it will automatically append the subschema tree nodes as well!!!
             DefaultMutableTreeNode newMongooseSchemaTreeNode=getMongooseSchemaTreeNode(newMongooseSchema);
             selectedMongooseSchemaNode.add(newMongooseSchemaTreeNode);
@@ -138,6 +139,8 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         newMongooseSchemaButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+            	Object selectedObject=getSelectedObject();
+            	MongooseSchemaCollection collection=null;try{collection=(MongooseSchemaCollection)getSelectedObject();}catch(Exception ex){}
             	// allowing multiple schema's comma-delimited
 				String[] newSchemaNameTexts=newMongooseSchemaTextField.getText().trim().split(",");
 				TreePath newSchemaTreePath,lastCreatedSchemaTreePath=null;
@@ -148,9 +151,9 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 					newSchemaName=newSchemaNameText.trim();
 					if(newSchemaName.isEmpty()) continue;
 					if(newSchemaName.indexOf('.')<0){
-						if(!isExistingSchemaName(newSchemaName,selectedMongooseSchema)){
-							newSchemaTreePath=getANewMongooseSchemaTreePath(newSchemaName,selectedMongooseSchema,null);
-							if(newSchemaTreePath!=null) lastCreatedSchemaTreePath=newSchemaTreePath;
+						if(!isExistingSchemaName(newSchemaName,selectedObject)){
+							newSchemaTreePath=getANewMongooseSchemaTreePath(newSchemaName,selectedMongooseSchema,collection);
+							if(newSchemaTreePath!=null)lastCreatedSchemaTreePath=newSchemaTreePath;
 						}else Utils.setInfo(this,"Schema '"+newSchemaName+"' not created: it already exists.");
 					}else
 						Utils.setInfo(this,"New schema name '"+newSchemaName+"' skipped: it contains an invalid period character.");
@@ -227,15 +230,22 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 	}
 
 	// on any occasion it should not be allowed to add (sub)schemas with existing schema names
-	private boolean isExistingSchemaName(String schemaName,MongooseSchema parentSchema){
-		return(parentSchema!=null?parentSchema.containsASubSchemaCalled(schemaName):MongooseSchemaFactory.isExistingMongooseSchemaName(schemaName));
+	private boolean isExistingSchemaName(String schemaName,Object parent){
+		if(parent==null)return MongooseSchemaFactory.isExistingMongooseSchemaName(schemaName);
+		if(parent instanceof MongooseSchema)return ((MongooseSchema)parent).containsASubSchemaCalled(schemaName);
+		if(parent instanceof MongooseSchemaCollection)return((MongooseSchemaCollection)parent).containsASchemaCalled(schemaName);
+		return false; // benefit of the doubt
+	}
+	private Object getSelectedObject(){
+		Object selectedObject=null;
+		try{selectedObject=selectedMongooseSchemaNode.getUserObject();}catch(Exception ex){} // this is correct because the top level root tree node does NOT have a user object that is a MongooseSchema instance
+		return selectedObject;
 	}
 	// check for new schema names if either the entered names change or another schema is selected
 	private void checkForNewSchemaNames(){
 		boolean anyNewSchemaName=false;
 		String newSchemaNamesText=newMongooseSchemaTextField.getText().trim();
 		if(!newSchemaNamesText.isEmpty()){
-			MongooseSchema mongooseSchema=getSelectedMongooseSchema(); // this is correct because the top level root tree node does NOT have a user object that is a MongooseSchema instance
 			// if no mongoose schema is currently selected check against the schema's defined at the top level
 			// the problem however is with the selected mongoose schema because sometimes the Schemas root is selected
 			StringBuilder noNewSchemaNames=new StringBuilder();
@@ -243,7 +253,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			for(String newSchemaName:newSchemaNamesText.split(",")){
 				if(newSchemaName.trim().isEmpty()) continue; // skip missing schema names!!
 				if(newSchemaName.indexOf('.')<0){
-					aNewSchemaName=!isExistingSchemaName(newSchemaName.trim(),mongooseSchema);
+					aNewSchemaName=!isExistingSchemaName(newSchemaName.trim(),getSelectedObject());
 					if(aNewSchemaName) anyNewSchemaName=true;
 					else noNewSchemaNames.append(", "+newSchemaName.trim());
 				}else

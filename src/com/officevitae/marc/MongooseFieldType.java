@@ -4,7 +4,7 @@ package com.officevitae.marc;
 public enum MongooseFieldType implements IFieldType{
 
 	// MDH@30OCT2018: it's INTEGER but it should use the Long extension to the schema types provided by mongoose-long
-	ARRAY("Array"),BOOLEAN("Boolean"),BUFFER("Buffer"),DATE("Date"),DECIMAL128("Decimal128"),INTEGER("Long"),MAP("Map"),MIXED("Mixed"),NUMBER("Number"),OBJECTID("ObjectId"),STRING("String");
+	ARRAY("Array"),BOOLEAN("Boolean"),BUFFER("Buffer"),DATE("Date"),DECIMAL128("Decimal128"),INT32("Int32"),LONG("Long"),MAP("Map"),MIXED("Mixed"),NUMBER("Number"),OBJECTID("ObjectId"),STRING("String");
 
 	// we need a fixed (and final) description object, so we create it only once
 	private final Description description;
@@ -38,17 +38,19 @@ public enum MongooseFieldType implements IFieldType{
 					break;
 				case 4: // Decimal128
 					break;
-				case 5: // Integer
+				case 5: // Int32
 					break;
-				case 6: // Map
+				case 6: // Long
 					break;
-				case 7: // Mixed
+				case 7: // Map
 					break;
-				case 8: // Number
+				case 8: // Mixed
 					break;
-				case 9: // ObjectId
+				case 9: // Number
 					break;
-				case 10: // String
+				case 10: // ObjectId
+					break;
+				case 11: // String
 					break;
 			}
 		}
@@ -70,6 +72,6 @@ public enum MongooseFieldType implements IFieldType{
 	}
 	*/
 	// end IFieldType implementation
-	public String toString(){return "mongoose.Schema.Types."+description.toString();} // use the full name (assuming the mongoose object is indeed called 'mongoose' as returned by the require('mongoose') call)
+	public String toString(){return(ordinal()==5?"Int32":"mongoose.Schema.Types."+description.toString());} // use the full name (assuming the mongoose object is indeed called 'mongoose' as returned by the require('mongoose') call)
 
 }

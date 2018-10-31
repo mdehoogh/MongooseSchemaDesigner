@@ -17,6 +17,7 @@ public interface ITextLinesProcessor extends ITextLinesContainer{
 			File file=getFile();
 			File parentFile=file.getParentFile();
 			if(parentFile!=null&&!parentFile.exists()&&!parentFile.mkdirs())throw new Exception("Failed to create directory '"+parentFile.getAbsolutePath()+"'.");
+			Utils.setInfo(this,"Saving text lines to '"+file.getAbsolutePath()+"'.");
 			PrintWriter pw=new PrintWriter(file);
 			for(String textLine:textLines)pw.println(textLine);
 			pw.close();

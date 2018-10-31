@@ -15,8 +15,11 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema>{
 
 	public boolean add(MongooseSchema mongooseSchema){
 		boolean result=super.add(mongooseSchema);
-		if(result)mongooseSchema.setCollection(this);
+		///////if(result)mongooseSchema.setCollection(this);
 		return result;
 	}
-
+	public boolean containsASchemaCalled(String schemaName){
+		for(MongooseSchema mongooseSchema:this)if(mongooseSchema.getName().equals(schemaName))return true;
+		return false;
+	}
 }

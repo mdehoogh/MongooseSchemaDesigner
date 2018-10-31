@@ -200,7 +200,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 	protected MongooseSchema(){}
 	public MongooseSchema(String name,MongooseSchema parentSchema,MongooseSchemaCollection collection){
 		this.name=name;
-		this.collection=collection;
+		if(collection!=null)if(collection.add(this))this.collection=collection;else Utils.setInfo(this,"Failed to register schema '"+name+"' with its collection.");
 		if(parentSchema!=null)
 			setParent(parentSchema);
 		else // load the contents of the schema using the associated text file lines producer (to start with)
@@ -641,12 +641,13 @@ module.exports=(app)=>{
 		modelTextLines.add(" */");
 		modelTextLines.add("");
 		modelTextLines.add("const mongoose=require('mongoose');");
-		modelTextLines.add("require('mongoose-long')(mongoose);"); // Long (=integer) support
+		modelTextLines.add("require('mongoose-long')(mongoose);"); // Long (=integer) support TODO can we make this optional
+		modelTextLines.add("var Int32=require('mongoose-int32');"); // Int32 support TODO can we make this optional (when it is actually used in the schema??)
 		modelTextLines.add("");
 		// write all subschema (and myself of course)
 		modelTextLines.addAll(getModelSchemaCreationLines());
 		modelTextLines.add("");
-		modelTextLines.add("module.exports=mongoose.model('"+name.toUpperCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement
+		modelTextLines.add("module.exports=mongoose.model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement
 		return(modelTextLines.isEmpty()?new String[]{}:(String[])modelTextLines.toArray(new String[modelTextLines.size()]));
 	}
 	private ITextLinesConsumer.TextFile modelTextFile;
@@ -722,8 +723,8 @@ module.exports=(app)=>{
 		if(fieldTypeName.equalsIgnoreCase("boolean")||fieldTypeName.equals("mongoose.Schema.Types.Boolean"))return MongooseFieldType.BOOLEAN;
 		if(fieldTypeName.equalsIgnoreCase("buffer")||fieldTypeName.equals("mongoose.Schema.Types.Buffer"))return MongooseFieldType.BUFFER;
 		if(fieldTypeName.equalsIgnoreCase("date")||fieldTypeName.equals("mongoose.Schema.Types.Date"))return MongooseFieldType.DATE;
-		if(fieldTypeName.equalsIgnoreCase("decimal128")||fieldTypeName.equals("mongoose.Schema.Types.Decimal128"))return MongooseFieldType.DECIMAL128;
-		if(fieldTypeName.equalsIgnoreCase("long")||fieldTypeName.equals("mongoose.Schema.Types.Long"))return MongooseFieldType.INTEGER;
+		if(fieldTypeName.equalsIgnoreCase("int32"))return MongooseFieldType.INT32; // MDH@31OCT2018: long name NOT possible...
+		if(fieldTypeName.equalsIgnoreCase("long")||fieldTypeName.equals("mongoose.Schema.Types.Long"))return MongooseFieldType.LONG;
 		if(fieldTypeName.equalsIgnoreCase("map")||fieldTypeName.equals("mongoose.Schema.Types.Map"))return MongooseFieldType.MAP;
 		if(fieldTypeName.equalsIgnoreCase("mixed")||fieldTypeName.equals("mongoose.Schema.Types.Mixed"))return MongooseFieldType.MIXED;
 		if(fieldTypeName.equalsIgnoreCase("number")||fieldTypeName.equals("mongoose.Schema.Types.Number"))return MongooseFieldType.NUMBER;
@@ -1131,7 +1132,7 @@ module.exports=(app)=>{
 		}catch(Exception ex){
 			saveException=ex;
 			// assume failure in which case we should assume undeterminable different!!
-			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving the Mongoose schema design '"+name+"'.");
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving Mongoose schema design '"+name+"'.");
 		}
 		if(saveException==null){
 			assumeSynced();
