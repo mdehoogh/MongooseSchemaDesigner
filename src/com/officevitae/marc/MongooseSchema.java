@@ -12,7 +12,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 
 	private static final int DEFAULT_TYPE_INDEX=7;
 	// MDH@25OCT2018: index, sparse and unique flags now removed (as they are not mutually exclusive)
-	private static final java.util.List<String> FIELD_FLAG_NAMES=Arrays.asList(new String[]{"required","lowercase","uppercase","trim"});
+	private static final java.util.List<String> FIELD_FLAG_NAMES=Arrays.asList(new String[]{"virtual","required","select","noselect","lowercase","uppercase","trim"});
 
 	// MDH@18OCT2018: keep the fields in a separate FieldCollection class
 	public class FieldCollection extends Vector<Field> implements ITextLinesContainer{
@@ -530,8 +530,7 @@ module.exports=(app)=>{
 	public boolean hasSubSchemas(){return(subSchemas!=null&&!subSchemas.isEmpty());} // convenient method to determine if it has any subschema's defined at all!!!
 	List<String> getModelSchemaCreationLines(){
 		Vector<String> modelSchemaCreationLines=new Vector<String>();
-		if(!subSchemas.isEmpty())
-		for(MongooseSchema subSchema:subSchemas)if(subSchema.hasSubSchemas())modelSchemaCreationLines.addAll(subSchema.getModelSchemaCreationLines());
+		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)if(subSchema.hasSubSchemas())modelSchemaCreationLines.addAll(subSchema.getModelSchemaCreationLines());
 		// now we can write the lines that define this subschema
 		String mongooseSchemaDeclaration="const "+getDescription().toString()+"=mongoose.Schema({";
 		String mongooseSchemaDeclarationPrefix=String.join("",Collections.nCopies(mongooseSchemaDeclaration.length()," "));
@@ -539,9 +538,21 @@ module.exports=(app)=>{
 		// write one field per line following
 		Field autoIncrementedField=null;
 		String fieldName;
+		boolean explicitIdField;
+		boolean hasVirtualFields=false;
 		for(Field field:fieldCollection){
 			// MDH@16OCT2018: do NOT publish disabled fields!
 			if(!field.isEnabled())continue;
+			if(field.isVirtual()){hasVirtualFields=true;continue;}
+			// MDH@01NOV2018: any field collection now contains a field called _id that could become the explicit declared _id field replacing the implicit _id field but only when it is different
+			//                it is considered to be different if the type is different (i.e. not ObjectId) or some property is set
+			//                for now we're only allowing a change when _id has another type
+			fieldName=field.getName()/*.toLowerCase()*/;
+			// if we have this enabled _id and its type is NOT ObjectId we allow it to replace the implicit (default) _id field...
+			// NOTE that we have forced _id to be both unique and required, so that it will always function as a unique _id
+			explicitIdField=(fieldName.equals("_id")); // mark this field as the explicit _id field if it's name is _id
+			if(explicitIdField)if(field.getType().equals(MongooseFieldType.OBJECTID))continue; // no need for an explicit _id definition as the implicit _id definition suffices!!!
+			// TODO prevent certain properties to be written when dealing with an explicit Id field like default, alias, ref
 			// the most simple form is just the name of the field, a colon and the type
 			// but for now let's not do that
 			// using the description to represent the type (so we'd get a$aSchema instead of a$a)
@@ -554,7 +565,7 @@ module.exports=(app)=>{
 				if(!field.refLiteral.isDisabled()&&field.refLiteral.isValid())fieldTextRepresentation.append(",ref:"+field.refLiteral.getValue());
 				// I suppose the index is also quite important
 				// MDH@25OCT2018: any valid index value is either text 'unique', 'index' or 'sparse' (currently)
-				if(!field.indexLiteral.isDisabled()&&field.indexLiteral.isValid())fieldTextRepresentation.append(","+field.indexLiteral.getText().toLowerCase()+":true");
+				if(!field.indexTypeLiteral.isDisabled()&&field.indexTypeLiteral.isValid())fieldTextRepresentation.append(","+field.indexTypeLiteral.getText().toLowerCase()+":true");
 				/* replacing
 				if(field.isUnique()) fieldTextRepresentation.append(",unique:true");
 				else if(field.isIndex()) fieldTextRepresentation.append(",index:true");
@@ -565,8 +576,7 @@ module.exports=(app)=>{
 				if(field.isSelect())fieldTextRepresentation.append(",select:true");
 				// general options
 				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled())fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
-				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())
-					fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
+				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
 				// type-specific options
 				IFieldType fieldType=field.getType();
 				if(fieldType instanceof MongooseFieldType) switch(((MongooseFieldType)fieldType).ordinal()){
@@ -590,8 +600,8 @@ module.exports=(app)=>{
 						if(!field.valuesLiteral.isDisabled()&&field.valuesLiteral.isValid()) fieldTextRepresentation.append("enum:['"+String.join("','",field.valuesLiteral.getValue())+"'']");
 						break;
 				}
-			}else autoIncrementedField=field;
-			fieldName=field.getName()/*.toLowerCase()*/;
+			}else
+				autoIncrementedField=field;
 			int firstColonPos=fieldTextRepresentation.indexOf(":");
 			String fieldTag=field.getTag(); // MDH@30OCT2018: like to see the tag written as comment as well!!
 			if(firstColonPos!=fieldTextRepresentation.lastIndexOf(":")) // not just the the type is present in the field text representation
@@ -603,8 +613,14 @@ module.exports=(app)=>{
 		StringBuilder optionsTextRepresentation=new StringBuilder(mongooseSchemaDeclarationPrefix.substring(1)+"}");
 		// add any options if we have them
 		// only subschema's can NOT have _id fields in which case the user disabled it (which is not possible for main schema's)
-		// TODO there might be other options that we'd like to be able to set
-		if(this.getParent()!=null)if(!this.containsFieldWithName("_id")||!this.getFieldCalled("_id").isEnabled())optionsTextRepresentation.append(",{_id:false}");
+		// TODO collect all the options from the schema
+		Vector<String> optionTexts=new Vector<String>();
+		if(this.getParent()!=null){
+			if(!this.containsFieldWithName("_id")||!this.getFieldCalled("_id").isEnabled())optionTexts.add("_id:false");
+		}else{
+
+		}
+		if(!optionTexts.isEmpty())optionsTextRepresentation.append(",{"+String.join(",",optionTexts)+"}");
 		optionsTextRepresentation.append(");");
 		////////optionsTextRepresentation.append(" /*MSD:O*/"); // close the schema assignment (on the same line, so we save a little space!!! let's call this the O(ptions) line
 		modelSchemaCreationLines.add(optionsTextRepresentation.toString());
@@ -620,6 +636,17 @@ module.exports=(app)=>{
 			///modelSchemaCreationLines.add(name+"=new "+Utils.capitalize(name)+"();"); // get an instance
 			///modelSchemaCreationLines.add(name+".save(function(err){"+name+".nextCount(function(err,count){"+name+".resetCount(function(err,nextCount){});});});");
 			///modelSchemaCreationLines.add("*/");
+		}
+		if(hasVirtualFields){
+			// adding a single line for each field that is a virtual!!!
+			StringBuilder virtualFieldText;
+			for(Field field:fieldCollection)if(field.isVirtual()){
+				virtualFieldText=new StringBuilder(name+"Schema.virtual('"+field.getName()+"')");
+				if(!field.getLiteral.isDisabled()&&field.getLiteral.isValid())virtualFieldText.append(".get("+field.getLiteral.getValue()+")");
+				if(!field.setLiteral.isDisabled()&&field.setLiteral.isValid())virtualFieldText.append(".set("+field.setLiteral.getValue()+")");
+				virtualFieldText.append(";");
+				modelSchemaCreationLines.add(virtualFieldText.toString());
+			}
 		}
 		return modelSchemaCreationLines;
 	}
@@ -648,7 +675,7 @@ module.exports=(app)=>{
 		// write all subschema (and myself of course)
 		modelTextLines.addAll(getModelSchemaCreationLines());
 		modelTextLines.add("");
-		modelTextLines.add("module.exports=mongoose.model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement
+		modelTextLines.add("module.exports=mongoose.model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement with first argument the singular version of the collection e.g. areamap (so the collection used will be areamaps)
 		return(modelTextLines.isEmpty()?new String[]{}:(String[])modelTextLines.toArray(new String[modelTextLines.size()]));
 	}
 	private ITextLinesConsumer.TextFile modelTextFile;
@@ -800,8 +827,8 @@ module.exports=(app)=>{
 							field.aliasLiteral.setDisabled(fieldPropertyFlag);
 							field.aliasLiteral.setText(fieldPropertyValue);
 						}else if(fieldPropertyName.equalsIgnoreCase("indextype")){ // MDH@25OCT2018
-							field.indexLiteral.setDisabled(fieldPropertyFlag);
-							field.indexLiteral.setText(fieldPropertyValue);
+							field.indexTypeLiteral.setDisabled(fieldPropertyFlag);
+							field.indexTypeLiteral.setText(fieldPropertyValue);
 						}else if(fieldPropertyName.equalsIgnoreCase("default")){
 							field.defaultLiteral.setDisabled(fieldPropertyFlag);
 							field.defaultLiteral.setText(fieldPropertyValue);
@@ -829,20 +856,38 @@ module.exports=(app)=>{
 						}else if(fieldPropertyName.equalsIgnoreCase("maxnumber")){
 							field.maxNumberLiteral.setDisabled(fieldPropertyFlag);
 							field.maxNumberLiteral.setText(fieldPropertyValue);
+						}else if(fieldPropertyName.equalsIgnoreCase("get")){
+							field.getLiteral.setDisabled(fieldPropertyFlag);
+							field.getLiteral.setText(fieldPropertyValue);
+						}else if(fieldPropertyName.equalsIgnoreCase("set")){
+							field.setLiteral.setDisabled(fieldPropertyFlag);
+							field.setLiteral.setText(fieldPropertyValue);
+						}else if(fieldPropertyName.equalsIgnoreCase("validate")){
+							field.validateLiteral.setDisabled(fieldPropertyFlag);
+							field.validateLiteral.setText(fieldPropertyValue);
 						}else
 							Utils.setInfo(this,"ERROR: Invalid field property name '"+fieldPropertyName+"' in field property assignment '"+contentPart+"'.");
 					}else /////if(contentPart.charAt(0)=='-'){ // something that is a flag
 						switch(FIELD_FLAG_NAMES.indexOf(contentPart)){
 							case 0:
-								field.setRequired(true);
+								field.setVirtual(true);
 								break;
 							case 1:
-								field.setLowercase(true);
+								field.setRequired(true);
 								break;
 							case 2:
-								field.setUppercase(true);
+								field.setSelect(true);
 								break;
 							case 3:
+								field.setSelect(false);
+								break;
+							case 4:
+								field.setLowercase(true);
+								break;
+							case 5:
+								field.setUppercase(true);
+								break;
+							case 6:
 								field.setTrim(true);
 								break;
 							default:

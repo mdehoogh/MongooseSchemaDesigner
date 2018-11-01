@@ -175,6 +175,27 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         });
         return newMongooseSchemaPanel;
     }
+    private MongooseSchemaCollection getSelectedMongooseSchemaCollection(){return(MongooseSchemaCollection)selectedMongooseSchemaNode.getUserObject();}
+    private JButton saveMongooseSchemaCollectionButton;
+    private JComponent getSaveMongooseSchemaCollectionView(){
+    	JPanel saveMongooseSchemaCollectionPanel=new JPanel(new BorderLayout());
+    	saveMongooseSchemaCollectionPanel.add(saveMongooseSchemaCollectionButton=new JButton("Save schema collection"),BorderLayout.WEST);
+    	saveMongooseSchemaCollectionButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				String[] unsavedMongooseSchemaNames=getSelectedMongooseSchemaCollection().unsaved();
+				if(unsavedMongooseSchemaNames.length>0)Utils.setInfo(this,"ERROR: Failed to save schema(s) "+String.join(", ",unsavedMongooseSchemaNames)+".");
+			}
+		});
+    	saveMongooseSchemaCollectionButton.setEnabled(false); // assuming there's no currently selected Mongoose Schema collection
+    	return saveMongooseSchemaCollectionPanel;
+	}
+    private JComponent getMongooseSchemaButtonView(){
+    	JPanel mongooseSchemaButtonPanel=new JPanel(new BorderLayout());
+    	mongooseSchemaButtonPanel.add(getNewMongooseSchemaView(),BorderLayout.NORTH);
+    	mongooseSchemaButtonPanel.add(getSaveMongooseSchemaCollectionView(),BorderLayout.SOUTH);
+    	return mongooseSchemaButtonPanel;
+	}
     /*
     private JList mongooseSchemasList;
     private MongooseSchema getMongooseSchemaWithName(String tableName){
@@ -279,8 +300,18 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		// when a node gets selected and thus a new mongoose schema possibly the entered new names need to be reevaluated and need to be ALL new
 		this.selectedMongooseSchemaNode=(mongooseSchemaNode!=null?mongooseSchemaNode:schemasTreeRootNode);
 		// if the selected mongoose schema node is NOT the root node, we select the associated mongoose schema
+		Object selectedUserObject=this.selectedMongooseSchemaNode.getUserObject();
+		if(selectedUserObject instanceof MongooseSchemaCollection){
+			saveMongooseSchemaCollectionButton.setEnabled(true);
+		}else{
+			saveMongooseSchemaCollectionButton.setEnabled(false);
+			if(selectedUserObject instanceof MongooseSchema)setSelectedMongooseSchema((MongooseSchema)selectedUserObject);
+		}
+		checkForNewSchemaNames();
+		/* replacing:
 		if(!schemasTreeRootNode.equals(this.selectedMongooseSchemaNode))setSelectedMongooseSchema(((MongooseSchema)(this.selectedMongooseSchemaNode.getUserObject())));
 		else checkForNewSchemaNames(); // IMPORTANT I have to do this because getSelectedMongooseSchema() will return null when this happens!!!
+		*/
 	}
     private JComponent getMongooseSchemaTreeView(){
         JPanel mongooseSchemaListPanel=SwingUtils.getTitledPanel(null);
@@ -303,7 +334,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
                 try{setSelectedMongooseSchemaNode((DefaultMutableTreeNode)mongooseSchemasTree.getLastSelectedPathComponent());}catch(Exception ex){}
             }
         });
-        mongooseSchemaListPanel.add(getNewMongooseSchemaView(),BorderLayout.SOUTH);
+        mongooseSchemaListPanel.add(getMongooseSchemaButtonView(),BorderLayout.SOUTH);
         return mongooseSchemaListPanel;
     }
     /* replacing:
@@ -372,6 +403,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 				}
 				if(canRead){
 					schemaName=schemaFile.getName().substring(0,schemaFile.getName().indexOf('.'));
+					Utils.setInfo(this,"Loading schema '"+schemaName+"' in collection '"+mongooseSchemaCollection.toString()+"'...");
 					newSchemaTreePath=getANewMongooseSchemaTreePath(schemaName,null,mongooseSchemaCollection);
 					if(newSchemaTreePath!=null)lastSchemaTreePath=newSchemaTreePath;
 				}

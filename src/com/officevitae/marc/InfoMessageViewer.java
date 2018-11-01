@@ -17,7 +17,7 @@ public class InfoMessageViewer extends JPanel implements Utils.InfoMessageListen
 	public InfoMessageViewer(){
 		super(new BorderLayout());
 		Utils.addInfoMessageListener(this); // listen in to any changes...
-		add(infoMessagesTextArea=new JTextArea());
+		add(new JScrollPane(infoMessagesTextArea=new JTextArea()));
 		////////infoMessagesTextArea.setEnabled(false);
 		JPanel buttonPanel=new JPanel();
 		buttonPanel.add(clearButton=new JButton("Clear"));

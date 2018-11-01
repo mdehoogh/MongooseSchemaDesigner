@@ -6,6 +6,28 @@ import java.awt.event.*;
 
 public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFieldLiteralChangeListener{
 
+	// MDH@01NOV2018: we're going to put a 1 second delay in there for actually registering the text
+	private Timer updateLiteralTimer=null;
+	private void runUpdateLiteralTimer(){
+		try{
+			if(updateLiteralTimer==null){
+				updateLiteralTimer=new Timer(750,new ActionListener(){
+					@Override
+					public void actionPerformed(ActionEvent e){
+						try{updateLiteral();}finally{updateLiteralTimer=null;}
+					}
+				});
+				updateLiteralTimer.setRepeats(false);
+				updateLiteralTimer.start();
+			}else
+				updateLiteralTimer.restart();
+		}finally{
+			// if we succeed in getting the timer to run, we should make the text turn blue and disable the check box while we're at it...
+			// NOTE updateLiteral() will call updateView() which will then take care of enabling the check box when appropriate, so I do not do that in updateLiteral!!!
+			if(updateLiteralTimer!=null&&updateLiteralTimer.isRunning()){checkBox.setEnabled(false);textField.setForeground(Color.BLUE);}
+		}
+	}
+
 	private ValidatedFieldLiteral<V> validatedLiteral=null;
 	private JCheckBox checkBox=null;
 
@@ -15,10 +37,13 @@ public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFie
 	private JComboBox comboBox=null;
 	private String[] options=null; // the texts to choose from
 
+	private void enableTextField(){if(super.isEnabled())textField.setEnabled(true);}
+	private void enableCheckBox(){if(super.isEnabled())checkBox.setEnabled(true);}
+	private void enableComboBox(){if(super.isEnabled())comboBox.setEnabled(true);}
 	private void updateView(){
 		if(validatedLiteral!=null){
-			if(textField!=null)textField.setEnabled(true);
-			if(comboBox!=null)comboBox.setEnabled(true);
+			if(textField!=null)enableTextField();
+			if(comboBox!=null)enableComboBox();
 			if(checkBox!=null){
 				boolean valid=validatedLiteral.isValid();
 				if(textField!=null)textField.setForeground(valid?Color.BLACK:Color.RED);
@@ -28,7 +53,7 @@ public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFie
 				boolean selected=(disabled?false:valid);
 				checkBox.setSelected(selected);
 				// turning off should always be possible but when not selected turning off is only possible if we have a valid text to return to!!
-				checkBox.setEnabled(selected?true:validatedLiteral.getValidText()!=null);
+				checkBox.setEnabled(isEnabled()&&(selected||validatedLiteral.getValidText()!=null));
 			}
 		}else{
 			if(textField!=null)textField.setEnabled(false);
@@ -39,7 +64,7 @@ public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFie
 
 	private void updateLiteral(){
 		if(validatedLiteral==null)return;
-		if(textField!=null)validatedLiteral.setText(textField.getText());
+		if(textField!=null){validatedLiteral.setText(textField.getText());textField.setForeground(Color.BLACK);} // MDH@01NOV2018: show the text in black (again), to indicate that the literal was updated with the new text
 		if(comboBox!=null)validatedLiteral.setText(comboBox.getSelectedItem().toString());
 		validatedLiteral.updateField(); // the representation of the associated field might have to be changed!!!
 		// shouldn't we enable the literal if it is currently valid?????
@@ -51,10 +76,17 @@ public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFie
 	}
 
 	public void setText(String text){
-		if(text==null) return; // ignore (that's when nothing is selected!!)
+		if(text==null)return; // ignore (that's when nothing is selected!!)
 		if(textField!=null)textField.setText(text);
 		if(comboBox!=null&&((DefaultComboBoxModel)comboBox.getModel()).getIndexOf(text)>=0)comboBox.setSelectedItem(text);
 		updateLiteral();
+	}
+
+	public void setEnabled(boolean enabled){
+		super.setEnabled(enabled);
+		checkBox.setEnabled(enabled);
+		if(comboBox!=null)comboBox.setEnabled(enabled);
+		if(textField!=null)textField.setEnabled(enabled);
 	}
 
 	private void createView(String checkBoxTitle){
@@ -90,7 +122,8 @@ public class ValidatedFieldLiteralView<V> extends JPanel implements ValidatedFie
 			textField.addKeyListener(new KeyAdapter(){
 				@Override
 				public void keyReleased(KeyEvent e){
-					updateLiteral();
+					// MDH@01NOV2018: delay registering the text change for 1 second after stopping with typing
+					runUpdateLiteralTimer(); // replacing: updateLiteral();
 				}
 			});
 			textField.setEnabled(false); // waiting for a validated literal!!

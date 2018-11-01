@@ -315,9 +315,12 @@ public class Field{
 		protected boolean isConsideredValid(){
 			boolean consideredValid=super.isConsideredValid();
 			// for now just allow anything that is considered valid JavaScript
-			if(consideredValid&&JavaScriptUtils.getNumberOfJavaScriptSourceTrees(super.getId(),super.getText())<=0)consideredValid=false;
+			// in order to allow return statements we have to enclose the lot in a function declaration which is exactly what getValue() does!!
+			if(consideredValid&&JavaScriptUtils.getNumberOfJavaScriptSourceTrees(super.getId(),getValue())<=0)consideredValid=false;
 			return consideredValid;
 		}
+		@Override
+		public String getValue(){return "function(v){"+super.getText()+"}";} // NOTE we actually do NOT need v for getters but it won't hurt????
 	}
 	public class RegExpValidatedFieldLiteral extends StringValidatedFieldLiteral{
 		protected boolean isConsideredValid(){
@@ -373,7 +376,8 @@ public class Field{
 
 	// MDH@25OCT2018: we can make an integer validated literal for storing the index type number where 0 represents no index type (and is therefore NOT valid)
 	//                changed to be a String literal
-	StringValidatedFieldLiteral indexLiteral=(StringValidatedFieldLiteral)(new StringValidatedFieldLiteral(Set.of(INDEX_TYPE_NAMES))).setField(this).setId("Index");
+	// MDH@01NOV2018: NOT allowing direct access to the index type!!! hmm, we do need it to pass to IndexTypeLiteralView so ok fix otherwise
+	StringValidatedFieldLiteral indexTypeLiteral=(StringValidatedFieldLiteral)(new StringValidatedFieldLiteral(Set.of(INDEX_TYPE_NAMES))).setField(this).setId("Index");
 
 	IntegerValidatedFieldLiteral startAtLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral()).setField(this).setId("Start at"); // it's most likely that the default startAt value will be 1 for auto-increment Number fields!!
 
@@ -393,6 +397,7 @@ public class Field{
 			validateLiteral=(FunctionBodyValidatedFieldLiteral)(new FunctionBodyValidatedFieldLiteral()).setField(this).setId("validate"),
 			getLiteral=(FunctionBodyValidatedFieldLiteral)(new FunctionBodyValidatedFieldLiteral()).setField(this).setId("get"),
 			setLiteral=(FunctionBodyValidatedFieldLiteral)(new FunctionBodyValidatedFieldLiteral()).setField(this).setId("set");
+
 	StringValidatedFieldLiteral aliasLiteral=(StringValidatedFieldLiteral)(new StringValidatedFieldLiteral()).setField(this).setId("alias");
 
 	// all setters mark the field as changed
@@ -466,39 +471,37 @@ public class Field{
 		}
 		return this;
 	}
+	
+	// MDH@01NOV2018: blockable properties
 	public void setRequired(boolean required){
+		if(requiredBlocked)return; // do NOT allow changing...
 		if(this.required==required)return;
 		this.required=required;
 		updateChanged();
 	}
+	public void setIndexType(String indexTypeText){
+		if(indexBlocked)return;
+		if(indexTypeText==null)return;
+		if(indexTypeLiteral.getText().equals(indexTypeText))return;
+		indexTypeLiteral.setText(indexTypeText);
+		updateChanged();
+	}
+	
+	/*
 	// MDH@25OCT2018: we can leave these flag methods in
 	public void setIndex(boolean index){
-		if(index)indexLiteral.setText(INDEX_TYPE_NAMES[1]);
-		/* replacing:
-		if(this.index==index)return;
-		this.index=index;
-		if(this.index){this.unique=false;this.sparse=false;}
-		*/
+		if(index)indexTypeLiteral.setText(INDEX_TYPE_NAMES[1]);
 		updateChanged();
 	}
 	public void setUnique(boolean unique){
-		if(unique)indexLiteral.setText(INDEX_TYPE_NAMES[2]);
-		/* replacing:
-		if(this.unique==unique)return;
-		this.unique=unique;
-		if(this.unique){this.sparse=false;this.index=false;}
-		*/
+		if(unique)indexTypeLiteral.setText(INDEX_TYPE_NAMES[2]);
 		updateChanged();
 	}
 	public void setSparse(boolean sparse){
-		if(sparse)indexLiteral.setText(INDEX_TYPE_NAMES[3]);
-		/* replacing:
-		if(this.sparse==sparse)return;
-		this.sparse=sparse;
-		if(this.sparse){this.unique=false;this.index=false;}
-		*/
+		if(sparse)indexTypeLiteral.setText(INDEX_TYPE_NAMES[3]);
 		updateChanged();
 	}
+	*/
 	public void setLowercase(boolean lowercase){
 		if(this.lowercase==lowercase)return;
 		this.lowercase=lowercase;
@@ -546,14 +549,27 @@ public class Field{
 	// this means that refText and defaultText will either be a non-empty String or null (at the start!!), a user is free to turn the refFlag/defaultFlag off of course
 	// we can basically still use the flags although probably it's more convenient to put the flags inside the different ValidatedFieldLiteral elements
 	// user should use the flags to turn on/off, if input invalid user can see the current value again by turning on the flag through the check box!!!
-	private boolean required=false,lowercase=false,uppercase=false,trim=false;
-	// MDH@24SEP2018: some other general options we might set
-	private boolean select=false;
+	private boolean required=false,select=true; // MDH@01NOV2018: select true by default...
 
+	// String type flags
+	private boolean lowercase=false,uppercase=false,trim=false;
+	
+	// MDH@01NOV2018: some additional flags that determine whether required or the index can change
+	private boolean requiredBlocked=false;
+	public boolean isRequiredBlocked(){return requiredBlocked;}
+	private boolean indexBlocked=false;
+	public boolean isIndexBlocked(){return indexBlocked;}
 	public Field(String name){
 		this.name=name;
-		///////indexLiteral.setText(INDEX_TYPE_NAMES[0]); // MDH@30OCT2018: we might need this...
+		// any _id is block required (if it was not a user could try to create a document without an _id in it)
+		if(this.name.equals("_id")){virtualBlocked=true;setRequired(true);requiredBlocked=true;indexTypeLiteral.setText("unique");indexBlocked=true;}
+		///////indexTypeLiteral.setText(INDEX_TYPE_NAMES[0]); // MDH@30OCT2018: we might need this...
 	}
+	// MDH@01NOV@2018: now also possible to define a field as virtual (which technically require at least a get function
+	private boolean virtual=false,virtualBlocked=false;
+	public boolean isVirtualBlocked(){return virtualBlocked;}
+	public boolean isVirtual(){return virtual;}
+	public void setVirtual(boolean virtual){if(virtualBlocked)return;if(this.virtual==virtual)return;this.virtual=virtual;updateChanged();}
 
 	public String getName(){return name;}
 	public IFieldType getType(){return type;}
@@ -657,9 +673,12 @@ public class Field{
 		*/
 		sbRepresentation.append(getTypeRepresentation(serialized?internal:true)); // MDH@24OCT2018: the type itself should know how to show itself
 
+		if(isVirtual())sbRepresentation.append("\tvirtual"); // MDH@01NOV2018: all other properties don't mean much if the thing is tagged as virtual though
+
 		// NOTE as you can see the alias text is written even if undefined BUT in that case isDisabled() should return false, not true
 		sbRepresentation.append(getLiteralRepresentation("alias",serialized,aliasLiteral));
 
+		// TODO put tag at the end?????
 		if(tag!=null&&!tag.trim().isEmpty())sbRepresentation.append("\t$"+tag); // MDH@30OCT2018
 
 		// when serializing always to store the actual text stored, otherwise only when we have a valid default!!
@@ -671,15 +690,15 @@ public class Field{
             else
                 sbRepresentation.append("\t-autoincremented");
             */
-		if(select)sbRepresentation.append("\tselect");
+		if(!select)sbRepresentation.append("\tnoselect"); // MDH@01NOV2018: as select is the default we only write noselect when select is false!!!
 
 		if(autoIncremented)sbRepresentation.append(getLiteralRepresentation("startAt",serialized,startAtLiteral));
 
 		// index flags
 		// of course, if the index literal is disabled, not to write the flag!!
 		// even better:
-		sbRepresentation.append(getLiteralRepresentation("indextype",serialized,indexLiteral));
-		// replacing: if(!indexLiteral.isDisabled()&&indexLiteral.isValid())sbRepresentation.append("\t-"+indexLiteral.getText()); // NOTE do NOT call getValue() because getValue() will enquote the text!!!
+		sbRepresentation.append(getLiteralRepresentation("indextype",serialized,indexTypeLiteral));
+		// replacing: if(!indexTypeLiteral.isDisabled()&&indexTypeLiteral.isValid())sbRepresentation.append("\t-"+indexTypeLiteral.getText()); // NOTE do NOT call getValue() because getValue() will enquote the text!!!
 		/* replacing:
 		if (isUnique())sbRepresentation.append("\t-unique");
 		if (isIndex())sbRepresentation.append("\t-index");
@@ -687,11 +706,16 @@ public class Field{
 		*/
 
 		// type-specific stuff
-		if(!name.equalsIgnoreCase("_id")){ // don't allow a ref on something called _id
+		if(!name.equals("_id")){ // don't allow a ref on something called _id
 			if(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)){ // referencing is allowed on these 4 different types (although OBJECTID is most common)
 				sbRepresentation.append(getLiteralRepresentation("ref",serialized,refLiteral));
 			}
 		}
+
+		// MDH@01NOV2018: don't wanna loose these!!!
+		sbRepresentation.append(getLiteralRepresentation("get",serialized,getLiteral));
+		sbRepresentation.append(getLiteralRepresentation("set",serialized,setLiteral));
+		sbRepresentation.append(getLiteralRepresentation("validate",serialized,validateLiteral));
 
 		// String
 		if(type.equals(MongooseFieldType.STRING)) {

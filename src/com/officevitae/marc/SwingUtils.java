@@ -17,7 +17,7 @@ public class SwingUtils{
 		if(showInfoFrame==null){
 			showInfoFrame=new JFrame();
 			showInfoFrame.getContentPane().setLayout(new BorderLayout());
-			showInfoFrame.getContentPane().add(new JScrollPane(infoMessageViewer=new InfoMessageViewer()));
+			showInfoFrame.getContentPane().add(infoMessageViewer=new InfoMessageViewer());
 			showInfoFrame.setSize(1024,768);
 			showInfoFrame.setLocationRelativeTo(null); // center
 			showInfoFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);

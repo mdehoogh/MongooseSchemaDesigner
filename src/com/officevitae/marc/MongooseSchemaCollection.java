@@ -22,4 +22,11 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema>{
 		for(MongooseSchema mongooseSchema:this)if(mongooseSchema.getName().equals(schemaName))return true;
 		return false;
 	}
+
+	public String[] unsaved(){
+		Vector<String> unsavedMongooseSchemaNames=new Vector<String>(this.size());
+		for(MongooseSchema mongooseSchema:this)if(!mongooseSchema.save())unsavedMongooseSchemaNames.add(mongooseSchema.getName());
+		return(unsavedMongooseSchemaNames.isEmpty()?new String[]{}:(String[])unsavedMongooseSchemaNames.toArray(new String[unsavedMongooseSchemaNames.size()]));
+	}
+
 }

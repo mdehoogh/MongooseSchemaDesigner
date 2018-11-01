@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="MongooseSchemaDesigner1.0">
+    <output-path>$PROJECT_DIR$/../ovnodejsbackenddevelopment</output-path>
+    <root id="archive" name="MongooseSchemaDesigner1.0.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/officevitaemongooseschemadesignermanifest.txt" output-file-name="MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>

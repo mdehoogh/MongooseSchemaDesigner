@@ -24,7 +24,6 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	private ValidatedFieldLiteralView<String[]> valuesLiteralView;
 	private ValidatedFieldLiteralView<String> defaultLiteralView,matchLiteralView,aliasLiteralView,getLiteralView,setLiteralView,validateLiteralView,refLiteralView,indexLiteralView;
 
-
 	// MDH@24OCT2018: replacing typeComboBox with a FieldTypeSelectorView which has full support for defining a type
 	private FieldTypeSelectorView fieldTypeSelectorView; // replacing: private JComboBox typeComboBox;
 	// whenever the selected field type changes, we determine which views to show
@@ -113,12 +112,15 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	}
 	private void showOptions(){
 		requiredCheckBox.setSelected(field.isRequired());
+		requiredCheckBox.setEnabled(!field.isRequiredBlocked()); // MDH@01NOV2018: required may be blocked (e.g. automatically with _id)
 		selectCheckBox.setSelected(field.isSelect());
 		defaultLiteralView.setValidatedFieldLiteral(field.defaultLiteral);
 		optionsView.setVisible(true);
 	}
 	private void showIndexOptions(){
-		indexLiteralView.setValidatedFieldLiteral(field.indexLiteral);
+		// MDH@01NOV2018: we have to prevent changing the current value if it is blocked
+		indexLiteralView.setEnabled(!field.isIndexBlocked());
+		indexLiteralView.setValidatedFieldLiteral(field.indexTypeLiteral);
 		indexLiteralView.setVisible(true);
 		/* replacing:
 		if(field.isIndex())indexRadioButton.setSelected(true);else
@@ -159,43 +161,52 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	private void showField(){
 		try{
 			showTag();
-			showAliasView(); // TODO can an auto-increment column have an alias????
+			virtualCheckBox.setEnabled(!field.isVirtualBlocked()); // virtual will be blocked on _id
+			if(field.isVirtual()){
+				aliasLiteralView.setVisible(false);
+				refView.setVisible(false);
+				indexLiteralView.setVisible(false);
+				optionsView.setVisible(false);
+				stringOptionsView.setVisible(false);
+				dateOptionsView.setVisible(false);
+				numberOptionsView.setVisible(false);
+				showFunctionOptions();
+			}else{ // a 'real' field
+				showAliasView(); // TODO can an auto-increment column have an alias????
+				boolean references=field.isReferencing();
+				boolean autoincremented=field.isAutoIncremented();
+				IFieldType type=field.getType();
+				// MDH@24OCT2018: we no longer have a subview to select the array element field type, that's all taken care of by FieldTypeSelectorView
+				/* replacing
+				if(type.equals(MongooseFieldType.ARRAY)){ // either a generic Array or type specific array!!
+					removeSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
+					addSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
+					IFieldType arrayElementType=field.getArrayElementType();
+					if(arrayElementType!=null)arrayElementTypeComboBoxModel.setSelectedItem(arrayElementType.getDescription()); // TODO may we assume to have the array element type defined???
+					arrayElementTypeView.setVisible(true);
+				}else
+					arrayElementTypeView.setVisible(false);
+				*/
+				// I suppose anything that is numeric can be auto-incremented!!
+				// can't tell exactly but Number fields seem to be the only auto-incremental fields (with the used library)
+				if(type.equals(MongooseFieldType.NUMBER))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
 
-			boolean references=field.isReferencing();
-			boolean autoincremented=field.isAutoIncremented();
+				if(!autoincremented&&!field.getName().equalsIgnoreCase("_id")&&(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)))
+					showRefView();
+				else if(refView!=null)refView.setVisible(false);
 
-			IFieldType type=field.getType();
-			// MDH@24OCT2018: we no longer have a subview to select the array element field type, that's all taken care of by FieldTypeSelectorView
-			/* replacing
-			if(type.equals(MongooseFieldType.ARRAY)){ // either a generic Array or type specific array!!
-				removeSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
-				addSubSchemaFieldTypes(arrayElementTypeComboBoxModel);
-				IFieldType arrayElementType=field.getArrayElementType();
-				if(arrayElementType!=null)arrayElementTypeComboBoxModel.setSelectedItem(arrayElementType.getDescription()); // TODO may we assume to have the array element type defined???
-				arrayElementTypeView.setVisible(true);
-			}else
-				arrayElementTypeView.setVisible(false);
-			*/
-			// I suppose anything that is numeric can be auto-incremented!!
-			// can't tell exactly but Number fields seem to be the only auto-incremental fields (with the used library)
-			if(type.equals(MongooseFieldType.NUMBER))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
+				if(!autoincremented)showIndexOptions();else indexLiteralView.setVisible(false); // TODO can a reference be used as index????
 
-			if(!autoincremented&&!field.getName().equalsIgnoreCase("_id")&&(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)))
-				showRefView();
-			else
-				if(refView!=null)refView.setVisible(false);
-
-			if(!autoincremented)showIndexOptions();else indexLiteralView.setVisible(false); // TODO can a reference be used as index????
-
-			// options only when NOT an auto-incremented thingie
-			if(!autoincremented)showOptions();else optionsView.setVisible(false);
-			if(!autoincremented)showFunctionOptions();else functionsView.setVisible(false);
-			// index stuff
-			// type specific stuff
-			if(!autoincremented&&type.equals(MongooseFieldType.STRING))showStringOptions();else stringOptionsView.setVisible(false);
-			if(type.equals(MongooseFieldType.DATE))showDateOptions();else dateOptionsView.setVisible(false);
-			if(!autoincremented&&type.equals(MongooseFieldType.NUMBER)&&!field.isAutoIncremented())showNumberOptions();else numberOptionsView.setVisible(false); // only show Number options on a regular (non-auto-incremented) Number field!!
-			// get a border showing the name of the field now!!
+				// options only when NOT an auto-incremented thingie
+				if(!autoincremented)showOptions();else optionsView.setVisible(false);
+				if(!autoincremented)showFunctionOptions();else functionsView.setVisible(false);
+				// index stuff
+				// type specific stuff
+				if(!autoincremented&&type.equals(MongooseFieldType.STRING))showStringOptions();else stringOptionsView.setVisible(false);
+				if(type.equals(MongooseFieldType.DATE))showDateOptions();else dateOptionsView.setVisible(false);
+				if(!autoincremented&&type.equals(MongooseFieldType.NUMBER)&&!field.isAutoIncremented())showNumberOptions();else numberOptionsView.setVisible(false); // only show Number options on a regular (non-auto-incremented) Number field!!
+				// get a border showing the name of the field now!!
+			}
 		}finally{
 			fieldNameLabel.setText("Field "+field.getName()); // replacing: fieldPanel.setBorder(new TitledBorder("Field "+field.name+" "));
 			((CardLayout)getLayout()).show(this,"Field");
@@ -514,6 +525,18 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		});
 		return tagPanel;
 	}
+	private JCheckBox virtualCheckBox;
+	private JComponent getVirtualView(){
+		JPanel virtualPanel=new JPanel(new BorderLayout());
+		virtualPanel.add(virtualCheckBox=new JCheckBox("Virtual"),BorderLayout.WEST);
+		virtualCheckBox.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e){
+				try{field.setVirtual(virtualCheckBox.isSelected());}finally{showField();}
+			}
+		});
+		return virtualPanel;
+	}
 	private JLabel fieldNameLabel;
 	public FieldView(){
 		super(new CardLayout());
@@ -524,6 +547,7 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 		Box fieldBox=Box.createVerticalBox();
 		fieldBox.add(SwingUtils.getLeftAlignedView(fieldNameLabel));
 		fieldBox.add(getTagView());
+		fieldBox.add(getVirtualView());
 		fieldBox.add(getTypeView());
 		// MDH@24OCT2018 removing: fieldBox.add(arrayElementTypeView=getArrayElementTypeView()); // MDH@16OCT2018: only to be shown when type Array is selected, so a user can select the array element type
 		fieldBox.add(startAtLiteralView=getStartAtView()); // right below the type where a person can define whether to be auto-incrementing...

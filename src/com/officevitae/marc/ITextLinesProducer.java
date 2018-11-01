@@ -58,6 +58,7 @@ public interface ITextLinesProducer{
 			}
 		}
 		public String[] getProducedTextLines(){return(linesToRead?super.getProducedTextLines():null);}
+		public String toString(){return(file.getName());}
 	}
 
 }
