@@ -8,7 +8,9 @@ import static com.officevitae.marc.Utils.*;
 
 public class Field{
 
-	public static final int ARRAY_FIELD=0,BOOLEAN_FIELD=1,BUFFER_FIELD=2,DATE_FIELD=3,DECIMAL128_FIELD=4,INTEGER_FIELD=5,MAP_FIELD=6,MIXED_FIELD=7,NUMBER_FIELD=8,OBJECTID_FIELD=9,STRING_FIELD=10;
+	public static final int
+			ARRAY_FIELD=0,BOOLEAN_FIELD=1,BUFFER_FIELD=2,DATE_FIELD=3,DECIMAL128_FIELD=4,INT32_FIELD=5,
+			LONG_FIELD=6,MAP_FIELD=7,MIXED_FIELD=8,NUMBER_FIELD=9,OBJECTID_FIELD=10,STRING_FIELD=11;
 
 	// the index types available (in the given order) are for the user to select from
 	public static final String[] INDEX_TYPE_NAMES=new String[]{"","unique","index","sparse"}; // NOTE the names are fixed
@@ -132,12 +134,23 @@ public class Field{
 	// given that minLength and maxLength depend on one another we can make IntegerValidatedFieldLiteral depend on DependentValidatedFieldLiteral<Long> immediately
 	public class IntegerValidatedFieldLiteral extends DependentValidatedFieldLiteral<Long>{
 		private IntegerValidatedFieldLiteral minIntegerValidatedFieldLiteral=null,maxIntegerValidatedFieldLiteral=null;
+		private Long fixedMinimum=null,fixedMaximum=null;
+		public IntegerValidatedFieldLiteral(){}
+		public IntegerValidatedFieldLiteral(Long fixedMinimum,Long fixedMaximum){
+			this.fixedMinimum=fixedMinimum;
+			this.fixedMaximum=fixedMaximum;
+		}
 		protected boolean isConsideredValid(){
 			boolean consideredValid=super.isConsideredValid();
 			if(consideredValid) {
 				System.out.println("\nChecking the validity of integer field literal "+super.getId()+".");
 				try {
 					long l=Long.parseLong(super.getText());
+					// check against the fixed minimum and/or maximum (if any)
+					if(fixedMinimum!=null&&l<fixedMinimum.longValue())consideredValid=false;
+					else
+					if(fixedMaximum!=null&&l>fixedMaximum.longValue())consideredValid=false;
+					else
 					if(minIntegerValidatedFieldLiteral!=null&&!minIntegerValidatedFieldLiteral.isDisabled()&&minIntegerValidatedFieldLiteral.isValid()&&l<minIntegerValidatedFieldLiteral.getValue())consideredValid=false;
 					else
 					if(maxIntegerValidatedFieldLiteral!=null&&!maxIntegerValidatedFieldLiteral.isDisabled()&&maxIntegerValidatedFieldLiteral.isValid()&&l>maxIntegerValidatedFieldLiteral.getValue())consideredValid=false;
@@ -330,7 +343,7 @@ public class Field{
 				try {
 					java.util.regex.Pattern.compile(super.getText());
 				} catch (java.util.regex.PatternSyntaxException e) {
-					consideredValid = false;
+					consideredValid=false;
 				}
 			}
 			return consideredValid;
@@ -370,8 +383,9 @@ public class Field{
 	ValidatedFieldLiteral refLiteral=(ValidatedFieldLiteral)(new StringValidatedFieldLiteral()).setField(this).setId("Ref");
 	ValidatedFieldLiteral defaultLiteral=(ValidatedFieldLiteral)(new MixedValidatedFieldLiteral()).setField(this).setId("Default");
 
+	// MDH@02NOV2018: even though the minLengthLiteral is free from being compared with maxLengthLiteral now, it still needs to be positive!!
 	IntegerValidatedFieldLiteral
-			minLengthLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral()).setField(this).setId("Minimum length"),
+			minLengthLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral(1L,null)).setField(this).setId("Minimum length"),
 			maxLengthLiteral=(IntegerValidatedFieldLiteral)(new IntegerValidatedFieldLiteral()).setField(this).setId("Maximum length");
 
 	// MDH@25OCT2018: we can make an integer validated literal for storing the index type number where 0 represents no index type (and is therefore NOT valid)
@@ -422,13 +436,15 @@ public class Field{
 					defaultLiteral=new DateValidatedFieldLiteral();
 					((DateValidatedFieldLiteral) defaultLiteral).setMaxDateValidatedFieldLiteral(maxDateLiteral);
 					((DateValidatedFieldLiteral) defaultLiteral).setMinDateValidatedFieldLiteral(minDateLiteral);
-					minDateLiteral.setMaxDateValidatedFieldLiteral(maxDateLiteral);
+					// MDH@02NOV2018: we're going to let the minimum date be free to choose, and the maximum should exceed the minimum of course
+					//////////minDateLiteral.setMaxDateValidatedFieldLiteral(maxDateLiteral);
 					maxDateLiteral.setMinDateValidatedFieldLiteral(minDateLiteral);
 					break;
 				case DECIMAL128_FIELD:
 					defaultLiteral=new Decimal128ValidatedFieldLiteral();
 					break;
-				case INTEGER_FIELD:
+				case INT32_FIELD:
+				case LONG_FIELD:
 					defaultLiteral=new IntegerValidatedFieldLiteral();
 					break;
 				case MAP_FIELD:
@@ -441,7 +457,9 @@ public class Field{
 					defaultLiteral=new NumberValidatedFieldLiteral();
 					((NumberValidatedFieldLiteral) defaultLiteral).setMaxNumberValidatedFieldLiteral(maxNumberLiteral);
 					((NumberValidatedFieldLiteral) defaultLiteral).setMinNumberValidatedFieldLiteral(minNumberLiteral);
-					minNumberLiteral.setMaxNumberValidatedFieldLiteral(maxNumberLiteral);
+					// MDH@02NOV2018: making a cyclic check is guaranteed to cause a stack overflow
+					//                so I'm gonna let the minimum to be free, and the maximum not
+					////////minNumberLiteral.setMaxNumberValidatedFieldLiteral(maxNumberLiteral);
 					maxNumberLiteral.setMinNumberValidatedFieldLiteral(minNumberLiteral);
 					break;
 				case OBJECTID_FIELD:
@@ -453,7 +471,8 @@ public class Field{
 					((StringValidatedFieldLiteral) defaultLiteral).setMinLengthValidatedFieldLiteral(minLengthLiteral);
 					((StringValidatedFieldLiteral) defaultLiteral).setValuesValidatedFieldLiteral(valuesLiteral);
 					((StringValidatedFieldLiteral)defaultLiteral).setRegExpValidatedFieldLiteral(matchLiteral);
-					minLengthLiteral.setMaxIntegerValidatedFieldLiteral(maxLengthLiteral);
+					// MDH@02NOV2018: same here, minLength is free (well it must be positive mind!!)
+					///////minLengthLiteral.setMaxIntegerValidatedFieldLiteral(maxLengthLiteral);
 					maxLengthLiteral.setMinIntegerValidatedFieldLiteral(minLengthLiteral);
 					valuesLiteral.setMinLengthValidatedFieldLiteral(minLengthLiteral);
 					valuesLiteral.setMaxLengthValidatedFieldLiteral(maxLengthLiteral);

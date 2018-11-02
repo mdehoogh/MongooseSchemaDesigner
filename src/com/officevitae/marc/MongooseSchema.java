@@ -617,7 +617,8 @@ module.exports=(app)=>{
 				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
 				// type-specific options
 				IFieldType fieldType=field.getType();
-				if(fieldType instanceof MongooseFieldType) switch(((MongooseFieldType)fieldType).ordinal()){
+				if(fieldType instanceof MongooseFieldType)
+					switch(((MongooseFieldType)fieldType).ordinal()){
 					case Field.DATE_FIELD:
 						if(!field.minDateLiteral.isDisabled()&&field.minDateLiteral.isValid())fieldTextRepresentation.append(",min:"+field.minDateLiteral.getValue());
 						if(!field.maxDateLiteral.isDisabled()&&field.maxDateLiteral.isValid())fieldTextRepresentation.append(",max:"+field.maxDateLiteral.getValue());
@@ -631,15 +632,18 @@ module.exports=(app)=>{
 						else if(field.isUppercase())fieldTextRepresentation.append(",uppercase:true");
 						if(field.isTrim())fieldTextRepresentation.append(",trim:true");
 						if(!field.minLengthLiteral.isDisabled()&&field.minLengthLiteral.isValid())
-							fieldTextRepresentation.append("minlength:"+field.minLengthLiteral.getValue());
+							fieldTextRepresentation.append(",minlength:"+field.minLengthLiteral.getValue());
 						if(!field.maxLengthLiteral.isDisabled()&&field.maxLengthLiteral.isValid())
-							fieldTextRepresentation.append("maxlength:"+field.minLengthLiteral.getValue());
+							fieldTextRepresentation.append(",maxlength:"+field.minLengthLiteral.getValue());
 						if(!field.matchLiteral.isDisabled()&&field.matchLiteral.isValid()) fieldTextRepresentation.append(",match:new RegExp("+field.matchLiteral.getValue()+")"); // assuming the user did NOT enclose the regular expression between / and /
 						if(!field.valuesLiteral.isDisabled()&&field.valuesLiteral.isValid()) fieldTextRepresentation.append("enum:['"+String.join("','",field.valuesLiteral.getValue())+"'']");
 						break;
 				}
-			}else
+				Utils.setInfo(this,"Text representation of field '"+fieldName+": '"+fieldTextRepresentation+"'.");
+			}else{
 				autoIncrementedField=field;
+				Utils.setInfo(this,"Field '"+fieldName+"' is the auto-increment field!");
+			}
 			int firstColonPos=fieldTextRepresentation.indexOf(":");
 			String fieldTag=field.getTag(); // MDH@30OCT2018: like to see the tag written as comment as well!!
 			if(firstColonPos!=fieldTextRepresentation.lastIndexOf(":")) // not just the the type is present in the field text representation
