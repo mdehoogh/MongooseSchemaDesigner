@@ -344,6 +344,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		//////schemaTagTextArea.setBorder(new LineBorder(Color.LIGHT_GRAY));
 		return schemaTagPanel;
 	}
+	private JButton showInExternalEditorButton;
 	private JComponent getSchemaHeaderView(){
 		JPanel schemaHeaderPanel=new JPanel(new GridLayout(2,1)); // two rows
 		/* replacing:
@@ -364,7 +365,17 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		schemaHeaderPanel.add(schemaNamePanel,BorderLayout.NORTH);
 		*/
 		mongooseSchemaEntryLabel.setFont(mongooseSchemaEntryLabel.getFont().deriveFont(Font.BOLD));
-		schemaHeaderPanel.add(SwingUtils.getLeftAlignedView(mongooseSchemaEntryLabel));
+		JPanel mongooseSchemaEntryPanel=new JPanel(new BorderLayout());
+		mongooseSchemaEntryPanel.add(mongooseSchemaEntryLabel,BorderLayout.WEST);
+		mongooseSchemaEntryPanel.add(showInExternalEditorButton=new JButton("Show in external editor"),BorderLayout.EAST);
+		showInExternalEditorButton.setEnabled(false);
+		showInExternalEditorButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				mongooseSchema.showInExternalEditor();
+			}
+		});
+		schemaHeaderPanel.add(mongooseSchemaEntryPanel);
 		schemaHeaderPanel.add(getSchemaTagView());
 		////////schemaHeaderPanel.add(getSubSchemaSelectorView());
 		return schemaHeaderPanel;
@@ -567,6 +578,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			}
 			this.mongooseSchema=mongooseSchema;
 			if(this.mongooseSchema!=null){
+				showInExternalEditorButton.setEnabled(this.mongooseSchema.isAssociatedFileReadable());
 				boolean showOutputTab=(this.mongooseSchema.getParent()==null);
 				saveView.setVisible(showOutputTab);
 				if(showOutputTab)if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Output",outputView);else;
@@ -593,6 +605,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		}
 	}
 	public MongooseSchema getMongooseSchema(){return mongooseSchema;} // exposes the associated mongoose schema!!!
+	@Override
 	public String toString(){return "Office Vitae Mongoose Schema Editor";}
 	public MongooseSchemaDesignEditorView(){
 		super(new CardLayout());
@@ -600,5 +613,4 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		add(new JLabel("The selected schema will show here!"),"NoSchema");
 		add(getSchemaView(),"Schema");
 	}
-
 }

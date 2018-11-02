@@ -8,7 +8,7 @@ import java.awt.event.*;
 import java.util.Date;
 import java.util.List;
 
-public class FieldView extends JPanel implements MongooseSchema.SubSchemaListener,FieldTypeSelectorView.ChangeListener{
+public class FieldView extends JPanel implements FieldTypeSelectorView.ChangeListener{
 
 	private static final void setInfo(String info){
 		System.out.println("Field view info"+info);
@@ -212,22 +212,16 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 			((CardLayout)getLayout()).show(this,"Field");
 		}
 	}
+	/*
 	// MongooseSchema.SubSchemaListener implementation
 	public void subSchemaAdded(MongooseSchema subSchema){
 		// MDH@24OCT2018: typeComboBox replaced by an instance of FieldTypeSelectorView
 		fieldTypeSelectorView.addAdditionalFieldType(subSchema);
-		/* replacing:
-		typeComboBoxModel.addElement(subSchema.getDescription());
-		if(arrayElementTypeComboBoxModel!=null)arrayElementTypeComboBoxModel.addElement(subSchema.getDescription());
-		*/
 	}
 	public void subSchemaRemoved(MongooseSchema subSchema){
 		fieldTypeSelectorView.removeAdditionalFieldType(subSchema);
-		/* replacing:
-		typeComboBoxModel.removeElement(subSchema.getDescription());
-		if(arrayElementTypeComboBoxModel!=null)arrayElementTypeComboBoxModel.removeElement(subSchema.getDescription());
-		*/
 	}
+	*/
 	/* replacing:
 	private void removeSubSchemaFieldTypes(DefaultComboBoxModel comboBoxModel){
 		int fieldTypeIndex=comboBoxModel.getSize();
@@ -240,18 +234,36 @@ public class FieldView extends JPanel implements MongooseSchema.SubSchemaListene
 	}
 	*/
 	// end MongooseSchema.SubSchemaListener implementation
+
+	// MDH@02NOV2018: with
+	private MongooseSchema schema=null;
+	private void setSchema(MongooseSchema schema){
+		if(schema==null&&this.schema==null)return; // both null, no change
+		if(schema==null||!schema.equals(this.schema)){
+			if(this.schema!=null){
+				this.schema.setListener(null);
+				fieldTypeSelectorView.setAdditionalFieldTypes(null);
+			}
+			this.schema=schema;
+			if(this.schema!=null){
+				this.schema.setListener(fieldTypeSelectorView);
+				fieldTypeSelectorView.setAdditionalFieldTypes(this.schema.getFieldTypes());
+			}
+		}
+	}
 	public void setField(Object field){
 		// MDH@24OCT2018 removing: removeSubSchemaFieldTypes(typeComboBoxModel);
 		try{
 			fieldTagTextField.setText("");
-			this.field.getCollection().getSchema().removeSubSchemaListener(this);
+			//////////this.field.getCollection().getSchema().removeSubSchemaListener(this);
 		}catch(Exception ex){}
 		this.field=(field!=null&&field instanceof Field?(Field)field:null);
+		setSchema(this.field!=null?this.field.getCollection().getSchema():null);
 		if(this.field!=null){
 			try{
 				showField();
 				// MDH@24OCT2018 removing: addSubSchemaFieldTypes(typeComboBoxModel);
-				this.field.getCollection().getSchema().addSubSchemaListener(this);
+				//////////this.field.getCollection().getSchema().addSubSchemaListener(this);
 			}catch(Exception ex){
 				System.out.println("ERROR: '"+ex.getLocalizedMessage()+"' in setting the field of the field viewer.");
 			}finally{

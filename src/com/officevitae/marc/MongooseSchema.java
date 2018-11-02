@@ -2,13 +2,10 @@ package com.officevitae.marc;
 
 import javax.swing.*;
 import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 
 // MDH@16OCT2018: any Mongoose Schema can also be used as field type (i.e. when it is a subschema!!!)
-public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLinesProducer{
+public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLinesProducer,IMutableMongooseFieldTypeCollection{
 
 	private static final int DEFAULT_TYPE_INDEX=7;
 	// MDH@25OCT2018: index, sparse and unique flags now removed (as they are not mutually exclusive)
@@ -20,13 +17,34 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 			for(Field field:this)if(field.getName().equalsIgnoreCase(fieldName))return true;
 			return false;
 		}
+		public FieldCollection(){
+			// ascertain to have at least the _id field, and ascertain to call the constructor AFTER calling setParent!!!
+			if(!super.add(new Field("_id").setType(MongooseFieldType.OBJECTID).setDisabable(parentSchema!=null)))
+				Utils.setInfo(this,"ERROR: Failed to add automatic _id field to schema '"+getRepresentation(false)+"'.");
+		}
 		public MongooseSchema getSchema(){return MongooseSchema.this;}
 		@Override
 		public boolean add(Field field){
 			// we don't want null fields or fields with the same name as one of mine
-			if(field==null||this.containsFieldWithName(field.getName()))return false;
-			if(!super.add(field))return false;
-			field.setCollection(this);
+			if(field==null)return false;
+			String fieldName=field.getName();
+			if(fieldName==null||fieldName.isEmpty()){Utils.setInfo(this,"Failed to add a field that has no name to the field collection.");return false;}
+			// find out if we have one with the same name
+			int identicalFieldIndex=super.size();while(--identicalFieldIndex>=0&&!super.get(identicalFieldIndex).getName().equals(fieldName));
+			if(identicalFieldIndex<0){
+				if(!super.add(field)){Utils.setInfo(this,"Failed to add field '"+field.getName()+"' to the field collection.");return false;}
+			}else{
+				super.set(identicalFieldIndex,field); // TODO shouldn't be a problem now should it???? NO can only go wrong if the index is out of range!!
+				Utils.setInfo(this,"WARNING: Field with name '"+fieldName+"' replaced with a newer version.");
+			}
+			// I guess that we need to ascertain that any _id field added is only disablable if it is a subschema!!!!
+			if("_id".equals(fieldName))field.setDisabable(parentSchema!=null);
+			// replacing: if(this.containsFieldWithName(field.getName())){Utils.setInfo(this,"Field '"+field.getName()+"' already present!");return false;}
+			try{
+				field.setCollection(this);
+			}catch(Exception ex){
+				Utils.consoleprintln("ERROR: '"+ex.getLocalizedMessage()+"' registering the collection with a field.");
+			}
 			return true; // force registering the schema that contains the field!!!
 		}
 		public void setTextLines(String[] textLines){
@@ -41,7 +59,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 		public String[] getProducedTextLines(){return textLines;}
 		public boolean doneEditing(){return true;}
 	}
-	public FieldCollection fieldCollection=new FieldCollection();
+	public FieldCollection fieldCollection=null;
 	public FieldCollection getFieldCollection(){return fieldCollection;}
 
 	/* no need for the ID anymore
@@ -62,6 +80,11 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 			public IFieldType getFieldType(){return MongooseSchema.this;}
 			public String toString(){
 				return getRepresentation(false)+"Schema";
+			}
+			// TODO do we need the following????
+			public boolean equals(Object o){
+				try{return ((IFieldType.Description)o).toString().equals(toString());}catch(Exception ex){}
+				return false;
 			}
 		};
 	}
@@ -96,6 +119,15 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 		void syncChanged(MongooseSchema schema);
 	}
 
+	// MDH@02NOV2018: because subschema's are field types we expose them
+	// IMutableFieldTypeCollection implementation
+	private IMutableMongooseFieldTypeCollection.Listener fieldTypeCollectionListener;
+	public Set<IFieldType> getFieldTypes(){return Set.of((subSchemas.isEmpty()?new IFieldType[]{}:(IFieldType[])subSchemas.toArray(new IFieldType[subSchemas.size()])));}
+	public void setListener(IMutableMongooseFieldTypeCollection.Listener fieldTypeCollectionListener){
+		this.fieldTypeCollectionListener=fieldTypeCollectionListener;
+	}
+	// end IMutableFieldTypeCollection implementation
+
 	// subschema support
 	public interface SubSchemaListener{
 		void subSchemaAdded(MongooseSchema subSchema);
@@ -124,6 +156,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 		if(subSchemas.contains(subSchema))return true;
 		if(!subSchemas.add(subSchema))return false;
 		for(SubSchemaListener subSchemaListener:subSchemaListeners)try{subSchemaListener.subSchemaAdded(subSchema);}catch(Exception ex){}
+		if(fieldTypeCollectionListener!=null)
+			try{fieldTypeCollectionListener.fieldTypeAdded(this,subSchema);}catch(Exception ex){}
 		return true;
 	}
 	// MDH@24OCT2018: convenience method to be able to add a subschema if it's not there already, or otherwise create a new one and add it
@@ -137,6 +171,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 		if(!subSchemas.contains(subSchema))return true;
 		if(!subSchemas.remove(subSchema))return false;
 		for(SubSchemaListener subSchemaListener:subSchemaListeners)try{subSchemaListener.subSchemaRemoved(subSchema);}catch(Exception ex){}
+		if(fieldTypeCollectionListener!=null)try{fieldTypeCollectionListener.fieldTypeRemoved(this,subSchema);}catch(Exception ex){}
 		return true;
 	}
 	public List<MongooseSchema> getSubSchemas(){return Collections.unmodifiableList(subSchemas);} // iterable, but not modifyable!!!
@@ -201,13 +236,14 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 	public MongooseSchema(String name,MongooseSchema parentSchema,MongooseSchemaCollection collection){
 		this.name=name;
 		if(collection!=null)if(collection.add(this))this.collection=collection;else Utils.setInfo(this,"Failed to register schema '"+name+"' with its collection.");
-		if(parentSchema!=null)
-			setParent(parentSchema);
-		else // load the contents of the schema using the associated text file lines producer (to start with)
-			load();
+		if(parentSchema!=null)setParent(parentSchema);
+		fieldCollection=new FieldCollection(); // constructor looks at parentSchema to determine what type of _id to add!!! BUT we need it BEFORE calling load()!!!
+		if(parentSchema==null)load(); // load the contents of the schema using the associated text file lines producer (to start with)
+		/* MDH@02NOV2018: this would NOT be the right place to add the _id field, because parseTextLines() might get called AFTERWARDS, moved over to the constructor of FieldCollection, plus allowing replacement
 		// MDH@15OCT2018: the automatic _id field can only be disabled on a parentless schema
 		if(!fieldCollection.containsFieldWithName("_id")&&!fieldCollection.add(new Field("_id").setType(MongooseFieldType.OBJECTID).setDisabable(this.parentSchema!=null)))
 			Utils.setInfo(this,"ERROR: Failed to add automatic _id field to schema '"+getRepresentation(false)+"'.");
+		*/
 	}
 	public MongooseSchema(String name,MongooseSchemaCollection collection){this(name,null,collection);} // a main schema (not a subschema!!)
 
@@ -415,7 +451,7 @@ module.exports=(app)=>{
 		if(showSynced&&!isSynced())representation+="*"; // MDH@19OCT2018: much easier than doing it all ourselves!!!
 		// if any parent, prepend the representation of the parent (without sync info!!)
 		// MDH@16OCT2018: switched to using a $ between the different parts because that is a character we can use in JavaScript names (and a period we can't!!)
-		if(parentSchema!=null)representation=parentSchema.getRepresentation(false)+"$"+representation;
+		if(parentSchema!=null)representation=parentSchema.getRepresentation(false)+"_"+representation; // changing $ to _ as that looks nicer
 		return representation;
 	}
 	public String toString(){
@@ -529,8 +565,10 @@ module.exports=(app)=>{
 	//                the problem is that additional code can be placed between the schema definitions, so I guess we can put the schema names in the annotation: /*MSD:<schemaname>*/
 	public boolean hasSubSchemas(){return(subSchemas!=null&&!subSchemas.isEmpty());} // convenient method to determine if it has any subschema's defined at all!!!
 	List<String> getModelSchemaCreationLines(){
+		Utils.setInfo(this,"Constructing the schema creation and model text of schema '"+getName()+"'.");
 		Vector<String> modelSchemaCreationLines=new Vector<String>();
-		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)if(subSchema.hasSubSchemas())modelSchemaCreationLines.addAll(subSchema.getModelSchemaCreationLines());
+		Utils.setInfo(this,"\tNumber of subschemas: "+subSchemas.size()+".");
+		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)modelSchemaCreationLines.addAll(subSchema.getModelSchemaCreationLines());
 		// now we can write the lines that define this subschema
 		String mongooseSchemaDeclaration="const "+getDescription().toString()+"=mongoose.Schema({";
 		String mongooseSchemaDeclarationPrefix=String.join("",Collections.nCopies(mongooseSchemaDeclaration.length()," "));
@@ -573,7 +611,7 @@ module.exports=(app)=>{
 				*/
 				// general option flags
 				if(field.isRequired())fieldTextRepresentation.append(",required:true");
-				if(field.isSelect())fieldTextRepresentation.append(",select:true");
+				if(!field.isSelect())fieldTextRepresentation.append(",select:false"); // select:true is the default!!!
 				// general options
 				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled())fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
 				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
@@ -648,6 +686,7 @@ module.exports=(app)=>{
 				modelSchemaCreationLines.add(virtualFieldText.toString());
 			}
 		}
+		Utils.setInfo(this,"\tNumber of model lines: "+modelSchemaCreationLines.size()+".");
 		return modelSchemaCreationLines;
 	}
 	// keeping the model in a text file now the question when to actually read and write it
@@ -675,6 +714,7 @@ module.exports=(app)=>{
 		// write all subschema (and myself of course)
 		modelTextLines.addAll(getModelSchemaCreationLines());
 		modelTextLines.add("");
+		// the first argument is the singular form of the document collection (table), typically what is returned (the model) is used as constructor therefore usually assigned to something that starts with a capital (e.g. Areamap,User,etc.)
 		modelTextLines.add("module.exports=mongoose.model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement with first argument the singular version of the collection e.g. areamap (so the collection used will be areamaps)
 		return(modelTextLines.isEmpty()?new String[]{}:(String[])modelTextLines.toArray(new String[modelTextLines.size()]));
 	}
@@ -779,7 +819,13 @@ module.exports=(app)=>{
 			return mapFieldType;
 		}
 		// should be a subschema!!!
-		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)if(subSchema.getDescription().equals(fieldTypeName))return subSchema;
+		if(!subSchemas.isEmpty()){
+			for(MongooseSchema subSchema:subSchemas){
+				String subSchemaDescriptionName=subSchema.getDescription().toString();
+				if(subSchemaDescriptionName.equals(fieldTypeName))return subSchema;
+			}
+		}
+		Utils.setInfo(this,"WARNING: Type '"+fieldTypeName+"' not found!");
 		return null;
 	}
 
@@ -952,7 +998,9 @@ module.exports=(app)=>{
 		for(MongooseSchema subSchema:subSchemas){
 			subSchemaName=subSchema.getName();
 			if(!allSubSchemaTextLines.add(subSchemaName))throw new Exception("Failed to add the name of subschema '"+subSchema.getName()+"'.");
+			subSchema.produceTextLines(); // MDH@02NOV2018: this might do the trick (see comment below)
 			subSchemaTextLines=subSchema.getProducedTextLines();
+			if(subSchemaTextLines==null)continue; // MDH@02NOV2018: can we prevent this from happening????
 			// we have to indent all the returned text lines
 			for(String subSchemaTextLine:subSchemaTextLines)
 				if(!allSubSchemaTextLines.add("\t"+subSchemaTextLine))
@@ -1010,6 +1058,7 @@ module.exports=(app)=>{
 				if(line.charAt(0)!='-'&&line.charAt(0)!='+'){ // a subschema (name) line
 					subSchemaName=line;
 					Utils.consoleprintln("Subschema of schema '"+getRepresentation(false)+"': '"+subSchemaName+"'.");
+
 					subSchema=new MongooseSchema(subSchemaName,this,null); // create the subschema with the private name
 					if(!lastSubSchemasTextLines.add(line))Utils.consoleprintln("ERROR: Failed to register subschema name definition line '"+line+"'.");
 					// get all following lines that are indented, let's allow indenting with any character regulated by the first character on the next line
@@ -1039,9 +1088,12 @@ module.exports=(app)=>{
 						}
 					}
 					/////// already done by the constructor??? if(!subSchemas.add(subSchema))throw new Exception("Failed to register subschema '"+subSchemaName+"' with schema '"+getRepresentation(false)+"'.");
-				}else // a field definition line
-					if(!fieldCollection.add(getFieldFromContents(line))||!lastFieldsTextLines.add(line))
-						throw new Exception("Failed to store the field definition of schema '"+name+"' from text '"+line+"'.");
+				}else{ // a field definition line
+					if(!lastFieldsTextLines.add(line))throw new Exception("Failed to remember the field defined in line '"+line+"'.");
+					Field field=getFieldFromContents(line);
+					if(field==null)throw new Exception("Failed to initialize a field from text '"+line+"'.");
+					if(!fieldCollection.add(field))throw new Exception("Failed to register the field defined in line '"+line+"' in schema '"+name+"'.");
+				}
 			}
 		}
 	}
@@ -1060,6 +1112,14 @@ module.exports=(app)=>{
 	// possibly part of a collection associated with a directory...
 	private MongooseSchemaCollection collection=null;
 	public void setCollection(MongooseSchemaCollection mongooseSchemaCollection){collection=mongooseSchemaCollection;}
+
+	public void showInExternalEditor(){
+		try{java.awt.Desktop.getDesktop().edit(associatedFile);}catch(IOException ex){Utils.setInfo(this,"'"+ex.getLocalizedMessage()+"' in showing the Mongoose schema file.");}
+	}
+	public boolean isAssociatedFileReadable(){
+		createMongooseSchemaTextFileProcessor();
+		return(associatedFile!=null&&associatedFile.exists()&&!associatedFile.isDirectory()&&associatedFile.canRead());
+	}
 
 	// TODO we can keep the following stuff private as long as subclasses call setAssociatedFile/getAssociatedFile() to return the text file associated with them
 	private ITextLinesProcessor mongooseSchemaTextFileProcessor; // MDH@21OCT2018: does not need to be declared as a TextFile per se here (so subclasses can have other ones)

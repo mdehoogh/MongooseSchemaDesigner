@@ -4,12 +4,14 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.util.Set;
 import java.util.Vector;
 
 /**
  * more complex than it seems because the selector view needs to add subschema's as field type
+ * MDH@02NOV2018: changed that by allowing it to listen to dynamic changes to a supposed mutable field type collection...
  */
-public class FieldTypeSelectorView extends JPanel {
+public class FieldTypeSelectorView extends JPanel implements IMutableMongooseFieldTypeCollection.Listener{
 
 	public interface ChangeListener{
 		void fieldTypeChanged(FieldTypeSelectorView fieldTypeSelectorView,IFieldType newFieldType);
@@ -86,11 +88,9 @@ public class FieldTypeSelectorView extends JPanel {
 	}
 
 	// expose added field type
-	Vector<IFieldType> additionalFieldTypes=null;
+	Set<IFieldType> additionalFieldTypes=null;
 	// available to the sub fieldtype view are the added field types (so far)
-	IFieldType[] getAdditionalFieldTypes(){
-		return(additionalFieldTypes==null||additionalFieldTypes.isEmpty()?new IFieldType[]{}:(IFieldType[])additionalFieldTypes.toArray(new IFieldType[additionalFieldTypes.size()]));
-	}
+	Set<IFieldType> getAdditionalFieldTypes(){return additionalFieldTypes;}
 	private void removeAdditionalFieldTypes(){
 		DefaultComboBoxModel<IFieldType.Description> fieldTypeComboBoxModel=(DefaultComboBoxModel<IFieldType.Description>)fieldTypeComboBox.getModel();
 		// we can speed things
@@ -103,27 +103,39 @@ public class FieldTypeSelectorView extends JPanel {
 			fieldTypeComboBoxModel.removeElementAt(fieldTypeIndex);
 		}
 	}
-	public void setAdditionalFieldTypes(IFieldType[] fieldTypes){
+	// NOTE typically setAdditionalFieldTypes is called by whoever registers myself as listener
+	public void setAdditionalFieldTypes(Set<IFieldType> fieldTypes){
 		// NOTE this is a bit of a nuisance as I have to remove all currently displayed additional field types from fieldTypeComboBox
 		try{
 			if(additionalFieldTypes!=null){additionalFieldTypes.clear();removeAdditionalFieldTypes();}
-			if(fieldTypes!=null&&fieldTypes.length>0){
-				if(additionalFieldTypes==null)additionalFieldTypes=new Vector<IFieldType>();
-				for(IFieldType fieldType:fieldTypes){
-					if(!additionalFieldTypes.add(fieldType))break;
-					fieldTypeComboBox.addItem(fieldType.getDescription()); // make it show!!!
-				}
-			}
+			additionalFieldTypes=fieldTypes;
+			if(additionalFieldTypes!=null)for(IFieldType fieldType:additionalFieldTypes)fieldTypeComboBox.addItem(fieldType.getDescription()); // make it show!!!
 		}catch(Exception ex){
 		}finally{
 			// pass along my additional field types if the subtype is currently visible!!
-			if(subFieldTypeView.isVisible())subFieldTypeView.setAdditionalFieldTypes(additionalFieldTypes!=null&&!additionalFieldTypes.isEmpty()?new IFieldType[]{}:(IFieldType[])additionalFieldTypes.toArray(new IFieldType[additionalFieldTypes.size()]));
+			if(subFieldTypeView!=null&&subFieldTypeView.isVisible())subFieldTypeView.setAdditionalFieldTypes(additionalFieldTypes);
 		}
 	}
 	private void addAdditionalFieldTypes(){
-		IFieldType[] addableFieldTypes=parentFieldTypeSelectorView.getAdditionalFieldTypes();
-		for(IFieldType addableFieldType:addableFieldTypes)fieldTypeComboBox.addItem(addableFieldType.getDescription());
+		for(IFieldType addableFieldType:parentFieldTypeSelectorView.getAdditionalFieldTypes())fieldTypeComboBox.addItem(addableFieldType.getDescription());
 	}
+
+	// IMutableMongooseFieldTypeCollection.Listener implementation
+	// TODO for now we're using the 'original' methods to actual change the additional field types collection
+	public void fieldTypeAdded(IMutableMongooseFieldTypeCollection fieldTypeCollection,IFieldType fieldType){
+		try{
+			fieldTypeComboBox.addItem(fieldType.getDescription());
+			if(subFieldTypeView.isVisible())subFieldTypeView.fieldTypeAdded(fieldTypeCollection,fieldType);
+		}catch(Exception ex){}
+	}
+	public void fieldTypeRemoved(IMutableMongooseFieldTypeCollection fieldTypeCollection,IFieldType fieldType){
+		try{
+			fieldTypeComboBox.removeItem(fieldType.getDescription());
+			if(subFieldTypeView.isVisible())subFieldTypeView.fieldTypeRemoved(fieldTypeCollection,fieldType);
+		}catch(Exception ex){}
+	}
+	// end IMutableMongooseFieldTypeCollection.Listener implementation
+
 	private JComboBox fieldTypeComboBox;
 	private JLabel prefixLabel;
 	private void createView(){
@@ -196,7 +208,7 @@ public class FieldTypeSelectorView extends JPanel {
 		return false;
 	}
 	public boolean removeAdditionalFieldType(IFieldType fieldType){
-		if(additionalFieldTypes.removeElement(fieldType)){
+		if(additionalFieldTypes.remove(fieldType)){
 			try{
 				fieldTypeComboBox.removeItem(fieldType.getDescription());
 				// pass along to the sub field type selector (if currently visible), so it can also show this new field type in it's combo box

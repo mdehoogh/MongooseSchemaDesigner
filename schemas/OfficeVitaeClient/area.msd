@@ -1,9 +1,10 @@
 $client database - area: defines a site with a single GPS coordinate containing maps
+gpscoordinate
+	+_id:ObjectId	required	+indextype=unique
+	+longitude:Number	+minNumber=-180	+maxNumber=180
+	+latitude:Number	+minNumber=-180	+maxNumber=180
+	+altitude:Number
 +_id:ObjectId	required	+indextype=unique
-+name:String	required	+indextype=unique
-+label:String	required
-+areatype_id:ObjectId	+ref=areatypes
++name:String	trim	+minlength=1
 +timezone:String
-+latitude:Number
-+longitude:Number
-+altitude:Number
++gpslocation:area_gpscoordinateSchema

@@ -651,8 +651,10 @@ public class Field{
 	// MDH@25OCT2018: convenient to have a separate method to return the field type representation which cuts off the wrapper that MapFieldType puts around it's representation
 	//                which is NOT needed at the top level
 	public String getTypeRepresentation(boolean internal){
-		String typeRepresentation=(internal?type.getDescription().toString():type.toString());
-		if(typeRepresentation.startsWith("{type:")&&typeRepresentation.endsWith("}"))return typeRepresentation.substring(6,typeRepresentation.length()-1).trim();
+		// we have to be careful here, because if this is the reference to an subschema field type we need another representation
+		// so, when the given type is NOT a predefined field type we also return the 'internal' description (so we'll get something that ends with Schema as we want it to!!)
+		String typeRepresentation=(internal||!(type instanceof MongooseFieldType)?type.getDescription().toString():type.toString());
+		//// ?? if(typeRepresentation.startsWith("{type:")&&typeRepresentation.endsWith("}"))return typeRepresentation.substring(6,typeRepresentation.length()-1).trim();
 		return typeRepresentation;
 	}
 	// MDH@25OCT2018: published means do not use the internal representation of the type
