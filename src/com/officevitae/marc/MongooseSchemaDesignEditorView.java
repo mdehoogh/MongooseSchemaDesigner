@@ -121,7 +121,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	private boolean newFieldSelected=false; // the flag that will keep track of the selection of a field
 	private JComponent getFieldListView(){
 		JPanel fieldListPanel=SwingUtils.getTitledPanel(null);
-		fieldListPanel.add(SwingUtils.getLabelView("Fields"),BorderLayout.NORTH);
+		////////fieldListPanel.add(SwingUtils.getLabelView("Fields"),BorderLayout.NORTH);
 		fieldList=new JList<Field>(new FieldListModel()); // MUST be a FieldListModel!!
 		fieldList.setCellRenderer(new FieldListCellRenderer()); // MDH@15OCT2018: we want to be able to 'remove' a field temporarily i.e. disable it, so it won't be published
 		// MDH@15OCT2018: in order to be able to detect clicking a field item that is currently selected
@@ -157,7 +157,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		return fieldListPanel;
 	}
 	private FieldView fieldView; // the view where to show the field information
-	private JComponent getSchemaFieldsView(){
+	private JComponent getFieldsDesignView(){
 		JPanel fieldsEntryPanel=new JPanel(new BorderLayout());
 		JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT); // MDH@19OCT2018: switch to a horizontal split so we do not need to use the entire width of this subwindow for just showing the name
 		splitPane.setOneTouchExpandable(true); // allow collapsing the field list view with a single click
@@ -169,10 +169,43 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		// we can have a list of field names left ready to be edited?????
 		return fieldsEntryPanel;
 	}
+	private JComponent getFieldsTextView(){
+		JPanel fieldsTextPanel=new JPanel(new BorderLayout());
+		fieldsTextPanel.add(fieldsTextLinesEditor=new JTextLinesEditor());
+		return fieldsTextPanel;
+	}
+	private JTabbedPane fieldsTabbedPane;
+	private int selectedFieldsTabIndex=0;
+	private JComponent getSchemaFieldsView(){
+		JPanel schemaFieldsPanel=new JPanel(new BorderLayout());
+		fieldsTabbedPane=new JTabbedPane();
+		fieldsTabbedPane.add("Design",getFieldsDesignView());
+		fieldsTabbedPane.add("Text",getFieldsTextView());
+		fieldsTabbedPane.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e){
+				int fieldsTabIndex=fieldsTabbedPane.getSelectedIndex();
+				try{
+					switch(fieldsTabbedPane.getSelectedIndex()){
+						case 0:
+							if(selectedFieldsTabIndex==1)fieldsTextLinesEditor.write();
+							break;
+						case 1:
+							fieldsTextLinesEditor.read();
+							break;
+					}
+				}finally{
+					selectedFieldsTabIndex=fieldsTabIndex;
+				}
+			}
+		});
+		schemaFieldsPanel.add(fieldsTabbedPane);
+		return schemaFieldsPanel;
+	}
 	private void saveSchema(){
 		if(mongooseSchema!=null){
 			// there might be uncommitted text in the text lines editor
-			if(tabbedPane.getSelectedIndex()==1&&!fieldsTextLinesEditor.write())
+			if(tabbedPane.getSelectedIndex()==0&&fieldsTabbedPane.getSelectedIndex()==1&&!fieldsTextLinesEditor.write())
 				Utils.setInfo(this,"Can't save, due to failing to update the schema from the text.");
 			else
 				mongooseSchema.save();
@@ -380,12 +413,75 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		////////schemaHeaderPanel.add(getSubSchemaSelectorView());
 		return schemaHeaderPanel;
 	}
+	private Box schemaOptionsBox; // the box to show the options in
+	private void showSchemaOptions(){
+		schemaOptionsBox.removeAll();
+		if(mongooseSchema!=null){
+			for(Option option:mongooseSchema.getOptionCollection()){
+				schemaOptionsBox.add(new OptionView(option));
+			}
+		}
+	}
+	private JTextLinesEditor optionsTextLinesEditor;
+	private JComponent getOptionsTextView(){
+		JPanel optionsTextPanel=new JPanel(new BorderLayout());
+		optionsTextPanel.add(optionsTextLinesEditor=new JTextLinesEditor());
+		return optionsTextPanel;
+	}
+	private JTabbedPane optionsTabbedPane;
+	private int selectedOptionsTabIndex=0;
+	private JComponent getSchemaOptionsView(){
+		JPanel schemaOptionsPanel=new JPanel(new BorderLayout());
+		optionsTabbedPane=new JTabbedPane();
+		optionsTabbedPane.addTab("Design",new JScrollPane(schemaOptionsBox=Box.createVerticalBox()));
+		optionsTabbedPane.addTab("Text",getOptionsTextView());
+		optionsTabbedPane.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e){
+				int optionsTabIndex=optionsTabbedPane.getSelectedIndex();
+				try{
+					switch(optionsTabIndex){
+						case 0:
+							if(selectedOptionsTabIndex==1)optionsTextLinesEditor.write();
+							break;
+						case 1:
+							optionsTextLinesEditor.read();
+							break;
+					}
+				}finally{
+					selectedOptionsTabIndex=optionsTabIndex;
+				}
+			}
+		});
+		schemaOptionsPanel.add(optionsTabbedPane);
+		return schemaOptionsPanel;
+	}
+	/*
 	private JComponent getSchemaDesignView(){
 		JPanel schemaDesignPanel=new JPanel(new BorderLayout());
-		schemaDesignPanel.add(getSchemaFieldsView());
+		designTabbedPane=new JTabbedPane();
+		designTabbedPane.addChangeListener(new ChangeListener(){
+			@Override
+			public void stateChanged(ChangeEvent e){
+				switch(designTabbedPane.getSelectedIndex()){
+					case 0:
+						showSchemaFields();
+						break;
+					case 1:
+						showSchemaOptions();
+						break;
+				}
+			}
+		});
+		designTabbedPane.add("Fields",getSchemaFieldsView());
+		// showing the options on the Options tab!!
+		designTabbedPane.add("Options",getSchemaOptionsView());
+		schemaDesignPanel.add(designTabbedPane);
+		// replacing: schemaDesignPanel.add(getSchemaFieldsView());
 		/////////schemaDesignPanel.add(schemaButtonView=getSchemaButtonView(),BorderLayout.SOUTH);
 		return schemaDesignPanel;
 	}
+	*/
 	private JTextLinesEditor modelTextLinesEditor;
 	private JComponent saveView=null; // we need these views in order to be able to hide them???
 	/*
@@ -454,28 +550,43 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	private JTabbedPane tabbedPane;
 	// updateSelectedTabView() to be called whenever the user select another tab, or when the selected mongoose schema changes!!
 	private int lastSelectedTabIndex=-1;
+	private void updateFieldsTabView(){
+
+	}
+	private void updateOptionsTabView(){
+
+	}
 	private void updateSelectedTabView(){
 		// ASSERT mongooseSchema should NOT be null!!
 		int selectedTabIndex=tabbedPane.getSelectedIndex();
 		try{
 			// MDH@25OCT2018: ascertain to have the right tabs
 			switch(selectedTabIndex){
+				// switching to Fields or Options view by itself doesn't change anything there!!
 				case 1: // Text mode
 					// nothing wrong with ALWAYS doing that, even if we come from the Output tab (which might be selected when switching Mongoose schemas!!!)
-					fieldsTextLinesEditor.read();
+					if(selectedOptionsTabIndex==0)showSchemaOptions();
 					break;
 				case 0: // Design mode
+					updateOptionsTabView();
 					// TODO we should only do the following if the schemaTextArea's text actually changed!!!
 					// MDH@17OCT2018: we force a load so that what we see actually represents the text loaded (if any)
 					// disconnecting the fields text lines editor from the field collection will update the field collection accordingly (if something changed there)
 					// so we will get to see the proper fields and all!!!
-					if(lastSelectedTabIndex==1)fieldsTextLinesEditor.write(); // Text mode -> Design mode
-					showSchemaFields();
+					///////////if(lastSelectedTabIndex==1)fieldsTextLinesEditor.write(); // Text mode -> Design mode
+					if(selectedFieldsTabIndex==0)showSchemaFields();
 					break;
 				case 2:
 					// force a read so we will see the most recent model text lines
 					// I have to update the schema (fields) with the contents of the editor, if the editor view is now showing
-					if(lastSelectedTabIndex==1)fieldsTextLinesEditor.write(); // update the Mongoose schema from the text
+					switch(lastSelectedTabIndex){
+						case 0:
+							if(selectedFieldsTabIndex==1)fieldsTextLinesEditor.write(); // update the schema fields from the text
+							break;
+						case 1:
+							if(selectedOptionsTabIndex==1)optionsTextLinesEditor.write(); // update the schema options from the text
+							break;
+					}
 					modelTextLinesEditor.read();
 					routesTextLinesEditor.read();
 					controllerTextLinesEditor.read();
@@ -508,8 +619,8 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		// replacing:
 		tabbedPane=new JTabbedPane();
 		// initially when the schema is selected in the tree view we show the text only (before it's parsed when the Design view is shown!!!)
-		tabbedPane.addTab("Design",getSchemaDesignView());
-		tabbedPane.addTab("Text",getSchemaTextView());
+		tabbedPane.addTab("Fields",getSchemaFieldsView());
+		tabbedPane.addTab("Options",getSchemaOptionsView());
 		outputView=getOutputView();
 		// now wait for a top-level Mongoose schema to be selected!!!		tabbedPane.addTab("Model",schemaModelView=getSchemaModelView());
 		tabbedPane.addChangeListener(new ChangeListener(){
@@ -549,6 +660,8 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	}
 	private void respondToANewMongooseSchema(){
 		if(this.mongooseSchema!=null){
+			// if now looking at the Options pane, show options immediately (otherwise wait for the tab to be selected!!)
+			//////if(tabbedPane.getSelectedIndex()==1)if(optionsTabbedPane.getSelectedIndex()==0)showSchemaOptions();
 			lastSelectedTabIndex=0; // assuming the schema itself is up to date (but the text or the output might NOT)
 			updateSelectedTabView();
 			Utils.setInfo(this,"Showing schema '"+this.mongooseSchema.getRepresentation(false)+"'.");
@@ -566,9 +679,23 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		try{
 			// finish up the current Mongoose schema
 			if(this.mongooseSchema!=null){
-				if(tabbedPane.getSelectedIndex()==1)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+				// something to save????
+				switch(tabbedPane.getSelectedIndex()){
+					case 0: // fields tab
+						if(fieldsTabbedPane.getSelectedIndex()==1)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+						break;
+					case 1: // options tab
+						if(optionsTabbedPane.getSelectedIndex()==1)optionsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+						break;
+				}
+				// get rid of editing the current field collection...
 				fieldsTextLinesEditor.removeChangeListener(this);
-				fieldsTextLinesEditor.setTextLinesContainer(null); // get rid of editing the current field collection...
+				fieldsTextLinesEditor.setTextLinesContainer(null);
+
+				// same stuff for the Options
+				optionsTextLinesEditor.removeChangeListener(this);
+				optionsTextLinesEditor.setTextLinesContainer(null);
+
 				modelTextLinesEditor.setTextLinesContainer(null);
 				/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
 				this.mongooseSchema.deleteSchemaSyncListener(this);
@@ -578,6 +705,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			}
 			this.mongooseSchema=mongooseSchema;
 			if(this.mongooseSchema!=null){
+				showSchemaOptions();
 				showInExternalEditorButton.setEnabled(this.mongooseSchema.isAssociatedFileReadable());
 				boolean showOutputTab=(this.mongooseSchema.getParent()==null);
 				saveView.setVisible(showOutputTab);
@@ -585,7 +713,12 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				else if(tabbedPane.getTabCount()>=3)tabbedPane.remove(2);
 				schemaTagTextArea.setText(this.mongooseSchema.getTag());
 				showInfoButton.setEnabled(Utils.hasInfoMessages(this.mongooseSchema));
+
+				// do we have a separate field text lines editor or do we edit the fields and options together????
 				fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
+
+				optionsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getOptionCollection());
+
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
 				routesTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getRoutesTextLinesProducer());

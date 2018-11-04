@@ -62,6 +62,77 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType,ITextLine
 	public FieldCollection fieldCollection=null;
 	public FieldCollection getFieldCollection(){return fieldCollection;}
 
+	public class OptionCollection extends Vector<Option> implements ITextLinesContainer{
+		public Option getOptionWithName(String name){
+			for(Option option:this)if(option.getName().equals(name))return option;
+			return null;
+		}
+		public void parseOptionValue(String[] optionNameValuePair) throws Exception{
+			Option option=getOptionWithName(optionNameValuePair[0]);
+			Object value=option.getValue(); // we need to know the type of the option!!
+			if(value instanceof Boolean)option.setValue(Boolean.parseBoolean(optionNameValuePair[1]));
+			else if(value instanceof String)option.setValue(optionNameValuePair[1]);
+		}
+		private Vector<String> producedTextLines=null;
+		public void produceTextLines()throws Exception{
+			if(producedTextLines==null){
+				producedTextLines=new Vector<String>();
+				for(Option option:this)
+					if(!producedTextLines.add(option.toString()))throw new Exception("Failed to return option '"+option.getName()+"'.");
+			}
+		}
+		public String[] getProducedTextLines(){
+			return(producedTextLines.isEmpty()?new String[]{}:(String[])producedTextLines.toArray(new String[producedTextLines.size()]));
+		}
+		public void setTextLines(String[] textLines){
+			// we can't actually remove options, so the only thing we can do is replace the value
+			for(String textLine:textLines)
+				try{
+					parseOptionValue(textLine.split("="));
+				}catch(Exception ex){
+					Utils.setInfo(MongooseSchema.this,"ERROR: '"+ex.getLocalizedMessage()+"' parsing option line '"+textLine+"'.");
+				}
+		}
+		public OptionCollection(){
+			// let's add all possible options with their default
+			super.add(new Option<Boolean>("autoIndex","Create indexes at start (default: true).",Boolean.TRUE));
+			super.add(new Option<Boolean>("autoCreate","Create collection before creating indexes (default: false).",Boolean.FALSE));
+			super.add(new Option<Boolean>("bufferCommands","Buffer commands when connection goes down until reconnect (default: true).",Boolean.TRUE));
+			super.add(new Option<Integer>("capped","Maximum size of collection in bytes (default: unrestricted).",new Integer(0)));
+			super.add(new Option<String>("collection","Name of the collection (default: plural of schema name).",""));
+			super.add(new Option<String>("id","getter function to return the document id (default: _id).",""));
+			////////if(getParent()!=null)super.add(new Option<Boolean>("_id","Add _id automatically (default: true).",Boolean.TRUE));
+			super.add(new Option<Boolean>("minimize","Remove empty objects (default: true)",Boolean.TRUE));
+			// TODO "read" is actually a complex option, and we need to allow these too
+			super.add(new Option<String>("read","Read preferences to apply (default: p). Specify p, pp, s, sp or n.","p"));
+			super.add(new Option<Object>("writeConcern","The write concern (w, j and wtimeout attributes).",new Object()));
+			super.add(new Option<Boolean>("safe","Write concern shortcut (default: false = writeConcern:{w:0}).",Boolean.FALSE));
+			super.add(new Option<String>("shardKey","The shard key (tag and name attributes) to use in sharded collection insert/update operations (default: undefined).",""));
+			super.add(new Option<Boolean>("strict","Prevents values in the model that are undefined in the schema to be saved (default: true).",Boolean.TRUE));
+			super.add(new Option<Boolean>("strictQuery","Strict mode on/off switch for the filter parameter to queries (default: false).",Boolean.FALSE));
+			super.add(new Option<Boolean>("toJSON","Same as toObject but only when the documents toJSON method is called.",Boolean.FALSE));
+			// TODO look up all possible toObject() options
+			super.add(new Option<Boolean>("toObject","Default options for each toObject() document method call.",Boolean.FALSE));
+			super.add(new Option<String>("typeKey","Name of key to declare the type with (default: 'type').","type"));
+			super.add(new Option<Boolean>("validatedBeforeSave","Validate before save (default: true).",Boolean.TRUE));
+			super.add(new Option<String>("versionKey","The path to use for versioning (default: '__v'). Use 'false' to disable automatic versioning.","__v"));
+			super.add(new Option<String>("collation","The default collation (locale and strength attribute) for every query and aggregation (default: ?).",""));
+			super.add(new Option<String>("skipVersioning","Paths (comma-delimited) to exclude from versioning (default: none).",""));
+			// TODO instead of true, other names for createdAt and updatedAt can be used as well
+			super.add(new Option<Boolean>("timestamps","If set, Mongoose assigns createdAt and updatedAt fields to the schema.",Boolean.FALSE));
+			super.add(new Option<Boolean>("useNestedStrict","Use strict mode on subschema documents as well (default: false)",Boolean.FALSE));
+			super.add(new Option<Boolean>("selectPopulatedPaths","Select populated paths automatically (default: true).",Boolean.TRUE));
+			super.add(new Option<Boolean>("storeSubdocValidationError","Record a validation error in the single nested schema path as well when there is a validation error in a subpath (default: true).",Boolean.TRUE));
+		}
+		public Vector<String> getTextLines()throws Exception{
+			Vector<String> textLines=null;
+			for(Option option:this)if(!option.isDefault())if(!textLines.add(option.toString()))throw new Exception("Failed to return option '"+option.getName()+"'.");
+			return textLines;
+		}
+	}
+	public OptionCollection optionCollection=new OptionCollection();
+	public OptionCollection getOptionCollection(){return optionCollection;}
+
 	/* no need for the ID anymore
 	public class ID{
 		public String toString(){return name+(!isSynced()?"*":"");} // we want to see whether it changed!!!
@@ -657,10 +728,14 @@ module.exports=(app)=>{
 		// only subschema's can NOT have _id fields in which case the user disabled it (which is not possible for main schema's)
 		// TODO collect all the options from the schema
 		Vector<String> optionTexts=new Vector<String>();
+		try{
+			optionTexts.addAll(optionCollection.getTextLines());
+		}catch(Exception ex){
+			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' in adding the options of schema '"+getName()+"'.");
+		}
+		// we've excluded _id as option for subschema's!!
 		if(this.getParent()!=null){
 			if(!this.containsFieldWithName("_id")||!this.getFieldCalled("_id").isEnabled())optionTexts.add("_id:false");
-		}else{
-
 		}
 		if(!optionTexts.isEmpty())optionsTextRepresentation.append(",{"+String.join(",",optionTexts)+"}");
 		optionsTextRepresentation.append(");");
@@ -1020,14 +1095,13 @@ module.exports=(app)=>{
 	// ITextLinesContainer implementation
 	public void produceTextLines()throws Exception{
 		//////if(parentSchema==null)if(isSynced())return null; // nothing changed, so return null (MDH@19OCT2018: but only when a main schema, subschema's shouldn't be that fresh!!)
-		///if(textLines==null){ // no current contents known
-			// initialize textLines to return with the text lines of all subschema's
-			Vector<String> textLinesVector=new Vector<String>();
-			if(tag!=null&&!tag.trim().isEmpty())textLinesVector.add("$"+tag); // MDH@30OCT2018: write the tag line as the first line
-			textLinesVector.addAll(getSubSchemasTextLines()); // adding all the subschemas text lines
-			textLinesVector.addAll(getFieldsTextLines()); // adding all the fields text lines
-			textLines=(textLinesVector.isEmpty()?new String[]{}:textLinesVector.toArray(new String[textLinesVector.size()]));
-		///}
+		// initialize textLines to return with the text lines of all subschema's
+		Vector<String> textLinesVector=new Vector<String>();
+		if(tag!=null&&!tag.trim().isEmpty())textLinesVector.add("$"+tag); // MDH@30OCT2018: write the tag line as the first line
+		textLinesVector.addAll(getSubSchemasTextLines()); // adding all the subschemas text lines
+		textLinesVector.addAll(getFieldsTextLines()); // adding all the fields text lines
+		textLinesVector.addAll(optionCollection.getTextLines()); // append
+		textLines=(textLinesVector.isEmpty()?new String[]{}:textLinesVector.toArray(new String[textLinesVector.size()]));
 	}
 	public String[] getProducedTextLines(){return textLines;}
 	// end ITextLinesContainer implementation
@@ -1053,42 +1127,49 @@ module.exports=(app)=>{
 			String line,subSchemaName,subSchemaLineWhitespace;
 			Vector<String> subSchemaLines;
 			MongooseSchema subSchema;
-			int slw;
+			int slw,equalPos;
 			for(int lineIndex=0;lineIndex<lineCount;lineIndex++){
 				line=textLines[lineIndex].trim(); // trimming because at the top level all lines should not start with tabs (as subschema lines do)
 				Utils.consoleprintln("Processing line #"+(lineIndex+1)+" ("+line+") of schema '"+getRepresentation(false)+"'.");
 				if(line.length()==0||line.charAt(0)=='#'||line.startsWith("//"))continue; // skip comment lines
 				if(line.charAt(0)=='$')setTag(line.substring(1));else // any line starting with a dollar sign is considered the tag!!
-				if(line.charAt(0)!='-'&&line.charAt(0)!='+'){ // a subschema (name) line
-					subSchemaName=line;
-					Utils.consoleprintln("Subschema of schema '"+getRepresentation(false)+"': '"+subSchemaName+"'.");
+				if(line.charAt(0)!='-'&&line.charAt(0)!='+'){ // a subschema (name) or option line
+					equalPos=line.indexOf("=");
+					if(equalPos>=0){
+						if(equalPos>0){
+							optionCollection.parseOptionValue(line.trim().split("="));
+						}
+					}else{ // a subschema line
+						subSchemaName=line;
+						Utils.consoleprintln("Subschema of schema '"+getRepresentation(false)+"': '"+subSchemaName+"'.");
 
-					subSchema=new MongooseSchema(subSchemaName,this,null); // create the subschema with the private name
-					if(!lastSubSchemasTextLines.add(line))Utils.consoleprintln("ERROR: Failed to register subschema name definition line '"+line+"'.");
-					// get all following lines that are indented, let's allow indenting with any character regulated by the first character on the next line
-					if(lineIndex<lineCount-1){ // there is a next line
-						line=textLines[lineIndex+1];
-						lastSubSchemasTextLines.add(line);
-						// technically all heading whitespace should be considered subschema lines
-						subSchemaLineWhitespace=Utils.getHeadingWhitespace(line); // this is what we want a subschema line to start with!!!
-						slw=subSchemaLineWhitespace.length();
-						Utils.consoleprintln("Sub schema indentation length: "+slw+".");
-						if(slw>0){ // there are sub schema lines
-							Utils.consoleprintln("First subschema line: '"+line+"'.");
-							subSchemaLines=new Vector<String>();
-							while(true){
-								lineIndex++;
-								if(!subSchemaLines.add(line.substring(slw)))throw new Exception("Failed to register a text line defining sub schema "+subSchema.getRepresentation(false)+".");
-								if(lineIndex>=lineCount)break; // no further lines
-								line=textLines[lineIndex+1];
-								if(!line.startsWith(subSchemaLineWhitespace))break; // NOT a subschema line
-								if(!lastSubSchemasTextLines.add(line))throw new Exception("Failed to register a text line defining sub schema "+subSchema.getRepresentation(false));
+						subSchema=new MongooseSchema(subSchemaName,this,null); // create the subschema with the private name
+						if(!lastSubSchemasTextLines.add(line))Utils.consoleprintln("ERROR: Failed to register subschema name definition line '"+line+"'.");
+						// get all following lines that are indented, let's allow indenting with any character regulated by the first character on the next line
+						if(lineIndex<lineCount-1){ // there is a next line
+							line=textLines[lineIndex+1];
+							lastSubSchemasTextLines.add(line);
+							// technically all heading whitespace should be considered subschema lines
+							subSchemaLineWhitespace=Utils.getHeadingWhitespace(line); // this is what we want a subschema line to start with!!!
+							slw=subSchemaLineWhitespace.length();
+							Utils.consoleprintln("Sub schema indentation length: "+slw+".");
+							if(slw>0){ // there are sub schema lines
+								Utils.consoleprintln("First subschema line: '"+line+"'.");
+								subSchemaLines=new Vector<String>();
+								while(true){
+									lineIndex++;
+									if(!subSchemaLines.add(line.substring(slw)))throw new Exception("Failed to register a text line defining sub schema "+subSchema.getRepresentation(false)+".");
+									if(lineIndex>=lineCount)break; // no further lines
+									line=textLines[lineIndex+1];
+									if(!line.startsWith(subSchemaLineWhitespace))break; // NOT a subschema line
+									if(!lastSubSchemasTextLines.add(line))throw new Exception("Failed to register a text line defining sub schema "+subSchema.getRepresentation(false));
+								}
+								for(String subSchemaLine:subSchemaLines)Utils.consoleprintln("\tLine: '"+subSchemaLine+"'.");
+								// there will be at least one line in subSchemaLines (if we get here!!)
+								// MDH@28OCT2017: setTextLines() has now been removed because setTextLines() would remember the text lines
+								//                therefore a MongooseSchema does not need to be a consumer anymore... and setTextLines() not implemented!!!
+								subSchema.parseTextLines((String[])subSchemaLines.toArray(new String[subSchemaLines.size()]));
 							}
-							for(String subSchemaLine:subSchemaLines)Utils.consoleprintln("\tLine: '"+subSchemaLine+"'.");
-							// there will be at least one line in subSchemaLines (if we get here!!)
-							// MDH@28OCT2017: setTextLines() has now been removed because setTextLines() would remember the text lines
-							//                therefore a MongooseSchema does not need to be a consumer anymore... and setTextLines() not implemented!!!
-							subSchema.parseTextLines((String[])subSchemaLines.toArray(new String[subSchemaLines.size()]));
 						}
 					}
 					/////// already done by the constructor??? if(!subSchemas.add(subSchema))throw new Exception("Failed to register subschema '"+subSchemaName+"' with schema '"+getRepresentation(false)+"'.");
