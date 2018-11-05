@@ -151,4 +151,14 @@ public class Utils{
 		return(l<0); // the same when all lines were equal
 	}
 
+	public static String dequote(String todequote){
+		if(todequote!=null){
+			int l=todequote.length()-1;
+			if(l>0){
+				if(todequote.charAt(0)=='\''&&todequote.charAt(l)=='\'') return todequote.substring(1,l);
+				if(todequote.charAt(0)=='"'&&todequote.charAt(l)=='"') return todequote.substring(1,l);
+			}
+		}
+		return todequote;
+	}
 }

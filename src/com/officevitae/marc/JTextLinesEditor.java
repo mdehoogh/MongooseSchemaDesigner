@@ -165,15 +165,17 @@ public class JTextLinesEditor extends JPanel implements IMutableTextLinesProduce
 	public boolean write(){
 		// it's well possible that the user changed the text, so if so we will remember it before storing it
 		// WHAT IF the text has NOT changed? this is the case if the current text displayed equals the first element in the history
+		// MDH@05NOV2018: should return false when NOT actually calling setTextLines() on the textLinesConsumer and thus indicating change
+		if(textLinesConsumer==null)return false;
 		try{
 			String text=textArea.getText();
 			if(!history.isEmpty()){
-				if(text.equals(history.firstElement()))return true; // NO change since we started
+				if(text.equals(history.firstElement()))return false; // NO change since we started
 				if(!text.equals(history.peek()))remember();
 			}else
 				remember();
 			// update textLinesContainer with the new contents
-			if(textLinesConsumer!=null)textLinesConsumer.setTextLines(text.split("\n"));
+			textLinesConsumer.setTextLines(text.split("\n"));
 			return true;
 		}catch(Exception ex){
 			Utils.consoleprintln("ERROR: '"+ex.getLocalizedMessage()+"' in updating the Mongoose schema from the text.");

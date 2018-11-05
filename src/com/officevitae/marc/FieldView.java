@@ -204,7 +204,10 @@ public class FieldView extends JPanel implements FieldTypeSelectorView.ChangeLis
 				// type specific stuff
 				if(!autoincremented&&type.equals(MongooseFieldType.STRING))showStringOptions();else stringOptionsView.setVisible(false);
 				if(type.equals(MongooseFieldType.DATE))showDateOptions();else dateOptionsView.setVisible(false);
-				if(!autoincremented&&type.equals(MongooseFieldType.NUMBER)&&!field.isAutoIncremented())showNumberOptions();else numberOptionsView.setVisible(false); // only show Number options on a regular (non-auto-incremented) Number field!!
+				// all number types should allow setting minimum and maximum although I'm not certain whether it will work...
+				if(!autoincremented&&(type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.INT32)||type.equals(MongooseFieldType.LONG)))
+					showNumberOptions();
+				else numberOptionsView.setVisible(false); // only show Number options on a regular (non-auto-incremented) Number field!!
 				// get a border showing the name of the field now!!
 			}
 		}finally{

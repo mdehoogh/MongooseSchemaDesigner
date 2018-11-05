@@ -26,22 +26,22 @@ public class OptionView<T> extends JPanel{
 				@Override
 				public void stateChanged(ChangeEvent e){
 					try{
-						option.setValue(checkBox.isSelected());
-					}catch(ClassCastException ex){
+						option.parseValue(checkBox.isSelected()?Boolean.TRUE.toString():Boolean.FALSE.toString());
+					}catch(Exception ex){
 						Utils.setInfo(this,"Invalid boolean option value.");
 					}
 				}
 			});
-		}else if(initialValue instanceof Integer||initialValue instanceof String){
-			add(new JLabel(option.getName()+": "),BorderLayout.WEST);
+		}else{
+			add(new JLabel("  "+option.getName()+": "),BorderLayout.WEST);
 			add(textField=new JTextField(initialValue.toString()));
 			textField.addKeyListener(new KeyAdapter(){
 				@Override
 				public void keyReleased(KeyEvent e){
 					try{
-						option.setValue(textField.getText());
-					}catch(ClassCastException ex){
-						Utils.setInfo(this,"Invalid text option value.");
+						option.parseValue(textField.getText());
+					}catch(Exception ex){
+						Utils.setInfo(this,"Invalid option value text '"+textField.getText()+"'.");
 					}
 				}
 			});
