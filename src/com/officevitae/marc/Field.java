@@ -672,8 +672,9 @@ public class Field{
 	public String getTypeRepresentation(boolean internal){
 		// we have to be careful here, because if this is the reference to an subschema field type we need another representation
 		// so, when the given type is NOT a predefined field type we also return the 'internal' description (so we'll get something that ends with Schema as we want it to!!)
-		String typeRepresentation=(internal||!(type instanceof MongooseFieldType)?type.getDescription().toString():type.toString());
-		//// ?? if(typeRepresentation.startsWith("{type:")&&typeRepresentation.endsWith("}"))return typeRepresentation.substring(6,typeRepresentation.length()-1).trim();
+		if(internal||!(type instanceof ICompositeFieldType))return type.getDescription().toString();
+		String typeRepresentation=type.toString();
+		if(typeRepresentation.startsWith("{type:")&&typeRepresentation.endsWith("}"))return typeRepresentation.substring(6,typeRepresentation.length()-1).trim();
 		return typeRepresentation;
 	}
 	// MDH@25OCT2018: published means do not use the internal representation of the type
@@ -706,7 +707,7 @@ public class Field{
 		sbRepresentation.append(getLiteralRepresentation("default",serialized,defaultLiteral));
 
 		// if auto incremented no need to set the required flag (as it is definitely NOT required in creating the record!!!)
-		if(!autoIncremented)if(required)sbRepresentation.append("\trequired");
+		if(!autoIncremented)if(required)if(!requiredBlocked)sbRepresentation.append("\trequired");
             /* startAt now determines whether or not a field is an auto-increment field!!!
             else
                 sbRepresentation.append("\t-autoincremented");
@@ -718,7 +719,7 @@ public class Field{
 		// index flags
 		// of course, if the index literal is disabled, not to write the flag!!
 		// even better:
-		sbRepresentation.append(getLiteralRepresentation("indextype",serialized,indexTypeLiteral));
+		if(!indexBlocked)sbRepresentation.append(getLiteralRepresentation("indextype",serialized,indexTypeLiteral));
 		// replacing: if(!indexTypeLiteral.isDisabled()&&indexTypeLiteral.isValid())sbRepresentation.append("\t-"+indexTypeLiteral.getText()); // NOTE do NOT call getValue() because getValue() will enquote the text!!!
 		/* replacing:
 		if (isUnique())sbRepresentation.append("\t-unique");

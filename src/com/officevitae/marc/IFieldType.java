@@ -14,4 +14,8 @@ public interface IFieldType {
 	// MDH@16OCT2018: it's also a good idea to be able to test whether or not a given value text representation represents a valid value!!!
 	boolean representsAValidValue(String value);
 
+	// a tag to use for subschema's so that toString() will now to use the description's toString() and NOT the toString() method
+	interface External extends IFieldType{
+	}
+
 }

@@ -61,12 +61,13 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     }
 
     // IInfoViewer implementation
-    public void setInfo(String source,String info){
-        String infoNow=infoLabel.getText().trim();
-        if(!infoNow.isEmpty())Utils.consoleprintln("Info: "+infoNow); // pass along to the log
-		if(info!=null&&!info.isEmpty()){
+    public void setInfo(String info){
+    	// whatever gets here was sent with source null, so we could show it to the user
+    	if(info==null)return;
+    	if(!info.trim().isEmpty()){
 			infoLabel.setText(info);
-			if(source==null||!source.equals(toString()))Utils.storeInfo(this,(source==null?"Info":source)+": "+info); // if it wasn't me store in my log
+			// store anyway
+			Utils.storeInfo(this,info);
 		}else
 			infoLabel.setText(" ");
     }
@@ -74,9 +75,13 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 
     private JTextField newMongooseSchemaTextField;
     private MongooseSchemaDesignEditorView mongooseSchemaEditorView;
+    private MongooseSchemaCollectionEditorView mongooseSchemaCollectionEditorView;
     private JComponent getMongooseSchemaView(){
         return (mongooseSchemaEditorView=new MongooseSchemaDesignEditorView()); // that's easy
     }
+    private JComponent getMongooseSchemaCollectionView(){
+    	return(mongooseSchemaCollectionEditorView=new MongooseSchemaCollectionEditorView());
+	}
     private JButton newMongooseSchemaButton;
     // convenient to have a TreeNode class that we can set the sync listener on
     private class MongooseSchemaTreeNode extends DefaultMutableTreeNode{
@@ -104,7 +109,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
             selectedMongooseSchemaNode.add(newMongooseSchemaTreeNode);
 			return new TreePath(newMongooseSchemaTreeNode.getPath());
         }catch(Exception ex){
-            setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' creating a new Mongoose schema.");
+            Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' creating a new Mongoose schema.");
         }
         return null;
     }
@@ -117,7 +122,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			selectedMongooseSchemaNode.add(newMongooseSchemaTreeNode);
 			return new TreePath(newMongooseSchemaTreeNode.getPath());
 		}catch(Exception ex){
-			setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' creating a new JavaScript Mongoose schema.");
+			Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' creating a new JavaScript Mongoose schema.");
 		}
 		return null;
 	}
@@ -184,7 +189,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			@Override
 			public void actionPerformed(ActionEvent e){
 				String[] unsavedMongooseSchemaNames=getSelectedMongooseSchemaCollection().unsaved();
-				if(unsavedMongooseSchemaNames.length>0)Utils.setInfo(this,"ERROR: Failed to save schema(s) "+String.join(", ",unsavedMongooseSchemaNames)+".");
+				if(unsavedMongooseSchemaNames.length>0)Utils.setInfo(null,"ERROR: Failed to save schema(s) "+String.join(", ",unsavedMongooseSchemaNames)+".");
 			}
 		});
     	saveMongooseSchemaCollectionButton.setEnabled(false); // assuming there's no currently selected Mongoose Schema collection
@@ -284,7 +289,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 				String noNewSchemaNamesText=noNewSchemaNames.substring(2);
 				int lastCommaPos=noNewSchemaNamesText.lastIndexOf(", ");
 				if(lastCommaPos>0)noNewSchemaNamesText=noNewSchemaNamesText.substring(0,lastCommaPos)+" and "+noNewSchemaNamesText.substring(lastCommaPos+2);
-				Utils.setInfo(this,"WARNING: "+noNewSchemaNamesText+" already exist.");
+				Utils.setInfo(null,"WARNING: "+noNewSchemaNamesText+" already exist.");
 			}
 		}
 		newMongooseSchemaButton.setEnabled(anyNewSchemaName);
@@ -292,22 +297,28 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 	}
 	public String toString(){return "Office Vitae Mongoose Schema Designer";}
 	private void setSelectedMongooseSchema(MongooseSchema mongooseSchema){
-		if(mongooseSchema!=null)Utils.setInfo(this,"Selected schema: '"+mongooseSchema.getRepresentation(false)+"'.");
 		mongooseSchemaEditorView.setMongooseSchema(mongooseSchema);
+		if(mongooseSchema==null)return;
+		Utils.setInfo(this,"Selected schema: '"+mongooseSchema.getRepresentation(false)+"'.");
 		checkForNewSchemaNames();
+		((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"MongooseSchema");
+	}
+	private void setSelectedMongooseSchemaCollection(MongooseSchemaCollection mongooseSchemaCollection){
+		mongooseSchemaCollectionEditorView.setMongooseSchemaCollection(mongooseSchemaCollection);
+		saveMongooseSchemaCollectionButton.setEnabled(mongooseSchemaCollection!=null);
+		if(mongooseSchemaCollection==null)return;
+		Utils.setInfo(this,"Selected schema collection: '"+mongooseSchemaCollection.toString()+"'.");
+		((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"MongooseSchemaCollection");
 	}
     private void setSelectedMongooseSchemaNode(DefaultMutableTreeNode mongooseSchemaNode){
 		// when a node gets selected and thus a new mongoose schema possibly the entered new names need to be reevaluated and need to be ALL new
 		this.selectedMongooseSchemaNode=(mongooseSchemaNode!=null?mongooseSchemaNode:schemasTreeRootNode);
 		// if the selected mongoose schema node is NOT the root node, we select the associated mongoose schema
 		Object selectedUserObject=this.selectedMongooseSchemaNode.getUserObject();
-		if(selectedUserObject instanceof MongooseSchemaCollection){
-			saveMongooseSchemaCollectionButton.setEnabled(true);
-		}else{
-			saveMongooseSchemaCollectionButton.setEnabled(false);
-			if(selectedUserObject instanceof MongooseSchema)setSelectedMongooseSchema((MongooseSchema)selectedUserObject);
-		}
-		checkForNewSchemaNames();
+		// MDH@08NOV2018: now allowing editing the collection itself now (to start with editing of the schema options)
+		// TODO: what if we have neither????
+		setSelectedMongooseSchemaCollection(selectedUserObject instanceof MongooseSchemaCollection?(MongooseSchemaCollection)selectedUserObject:null);
+		setSelectedMongooseSchema(selectedUserObject instanceof MongooseSchema?(MongooseSchema)selectedUserObject:null);
 		/* replacing:
 		if(!schemasTreeRootNode.equals(this.selectedMongooseSchemaNode))setSelectedMongooseSchema(((MongooseSchema)(this.selectedMongooseSchemaNode.getUserObject())));
 		else checkForNewSchemaNames(); // IMPORTANT I have to do this because getSelectedMongooseSchema() will return null when this happens!!!
@@ -354,12 +365,20 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         return mongooseSchemaListPanel;
     }
     */
+    private JComponent mongooseSchemaTreeElementEditorView;
+    private JComponent getMongooseSchemaTreeElementEditorView(){
+    	JPanel mongooseSchemaTreeElementEditorPanel=new JPanel(new CardLayout());
+		mongooseSchemaTreeElementEditorPanel.add(new JLabel("Select either a Mongoose schema or Mongoose schema collection."),"None");
+		mongooseSchemaTreeElementEditorPanel.add(getMongooseSchemaView(),"MongooseSchema");
+		mongooseSchemaTreeElementEditorPanel.add(getMongooseSchemaCollectionView(),"MongooseSchemaCollection");
+		return mongooseSchemaTreeElementEditorPanel;
+	}
     private JComponent getMongooseSchemasView(){
         JPanel tablesPanel=new JPanel(new BorderLayout());
         JSplitPane splitPane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
         splitPane.setOneTouchExpandable(true);
         splitPane.setLeftComponent(getMongooseSchemaTreeView());
-        splitPane.setRightComponent(getMongooseSchemaView());
+        splitPane.setRightComponent(mongooseSchemaTreeElementEditorView=getMongooseSchemaTreeElementEditorView());
         tablesPanel.add(splitPane);
         splitPane.setDividerLocation(200);
         return tablesPanel;
@@ -397,13 +416,13 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 					if(schemaFile.canRead())
 						canRead=true;
 					else
-						Utils.setInfo(this,"Cannot create the schema defined in '"+schemaFile.getAbsolutePath()+"': it is not readable.");
+						Utils.setInfo(null,"Cannot create the schema defined in '"+schemaFile.getAbsolutePath()+"': it is not readable.");
 				}catch(Exception ex){
-					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' checking the readability of '"+schemaFile.getAbsolutePath()+"'.");
+					Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' checking the readability of '"+schemaFile.getAbsolutePath()+"'.");
 				}
 				if(canRead){
 					schemaName=schemaFile.getName().substring(0,schemaFile.getName().indexOf('.'));
-					Utils.setInfo(this,"Loading schema '"+schemaName+"' in collection '"+mongooseSchemaCollection.toString()+"'...");
+					Utils.setInfo(null,"Loading schema '"+schemaName+"' in collection '"+mongooseSchemaCollection.toString()+"'...");
 					newSchemaTreePath=getANewMongooseSchemaTreePath(schemaName,null,mongooseSchemaCollection);
 					if(newSchemaTreePath!=null)lastSchemaTreePath=newSchemaTreePath;
 				}
@@ -487,7 +506,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		if(schemasFolder.exists()||schemasFolder.mkdirs())
 			lastCreatedSchemaTreePath=readMongooseSchemas(schemasTreeRootNode);
 		else
-			Utils.setInfo(this,"ERROR: Failed to access schemas folder '"+schemasFolder.getAbsolutePath()+"'.");
+			Utils.setInfo(null,"ERROR: Failed to access schemas folder '"+schemasFolder.getAbsolutePath()+"'.");
 
 		// external (JavaScript) model files we want to import automatically
 		MongooseSchemaCollection mongooseSchemaCollection=new MongooseSchemaCollection("app/models");
@@ -506,9 +525,9 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 					if(jsschemaFile.canRead())
 						canRead=true;
 					else
-						Utils.setInfo(this,"Cannot create the schema defined in '"+jsschemaFile.getAbsolutePath()+"': it is not readable.");
+						Utils.setInfo(null,"Cannot create the schema defined in '"+jsschemaFile.getAbsolutePath()+"': it is not readable.");
 				}catch(Exception ex){
-					Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' checking the readability of '"+jsschemaFile.getAbsolutePath()+"'.");
+					Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' checking the readability of '"+jsschemaFile.getAbsolutePath()+"'.");
 				}
 				if(canRead){
 					jsschemaName=jsschemaFile.getName().substring(0,jsschemaFile.getName().indexOf('.'));

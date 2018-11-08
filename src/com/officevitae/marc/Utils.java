@@ -36,22 +36,26 @@ public class Utils{
 	// IInfoViewer stuff
 	private static IInfoViewer INFO_VIEWER=null;
 	static void setInfoViewer(IInfoViewer infoViewer){INFO_VIEWER=infoViewer;}
-	public static void storeInfo(Object source,String info){
-		if(source==null||info==null||info.trim().isEmpty())return;
-		if(!infoMessagesMap.containsKey(source))infoMessagesMap.put(source,new Vector<String>());
-		try{
-			infoMessagesMap.get(source).add(0,TIME_SDF.format(new Date())+"\t"+info);
-			informInfoMessageListeners(source);
-		}catch(Exception ex){}
+	public static boolean storeInfo(Object source,String info){
+		boolean result=false;
+		if(source!=null){
+			try{
+				if(!infoMessagesMap.containsKey(source))infoMessagesMap.put(source,new Vector<String>());
+				infoMessagesMap.get(source).add(0,TIME_SDF.format(new Date())+"\t"+info);
+				result=true;
+				informInfoMessageListeners(source);
+			}catch(Exception ex){}
+		}
+		return result;
 	}
 	public static void setInfo(Object source,String info){
-		if(info==null)return;
-		storeInfo(source,info);
+		if(info==null||info.trim().isEmpty())return;
 		String sourcerep=(source!=null?source.toString():null);
-		if(INFO_VIEWER!=null)
-			INFO_VIEWER.setInfo(sourcerep,info);
-		else
-			System.out.println((sourcerep!=null?sourcerep+": ":"")+info);
+		consoleprintln((sourcerep!=null?sourcerep:"INFO")+": "+info);
+		if(sourcerep!=null) // something to store by source name!!!
+			storeInfo(source,info);
+		else// no source defined, pass it along to the info viewer
+			if(INFO_VIEWER!=null)INFO_VIEWER.setInfo(info);
 	}
 
 	private static PrintStream CONSOLE=null;

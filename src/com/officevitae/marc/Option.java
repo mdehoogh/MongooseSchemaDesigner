@@ -37,11 +37,15 @@ public class Option<T>{
 		Utils.consoleprintln("'"+_default.toString()+"' does "+(result?"":" NOT ")+"equal '"+value.toString()+"'.");
 		return result;
 	}
+
 	public String toString(){
 		T value=getValue();
 		// enquote the value if it is a String
 		if(value instanceof String)return name+":'"+value+"'";
 		return name+":"+value.toString();
 	}
+
+	// MDH@08NOV2018: typically used for setting the value from predefined options which is only possible
+	public void setValue(T value){this.value=value;}
 
 }

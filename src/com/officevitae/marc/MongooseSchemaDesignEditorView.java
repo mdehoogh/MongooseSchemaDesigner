@@ -86,35 +86,53 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		newFieldButton.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				Field field=newField(newFieldTextField.getText()); // attempt to add the new field, if we succeed disable the new field button and select the newly added field!!!
-				if(field!=null){
-					// if we want to preselect the field type if we think the field name indicates that it is a reference to another mongooseSchema
-					if(field.getName().length()>3&&field.getName().substring(field.getName().length()-3).equalsIgnoreCase("_id")){
-						String referencedSchemaName=field.getName().substring(0,field.getName().length()-3);
-						MongooseSchema referencedSchema=MongooseSchemaFactory.getMongooseSchemaWithName(referencedSchemaName);
-						if(referencedSchema!=null){
-							field.setType(referencedSchema.getTypeOfIdField());
-							field.refLiteral.setText(referencedSchemaName);
-							field.refLiteral.setDisabled(false);
+				String[] newFieldNames=newFieldTextField.getText().trim().split(",");
+				if(newFieldNames.length==0){Utils.setInfo(null,"No field names specified!");return;}
+				Field lastField=null;
+				String fieldName;
+				MongooseSchemaCollection collection=mongooseSchema.getCollection();
+				for(String newFieldName:newFieldNames){
+					try{
+						Field field=newField(newFieldName.trim()); // attempt to add the new field, if we succeed disable the new field button and select the newly added field!!!
+						if(field!=null){
+							lastField=field;
+							if(collection!=null){
+								fieldName=field.getName();
+								// if we want to preselect the field type if we think the field name indicates that it is a reference to another mongooseSchema
+								if(fieldName.length()>3&&fieldName.substring(fieldName.length()-3).equalsIgnoreCase("_id")){
+									String referencedSchemaName=fieldName.substring(0,fieldName.length()-3);
+									MongooseSchema referencedSchema=collection.getSchemaWithName(referencedSchemaName);
+									if(referencedSchema!=null){
+										field.setType(referencedSchema.getTypeOfIdField());
+										field.refLiteral.setText(referencedSchemaName);
+										field.refLiteral.setDisabled(false);
+									}
+								}
+							}
 						}
+					}catch(Exception ex){
+						Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' adding field '"+newFieldName+"'.");
 					}
-					newFieldButton.setEnabled(false);
-					SwingUtils.removeDefaultButton(newFieldButton);
-					fieldList.setSelectedValue(field,true);
 				}
+				if(lastField==null)return; // no fields created!!
+				newFieldButton.setEnabled(false);
+				SwingUtils.removeDefaultButton(newFieldButton);
+				fieldList.setSelectedValue(lastField,true);
 			}
 		});
 		newFieldButton.setEnabled(false); // no valid field name entered yet!!!
 		newFieldPanel.add(newFieldTextField=new JTextField());
+		newFieldTextField.setToolTipText("the names of the fields to add, comma-delimited");
 		//////////newFieldTextField.setBorder(new LineBorder(Color.BLACK));
 		newFieldTextField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
 				// let's check whether this is a valid text name
-				String newFieldname=newFieldTextField.getText();
-				boolean isValidFieldname=!newFieldname.isEmpty()&&!isExistingFieldname(newFieldname);
-				newFieldButton.setEnabled(isValidFieldname);
-				if(isValidFieldname)SwingUtils.setDefaultButton(newFieldButton);
+				String[] newFieldNames=newFieldTextField.getText().trim().split(",");
+				boolean someNewFieldNames=false;
+				for(String newFieldName:newFieldNames)if(!newFieldName.trim().isEmpty()&&!isExistingFieldname(newFieldName.trim())){someNewFieldNames=true;break;}
+				newFieldButton.setEnabled(someNewFieldNames);
+				if(someNewFieldNames)SwingUtils.setDefaultButton(newFieldButton);
 			}
 		});
 		return newFieldPanel;
@@ -209,9 +227,9 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		if(mongooseSchema!=null){
 			// there might be uncommitted text in the text lines editor
 			if(tabbedPane.getSelectedIndex()==0&&fieldsTabbedPane.getSelectedIndex()==1&&!fieldsTextLinesEditor.write())
-				Utils.setInfo(this,"Can't save, due to failing to update the schema from the text.");
+				Utils.setInfo(null,"Can't save, due to failing to update the schema from the text.");
 			else
-				mongooseSchema.save();
+				if(mongooseSchema.save())Utils.setInfo(null,"Mongoose schema saved to "+mongooseSchema.getAssociatedFilename()+".");
 		}else
 			Utils.setInfo(this,"Bug: No schema to save!");
 	}
@@ -287,21 +305,46 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			textLinesConsumer.setTextLines(textLinesProducer.getProducedTextLines());
 			return true;
 		}catch(Exception ex){
-			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' saving to "+textLinesConsumer.toString()+".");
+			Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' saving to "+textLinesConsumer.toString()+".");
 		}
 		return false;
+	}
+	private JTextField saveOutputPathTextField;
+	private JComponent outputPathView;
+	private JComponent getOutputPathView(){
+		JPanel outputPathPanel=new JPanel(new BorderLayout());
+		outputPathPanel.add(new JLabel(" to: "),BorderLayout.WEST);
+		outputPathPanel.add(saveOutputPathTextField=new JTextField());
+		saveOutputPathTextField.setText("./app");
+		JButton browseForOutputPathButton;
+		outputPathPanel.add(browseForOutputPathButton=new JButton("Browse"),BorderLayout.EAST);
+		browseForOutputPathButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				JFileChooser chooser=new JFileChooser();
+				// how about selecting what's currently in the output path
+				chooser.setCurrentDirectory(new java.io.File(saveOutputPathTextField.getText())); // should we go one directory up???
+				chooser.setDialogTitle("The folder to write the output files to");
+				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				//
+				// disable the "All files" option.
+				//
+				chooser.setAcceptAllFileFilterUsed(false);
+				//
+				if(chooser.showOpenDialog(null)==JFileChooser.APPROVE_OPTION)
+					saveOutputPathTextField.setText(chooser.getSelectedFile().getAbsolutePath());
+			}
+		});
+		return outputPathPanel;
+	}
+	private String getOutputSubFolder(String subfolder){
+		return String.join(File.separator,new String[]{saveOutputPathTextField.getText(),subfolder});
 	}
 	private JButton showInfoButton;
 	private JComponent getSaveView(){
 		JPanel savePanel=new JPanel(new BorderLayout());
-		savePanel.add(showInfoButton=new JButton("Show info"),BorderLayout.WEST);
-		showInfoButton.addActionListener(new ActionListener(){
-			@Override
-			public void actionPerformed(ActionEvent e){
-				SwingUtils.showInfoFrame(mongooseSchema,"Schema "+mongooseSchema.getName()+" information messages");
-			}
-		});
-		savePanel.add(saveButton=new JButton("Save"),BorderLayout.EAST);
+		savePanel.add(saveButton=new JButton("Save"),BorderLayout.WEST);
+		savePanel.add(outputPathView=getOutputPathView());
 		saveButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
@@ -310,19 +353,21 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				switch(tabbedPane.getSelectedIndex()){
 					case 0:
 						if(fieldsTabbedPane.getSelectedIndex()==1)fieldsTextLinesEditor.write(); // TODO prevent writing if no change...
-						if(!mongooseSchema.save())Utils.setInfo(this,"Failed to save schema '"+mongooseSchema.getName()+"'.");
+						if(!mongooseSchema.save())Utils.setInfo(null,"Failed to save schema '"+mongooseSchema.getName()+"'.");
 						break;
 					case 1:
-						if(optionsTabbedPane.getSelectedIndex()==1)optionsTextLinesEditor.write(); // TODO prevent writing if no change...
-						if(!mongooseSchema.save())Utils.setInfo(this,"Failed to save schema '"+mongooseSchema.getName()+"'.");
+						optionCollectionView.refresh(); // MDH@08NOV2018 replacing with the same functionality: if(optionsTabbedPane.getSelectedIndex()==1)optionsTextLinesEditor.write(); // TODO prevent writing if no change...
+						if(!mongooseSchema.save())Utils.setInfo(null,"Failed to save schema '"+mongooseSchema.getName()+"'.");
 						break;
 					case 2:
 						String schemaName=mongooseSchema.getName();
 						Vector<String> written=new Vector<String>();
-						if(write(getExistingTextLinesConsumerFile(new File("./app/controllers","ovmsd."+schemaName+".controller.js")),controllerTextLinesEditor))written.add("model");
-						if(write(getExistingTextLinesConsumerFile(new File("./app/routes","ovmsd."+schemaName+".routes.js")),routesTextLinesEditor))written.add("routes");
-						if(write(getExistingTextLinesConsumerFile(new File("./app/models","ovmsd."+schemaName+".model.js")),modelTextLinesEditor))written.add("controller");
-						if(!written.isEmpty())Utils.setInfo(this,Utils.capitalize(String.join(", ",written)+" saved."));
+						String schemaOutputFileName=mongooseSchema.getOutputFileName();
+						// MDH@06NOV2018: a bit of a nuisance since routes, controller and model files assume relative paths as well that we need to adhere to BUT ok these are relative...
+						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("controllers"),schemaOutputFileName+".controller.js")),controllerTextLinesEditor))written.add("model");
+						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("routes"),schemaOutputFileName+".routes.js")),routesTextLinesEditor))written.add("routes");
+						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("models"),schemaOutputFileName+".model.js")),modelTextLinesEditor))written.add("controller");
+						if(!written.isEmpty())Utils.setInfo(null,Utils.capitalize(String.join(", ",written)+" saved."));
 				}
 			}
 		});
@@ -422,7 +467,15 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		mongooseSchemaEntryLabel.setFont(mongooseSchemaEntryLabel.getFont().deriveFont(Font.BOLD));
 		JPanel mongooseSchemaEntryPanel=new JPanel(new BorderLayout());
 		mongooseSchemaEntryPanel.add(mongooseSchemaEntryLabel,BorderLayout.WEST);
-		mongooseSchemaEntryPanel.add(showInExternalEditorButton=new JButton("Show in external editor"),BorderLayout.EAST);
+		Box buttonBox=Box.createHorizontalBox();
+		buttonBox.add(showInfoButton=new JButton("Show info"));
+		showInfoButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				SwingUtils.showInfoFrame(mongooseSchema,"Schema "+mongooseSchema.getName()+" information messages");
+			}
+		});
+		buttonBox.add(showInExternalEditorButton=new JButton("Show in external editor"));
 		showInExternalEditorButton.setEnabled(false);
 		showInExternalEditorButton.addActionListener(new ActionListener(){
 			@Override
@@ -430,6 +483,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				mongooseSchema.showInExternalEditor();
 			}
 		});
+		mongooseSchemaEntryPanel.add(buttonBox,BorderLayout.EAST);
 		schemaHeaderPanel.add(mongooseSchemaEntryPanel);
 		schemaHeaderPanel.add(getSchemaTagView());
 		////////schemaHeaderPanel.add(getSubSchemaSelectorView());
@@ -440,41 +494,20 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		schemaOptionsBox.removeAll();
 		if(mongooseSchema!=null)for(Option option:mongooseSchema.getOptionCollection())schemaOptionsBox.add(new OptionView(option));
 	}
+	/*
 	private JTextLinesEditor optionsTextLinesEditor;
 	private JComponent getOptionsTextView(){
 		JPanel optionsTextPanel=new JPanel(new BorderLayout());
 		optionsTextPanel.add(optionsTextLinesEditor=new JTextLinesEditor());
 		return optionsTextPanel;
 	}
-	private JTabbedPane optionsTabbedPane;
+	*/
+	private OptionCollectionView optionCollectionView=null;
 	private int selectedOptionsTabIndex=0;
-	private JComponent getSchemaOptionsView(){
-		JPanel schemaOptionsPanel=new JPanel(new BorderLayout());
-		optionsTabbedPane=new JTabbedPane();
-		optionsTabbedPane.addTab("Design",new JScrollPane(schemaOptionsBox=Box.createVerticalBox()));
-		optionsTabbedPane.addTab("Text",getOptionsTextView());
-		optionsTabbedPane.addChangeListener(new ChangeListener(){
-			@Override
-			public void stateChanged(ChangeEvent e){
-				int optionsTabIndex=optionsTabbedPane.getSelectedIndex();
-				try{
-					switch(optionsTabIndex){
-						case 0:
-							if(selectedOptionsTabIndex==1)
-								if(optionsTextLinesEditor.write())
-									showSchemaOptions();
-							break;
-						case 1:
-							optionsTextLinesEditor.read();
-							break;
-					}
-				}finally{
-					selectedOptionsTabIndex=optionsTabIndex;
-				}
-			}
-		});
-		schemaOptionsPanel.add(optionsTabbedPane);
-		return schemaOptionsPanel;
+	private JComponent getOptionCollectionView(){
+		// MDH@08NOV2018: create if not yet existing...
+		if(optionCollectionView==null)optionCollectionView=(new OptionCollectionView()).setOptionCollection(mongooseSchema!=null?mongooseSchema.getOptionCollection():null);
+		return optionCollectionView;
 	}
 	/*
 	private JComponent getSchemaDesignView(){
@@ -606,7 +639,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 							if(selectedFieldsTabIndex==1)fieldsTextLinesEditor.write(); // update the schema fields from the text
 							break;
 						case 1:
-							if(selectedOptionsTabIndex==1)optionsTextLinesEditor.write(); // update the schema options from the text
+							optionCollectionView.refresh(); /////if(selectedOptionsTabIndex==1)optionsTextLinesEditor.write(); // update the schema options from the text
 							break;
 					}
 					modelTextLinesEditor.read();
@@ -618,6 +651,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			Utils.setInfo(this,"ERROR: '"+ex.getLocalizedMessage()+"' switching tabs.");
 		}finally{
 			lastSelectedTabIndex=selectedTabIndex;
+			outputPathView.setVisible(lastSelectedTabIndex==2);
 			saveButton.setText("Save "+(lastSelectedTabIndex==2?"output":"schema"));
 		}
 	}
@@ -643,7 +677,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		tabbedPane=new JTabbedPane();
 		// initially when the schema is selected in the tree view we show the text only (before it's parsed when the Design view is shown!!!)
 		tabbedPane.addTab("Fields",getSchemaFieldsView());
-		tabbedPane.addTab("Options",getSchemaOptionsView());
+		tabbedPane.addTab("Options",getOptionCollectionView());
 		outputView=getOutputView();
 		// now wait for a top-level Mongoose schema to be selected!!!		tabbedPane.addTab("Model",schemaModelView=getSchemaModelView());
 		tabbedPane.addChangeListener(new ChangeListener(){
@@ -709,17 +743,19 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 						if(fieldsTabbedPane.getSelectedIndex()==1)fieldsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
 						break;
 					case 1: // options tab
-						if(optionsTabbedPane.getSelectedIndex()==1)optionsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
+						optionCollectionView.refresh();
+						// replacing: if(optionsTabbedPane.getSelectedIndex()==1)optionsTextLinesEditor.write(); // in case we were editing the field collection, update it before actually removing the text lines container
 						break;
 				}
 				// get rid of editing the current field collection...
 				fieldsTextLinesEditor.removeChangeListener(this);
 				fieldsTextLinesEditor.setTextLinesContainer(null);
 
-				// same stuff for the Options
+				optionCollectionView.setOptionCollection(null);
+				/* same stuff for the Options
 				optionsTextLinesEditor.removeChangeListener(this);
 				optionsTextLinesEditor.setTextLinesContainer(null);
-
+				 */
 				modelTextLinesEditor.setTextLinesContainer(null);
 				/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
 				this.mongooseSchema.deleteSchemaSyncListener(this);
@@ -729,7 +765,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			}
 			this.mongooseSchema=mongooseSchema;
 			if(this.mongooseSchema!=null){
-				showSchemaOptions();
+				optionCollectionView.setOptionCollection(this.mongooseSchema.getOptionCollection()); // replacing: showSchemaOptions();
 				showInExternalEditorButton.setEnabled(this.mongooseSchema.isAssociatedFileReadable());
 				boolean showOutputTab=(this.mongooseSchema.getParent()==null);
 				saveView.setVisible(showOutputTab);
@@ -741,14 +777,16 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				// do we have a separate field text lines editor or do we edit the fields and options together????
 				fieldsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getFieldCollection());
 
+				/*
 				optionsTextLinesEditor.setTextLinesContainer(this.mongooseSchema.getOptionCollection());
+				 */
 
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
 				routesTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getRoutesTextLinesProducer());
 				controllerTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getControllerTextLinesProducer());
 				// TODO do we need this?????
-				modelTextLinesEditor.setTextLinesConsumer(this.mongooseSchema.getModelTextLinesConsumer());
+				////////modelTextLinesEditor.setTextLinesConsumer(this.mongooseSchema.getModelTextLinesConsumer());
 				// the Save button should be enabled when showing the Output tab, or when the mongoose schema is both saveable and not considered synced right now...
 				/////////saveButton.setEnabled(tabbedPane.getSelectedIndex()==2||(this.mongooseSchema.isSaveable()&&!this.mongooseSchema.isSynced()));
 				fieldsTextLinesEditor.addChangeListener(this); // any change to the text should result in checking whether or not this text differs from the last 'saved' text!!!

@@ -1,6 +1,11 @@
 $client database - deviceinput: stores sensordata from devices
-+_id:ObjectId	required	+indextype=unique
-+maplocation_id:ObjectId	+ref=maplocation
-+deviceid:ObjectId	+ref=device
+sensorvalue
+	-_id:ObjectId
+	+id:Int32
+	+value:Number
++_id:ObjectId
 +project_id:ObjectId	+ref=project
-+sensordata:Array
++maplocation_id:ObjectId	+ref=maplocation
++devicetypeid:Int32	required
++deviceid:ObjectId	required
++sensorvalues:Array

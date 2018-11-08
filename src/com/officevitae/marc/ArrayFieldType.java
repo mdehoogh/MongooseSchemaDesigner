@@ -25,7 +25,7 @@ public class ArrayFieldType implements ICompositeFieldType{
 
 	public String toString(){
 		// I suppose we could use MongooseFieldType.ARRAY.toString() when the array element type is MIXED??? instead of the square brackets????
-		return "["+(arrayElementType.equals(MongooseFieldType.MIXED)?"":arrayElementType.toString())+"]";
+		return "["+(arrayElementType.equals(MongooseFieldType.MIXED)?"":(arrayElementType instanceof IFieldType.External?arrayElementType.getDescription().toString():arrayElementType.toString()))+"]";
 	}
 
 	// the array element type defaults to MIXED

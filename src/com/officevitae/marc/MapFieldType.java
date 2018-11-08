@@ -23,7 +23,8 @@ public class MapFieldType implements ICompositeFieldType{
 		// the representation should be JavaScript style, so it can be used immediately
 		String representation=MongooseFieldType.MAP.toString(); // the full representation of the generic MAP instance
 		if(ofFieldType.equals(MongooseFieldType.MIXED))return representation; // just Map
-		return "{type:"+representation+",of:"+ofFieldType.toString()+"}";
+		// the External tag forces the use of getDescription().toString() instead of toString() itself (so function as a wrapper to return another text)
+		return "{type:"+representation+",of:"+(ofFieldType instanceof IFieldType.External?ofFieldType.getDescription().toString():ofFieldType.toString())+"}";
 		// replacing: return "("+(ofFieldType.equals(MongooseFieldType.MIXED)?"":ofFieldType.getDescription().toString())+")";
 	}
 
