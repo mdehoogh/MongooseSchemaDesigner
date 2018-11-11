@@ -1,8 +1,8 @@
 package com.officevitae.marc;
 
 public class JavaScriptObjectOption extends Option<JavaScriptObject>{
-	public JavaScriptObjectOption(String name,String info,JavaScriptObject _default){
-		super(name,info,_default);
+	public JavaScriptObjectOption(OptionCollection optionCollection,OptionInfo<JavaScriptObject> optionInfo){
+		super(optionCollection,optionInfo);
 	}
 	@Override
 	public void parseValue(String valueText)throws Exception{
