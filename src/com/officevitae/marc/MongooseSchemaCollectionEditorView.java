@@ -11,11 +11,15 @@ public class MongooseSchemaCollectionEditorView extends JPanel{
 	private JButton saveMongooseSchemaCollectionOptionCollectionButton;
 	private OptionCollectionView optionCollectionView=null;
 	private JLabel optionCollectionLabel;
+	// MDH@12NOV2018: refresh() takes care of telling the user when it can and should Save the option collection...
+	public void refresh(){
+		if(saveMongooseSchemaCollectionOptionCollectionButton!=null)saveMongooseSchemaCollectionOptionCollectionButton.setEnabled(mongooseSchemaCollection.isSyncable()&&!mongooseSchemaCollection.isSynced());
+	}
 	private void showMongooseSchemaCollection(){
 		if(optionCollectionView!=null)optionCollectionView.setOptionCollection(mongooseSchemaCollection!=null?mongooseSchemaCollection.getOptionCollection():null);
 		OptionCollection optionCollection=optionCollectionView.getOptionCollection();
 		optionCollectionLabel.setText(optionCollection!=null?"Options of Mongoose schema collection "+mongooseSchemaCollection.toString():"");
-		if(saveMongooseSchemaCollectionOptionCollectionButton!=null)saveMongooseSchemaCollectionOptionCollectionButton.setEnabled(optionCollectionView.getOptionCollection()!=null);
+		refresh();
 	}
 	private JComponent getOptionCollectionLabelView(){
 		JPanel optionCollectionLabelPanel=new JPanel(new BorderLayout());

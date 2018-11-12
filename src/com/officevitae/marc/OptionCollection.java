@@ -4,7 +4,10 @@ import java.util.Vector;
 
 public class OptionCollection extends Vector<Option> implements ITextLinesContainer{
 
-	public static final Vector<OptionInfo> OPTIONINFOS=new Vector<OptionInfo>();
+	private static final Vector<OptionInfo> OPTIONINFOS=new Vector<OptionInfo>();
+
+	public static OptionInfo getOptionInfo(int optionIndex){return OPTIONINFOS.get(optionIndex);}
+
 	static {
 		// let's add all possible options with their default
 		OPTIONINFOS.add(new OptionInfo<Boolean>("autoIndex","Create indexes at start (default: true).",Boolean.TRUE));
@@ -38,6 +41,17 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 	}
 	private Object host=null;
 
+	public interface OptionChangeListener{
+		void optionChanged(int optionIndex);
+	}
+	private OptionChangeListener optionChangeListener=null;
+	public void setOptionChangeListener(OptionChangeListener optionChangeListener){
+		this.optionChangeListener=optionChangeListener;
+	}
+	public void optionChanged(int optionIndex){
+		if(optionChangeListener!=null)try{optionChangeListener.optionChanged(optionIndex);}catch(Exception ex){}
+	}
+
 	// allow setting a parent, as backup for default options which is ONLY applicable in producing text line
 	private OptionCollection parent=null;
 	public OptionCollection setParent(OptionCollection parent){this.parent=parent;return this;}
@@ -56,8 +70,11 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 	}
 
 	// an option may request the default of the option
-	public Object getDefault(Option option){
-		return(parent!=null?parent.getDefault(option):option.getOptionInfo().getDefault());
+	// which should be the actual value that the parent exposes for that option
+	// I guess we should do that by index
+	public Object getDefault(int optionIndex){
+		// either the value as stored in the parent, or otherwise the default stored in the OPTIONINFOS!!
+		return(parent!=null?parent.get(optionIndex).getValue():OPTIONINFOS.get(optionIndex).getDefault());
 	}
 
 	private Vector<String> producedTextLines=null;
@@ -82,11 +99,13 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 	public OptionCollection(Object host){
 		this.host=host;
 		// very convenient
-		for(OptionInfo optionInfo:OPTIONINFOS)
+		OptionInfo optionInfo;
+		for(int optionIndex=0;optionIndex<OPTIONINFOS.size();optionIndex++){
+			optionInfo=OPTIONINFOS.get(optionIndex);
 			if(optionInfo.getDefault() instanceof JavaScriptObject)
-				super.add(new JavaScriptObjectOption(this,optionInfo));
-			else
-				super.add(new Option(this,optionInfo));
+				super.add(new JavaScriptObjectOption(this,optionIndex));
+			else super.add(new Option(this,optionIndex));
+		}
 	}
 	// TODO there must be a way to improve this!!
 	public Option getNonDefaultOption(Option option){

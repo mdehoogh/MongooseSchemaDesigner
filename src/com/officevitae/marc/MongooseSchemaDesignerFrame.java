@@ -35,7 +35,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 */
 
-public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,MongooseSchema.SyncListener {
+public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,MongooseSchema.SyncListener,MongooseSchemaCollection.SyncListener {
 
 	///////////private Vector<String> toplevelSchemaNames=new Vector<String>();
 
@@ -240,7 +240,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     */
     // MDH@15OCT2018: preferable to use a Tree view instead of a list so we can also show subschema's!!!
     private JTree mongooseSchemasTree=null;
-    private DefaultMutableTreeNode schemasTreeRootNode=new DefaultMutableTreeNode(new MongooseSchemaCollection(".")); // indicate the schemas folder itself
+    private DefaultMutableTreeNode schemasTreeRootNode=new DefaultMutableTreeNode(new MongooseSchemaCollection(".",this)); // indicate the schemas folder itself
     private DefaultMutableTreeNode selectedMongooseSchemaNode=schemasTreeRootNode;
 
     // MongooseSchema.SyncListener implementation
@@ -254,6 +254,12 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 		}
 		else Utils.consoleprintln("NOTE: The Mongoose schema design that changed ("+mongooseSchema.getName()+") not found in the Mongoose schema design tree view.");
 	}
+	// end MongooseSchema.SyncListener impl.
+	// MongooseSchemaCollection.SyncListener implementation
+	public void syncChanged(MongooseSchemaCollection mongooseSchemaCollection){
+		mongooseSchemaCollectionEditorView.refresh();
+	}
+	// end MongooseSchemaCollection.SyncListener implementation
 
 	// on any occasion it should not be allowed to add (sub)schemas with existing schema names
 	private boolean isExistingSchemaName(String schemaName,Object parent){
@@ -436,7 +442,7 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			try{
 				subfolderName=subfolder.getName();
 				Utils.consoleprintln("Subfolder: '"+subfolderName+"' ("+subfolder.getCanonicalPath()+").");
-				mongooseSchemaCollection=new MongooseSchemaCollection(subfolder.getName()); // the subfolder name
+				mongooseSchemaCollection=new MongooseSchemaCollection(subfolder.getName(),this); // the subfolder name
 				DefaultMutableTreeNode subfolderTreeNode=new DefaultMutableTreeNode(mongooseSchemaCollection);
 				mongooseSchemaCollectionTreeNode.add(subfolderTreeNode);
 				readMongooseSchemas(subfolderTreeNode);
@@ -509,7 +515,8 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 			Utils.setInfo(null,"ERROR: Failed to access schemas folder '"+schemasFolder.getAbsolutePath()+"'.");
 
 		// external (JavaScript) model files we want to import automatically
-		MongooseSchemaCollection mongooseSchemaCollection=new MongooseSchemaCollection("app/models");
+		// TODO if there's NO sync listener an option collection should NOT be created, OR????
+		MongooseSchemaCollection mongooseSchemaCollection=new MongooseSchemaCollection("app/models",null);
 		File[] jsschemaFiles=new File("app/models").listFiles(new FilenameFilter(){
 			@Override
 			public boolean accept(File dir,String name){

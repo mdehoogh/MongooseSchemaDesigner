@@ -2,9 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7d8604b0-53c8-41d6-b597-b302511ce5ba" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/src/com/officevitae/marc/OptionInfo.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/Option.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/Option.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/OptionCollection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/OptionCollection.java" afterDir="false" />
     </list>
@@ -19,38 +21,38 @@
     <session id="-1393264772">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="33" />
+          <entry key="project.closed" value="35" />
           <entry key="project.open.time.10" value="5" />
           <entry key="project.open.time.11" value="10" />
           <entry key="project.open.time.12" value="6" />
-          <entry key="project.open.time.13" value="5" />
+          <entry key="project.open.time.13" value="7" />
           <entry key="project.open.time.14" value="3" />
           <entry key="project.open.time.15" value="3" />
           <entry key="project.open.time.2" value="1" />
-          <entry key="project.opened" value="33" />
+          <entry key="project.opened" value="35" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="java" value="128" />
+          <entry key="java" value="129" />
           <entry key="js" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="JAVA" value="128" />
+          <entry key="JAVA" value="129" />
           <entry key="JavaScript" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="java" value="202068" />
+          <entry key="java" value="206769" />
           <entry key="txt" value="48" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="202068" />
+          <entry key="JAVA" value="206769" />
           <entry key="PLAIN_TEXT" value="48" />
         </counts>
       </usages-collector>
@@ -61,20 +63,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IInfoViewer.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="60">
-              <caret line="4" column="1" selection-start-line="4" selection-start-column="1" selection-end-line="4" selection-end-column="1" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4545">
-              <caret line="314" selection-start-line="314" selection-end-line="314" />
+            <state relative-caret-position="213">
+              <caret line="516" column="76" lean-forward="true" selection-start-line="516" selection-start-column="76" selection-end-line="516" selection-end-column="76" />
             </state>
           </provider>
         </entry>
@@ -82,8 +75,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="33" column="20" selection-start-line="33" selection-start-column="20" selection-end-line="33" selection-end-column="20" />
+            <state relative-caret-position="226">
+              <caret line="16" column="5" lean-forward="true" selection-start-line="16" selection-start-column="5" selection-end-line="16" selection-end-column="5" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -106,10 +99,19 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionCollection.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="195">
-              <caret line="60" column="5" lean-forward="true" selection-start-line="60" selection-start-column="5" selection-end-line="60" selection-end-column="5" />
+            <state relative-caret-position="-468">
+              <caret line="49" column="5" lean-forward="true" selection-start-line="49" selection-start-column="5" selection-end-line="49" selection-end-column="5" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionCollectionView.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="627">
+              <caret line="55" selection-start-line="55" selection-end-line="55" />
               <folding>
-                <element signature="e#205#217#0" expanded="true" />
+                <element signature="imports" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -118,8 +120,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" column="1" lean-forward="true" selection-start-line="10" selection-start-column="1" selection-end-line="10" selection-end-column="1" />
+            <state relative-caret-position="75">
+              <caret line="5" column="5" selection-start-line="5" selection-start-column="5" selection-end-line="5" selection-end-column="5" />
             </state>
           </provider>
         </entry>
@@ -128,19 +130,18 @@
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionInfo.java">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="285">
-              <caret line="19" column="1" lean-forward="true" selection-start-line="19" selection-start-column="1" selection-end-line="19" selection-end-column="1" />
+              <caret line="19" column="1" selection-start-line="19" selection-start-column="1" selection-end-line="19" selection-end-column="1" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Option.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="8" selection-start-line="8" selection-end-line="8" />
+            <state relative-caret-position="702">
+              <caret line="55" column="34" selection-start-line="55" selection-start-column="34" selection-end-line="55" selection-end-column="34" />
               <folding>
-                <element signature="e#2043#2044#0" expanded="true" />
-                <element signature="e#2113#2114#0" expanded="true" />
+                <element signature="e#2339#2340#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -149,8 +150,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="175">
-              <caret line="22" column="40" selection-start-line="22" selection-start-column="40" selection-end-line="22" selection-end-column="40" />
+            <state relative-caret-position="285">
+              <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -161,8 +162,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionView.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="109">
-              <caret line="17" column="32" lean-forward="true" selection-start-line="17" selection-start-column="32" selection-end-line="17" selection-end-column="32" />
+            <state relative-caret-position="150">
+              <caret line="17" column="32" selection-start-line="17" selection-start-column="32" selection-end-line="17" selection-end-column="32" />
               <folding>
                 <element signature="imports" expanded="true" />
               </folding>
@@ -182,7 +183,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>routes.js</find>
       <find>getModelTextLinesConsumer</find>
       <find>getRoutes</find>
       <find>Show in e</find>
@@ -212,6 +212,7 @@
       <find>getOptionsT</find>
       <find>CardLa</find>
       <find>setMongooseSchema(</find>
+      <find>syncCa</find>
     </findStrings>
     <replaceStrings>
       <replace>Utils.consoleprintln(</replace>
@@ -258,14 +259,14 @@
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionCollectionView.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionView.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionInfo.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionCollection.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/Option.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" />
       </list>
     </option>
   </component>
@@ -281,7 +282,6 @@
     </navigator>
     <panes>
       <pane id="Scope" />
-      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -308,10 +308,11 @@
           <select />
         </subPane>
       </pane>
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1541365028050" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1542026113451" />
     <property name="project.structure.last.edited" value="Artifacts" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
@@ -381,7 +382,7 @@
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1680" height="964" extended-state="0" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8662921" visible="true" weight="0.36813188" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8662921" visible="true" weight="0.25152627" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -657,37 +658,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionCollectionView.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="780">
-          <caret line="55" selection-start-line="55" selection-end-line="55" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/IInfoViewer.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="60">
           <caret line="4" column="1" selection-start-line="4" selection-start-column="1" selection-end-line="4" selection-end-column="1" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4545">
-          <caret line="314" selection-start-line="314" selection-end-line="314" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="33" column="20" selection-start-line="33" selection-start-column="20" selection-end-line="33" selection-end-column="20" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -701,58 +675,81 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="175">
-          <caret line="22" column="40" selection-start-line="22" selection-start-column="40" selection-end-line="22" selection-end-column="40" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="75">
+          <caret line="5" column="5" selection-start-line="5" selection-start-column="5" selection-end-line="5" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionInfo.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="285">
-          <caret line="19" column="1" lean-forward="true" selection-start-line="19" selection-start-column="1" selection-end-line="19" selection-end-column="1" />
+          <caret line="19" column="1" selection-start-line="19" selection-start-column="1" selection-end-line="19" selection-end-column="1" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionView.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="109">
-          <caret line="17" column="32" lean-forward="true" selection-start-line="17" selection-start-column="32" selection-end-line="17" selection-end-column="32" />
+        <state relative-caret-position="150">
+          <caret line="17" column="32" selection-start-line="17" selection-start-column="32" selection-end-line="17" selection-end-column="32" />
           <folding>
             <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Option.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" column="1" lean-forward="true" selection-start-line="10" selection-start-column="1" selection-end-line="10" selection-end-column="1" />
+        <state relative-caret-position="702">
+          <caret line="55" column="34" selection-start-line="55" selection-start-column="34" selection-end-line="55" selection-end-column="34" />
+          <folding>
+            <element signature="e#2339#2340#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionCollection.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="60" column="5" lean-forward="true" selection-start-line="60" selection-start-column="5" selection-end-line="60" selection-end-column="5" />
+        <state relative-caret-position="-468">
+          <caret line="49" column="5" lean-forward="true" selection-start-line="49" selection-start-column="5" selection-end-line="49" selection-end-column="5" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/OptionCollectionView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="627">
+          <caret line="55" selection-start-line="55" selection-end-line="55" />
           <folding>
-            <element signature="e#205#217#0" expanded="true" />
+            <element signature="imports" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Option.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" selection-start-line="8" selection-end-line="8" />
+        <state relative-caret-position="285">
+          <caret line="19" lean-forward="true" selection-start-line="19" selection-end-line="19" />
           <folding>
-            <element signature="e#2043#2044#0" expanded="true" />
-            <element signature="e#2113#2114#0" expanded="true" />
+            <element signature="imports" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="226">
+          <caret line="16" column="5" lean-forward="true" selection-start-line="16" selection-start-column="5" selection-end-line="16" selection-end-column="5" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="213">
+          <caret line="516" column="76" lean-forward="true" selection-start-line="516" selection-start-column="76" selection-end-line="516" selection-end-column="76" />
         </state>
       </provider>
     </entry>
