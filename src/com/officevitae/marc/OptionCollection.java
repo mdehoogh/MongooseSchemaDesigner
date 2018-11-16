@@ -43,13 +43,24 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 
 	public interface OptionChangeListener{
 		void optionChanged(int optionIndex);
+		void optionUnchanged(int optionIndex);
 	}
 	private OptionChangeListener optionChangeListener=null;
 	public void setOptionChangeListener(OptionChangeListener optionChangeListener){
 		this.optionChangeListener=optionChangeListener;
 	}
-	public void optionChanged(int optionIndex){
+	// Options will either call optionChanged or optionUnchanged depending on whether their value has changed!!!
+	void optionChanged(int optionIndex){
+		Utils.consoleprintln("Option #"+optionIndex+" changed!");
 		if(optionChangeListener!=null)try{optionChangeListener.optionChanged(optionIndex);}catch(Exception ex){}
+	}
+	void optionUnchanged(int optionIndex){
+		Utils.consoleprintln("Option #"+optionIndex+" unchanged!");
+		if(optionChangeListener!=null)try{optionChangeListener.optionUnchanged(optionIndex);}catch(Exception ex){}
+	}
+	void assumeInitialized(){
+		for(Option option:this)option.assumeInitialized(); // this will force calling optionUnchanged() up the chain!!!!
+		// BUT this might call setSynced(true) which it shouldn't!!!
 	}
 
 	// allow setting a parent, as backup for default options which is ONLY applicable in producing text line
@@ -61,7 +72,7 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 		return null;
 	}
 	public void parseOptionValue(String[] optionNameValuePair) throws Exception{
-		getOptionWithName(optionNameValuePair[0]).parseValue(optionNameValuePair[1]);
+		getOptionWithName(optionNameValuePair[0]).parseInitialValue(optionNameValuePair[1]);
 	}
 
 	// a lot of things can go wrong, trying to set the value of an option using another option
@@ -91,13 +102,14 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 		for(String textLine:textLines)
 			try{
 				int colonpos=textLine.indexOf(":"); // additional colons might be present (e.g. in JavaScriptOption things)
-				getOptionWithName(textLine.substring(0,colonpos)).parseValue(textLine.substring(colonpos+1));
+				getOptionWithName(textLine.substring(0,colonpos)).parseInitialValue(textLine.substring(colonpos+1));
 			}catch(Exception ex){
 				Utils.setInfo(host,"ERROR: '"+ex.getLocalizedMessage()+"' parsing option line '"+textLine+"'.");
 			}
 	}
 	public OptionCollection(Object host){
 		this.host=host;
+		if(this.host instanceof OptionChangeListener)setOptionChangeListener((OptionChangeListener)this.host);
 		// very convenient
 		OptionInfo optionInfo;
 		for(int optionIndex=0;optionIndex<OPTIONINFOS.size();optionIndex++){

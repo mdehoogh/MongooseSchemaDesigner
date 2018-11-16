@@ -19,9 +19,9 @@ public class Option<T>{
 		this.optionIndex=optionIndex;
 	}
 
+	private T initialValue=null; // whatever we parse we consider to be the initial value!!!
 	protected T value=null;
-	// obviously any value should be of type T
-	public void parseValue(String valueText) throws Exception{
+	private void parse(String valueText)throws Exception{
 		T _default=getDefault();
 		if(_default instanceof Boolean)value=(T)Boolean.valueOf(valueText);else
 		if(_default instanceof String)value=(T)Utils.dequote(valueText);else
@@ -29,9 +29,33 @@ public class Option<T>{
 		if(_default instanceof Long)value=(T)Long.valueOf(valueText);else
 		if(_default instanceof Double)value=(T)Double.valueOf(valueText);else
 		if(_default instanceof Float)value=(T)Float.valueOf(valueText);else
-		throw new Exception("Unable to parse value text '"+valueText+"'.");
-		// inform OptionCollection
-		if(optionCollection!=null)optionCollection.optionChanged(optionIndex);
+			throw new Exception("Unable to parse value text '"+valueText+"'.");
+	}
+	// obviously any value should be of type T
+	// MDH@08NOV2018: typically used for setting the value from predefined options which is only possible
+	public void assumeInitialized(){
+		initialValue=value;
+		// definititely unchanged now...
+		if(optionCollection!=null)optionCollection.optionUnchanged(optionIndex);
+	}
+	void initialize(){
+		value=initialValue;
+		// definititely unchanged now...
+		if(optionCollection!=null)optionCollection.optionUnchanged(optionIndex);
+	}
+	public void parseInitialValue(String valueText)throws Exception{
+		parse(valueText);
+		assumeInitialized();
+	}
+	public boolean isChanged(){
+		boolean changed=(initialValue==null?this.value!=null:!initialValue.equals(this.value));
+		if(initialValue!=null)
+			Utils.consoleprintln("Initial value '"+initialValue+"' does "+(changed?"":"NOT")+" differ from '"+(value==null?"?":value.toString())+"'.");
+		return changed;
+	}
+	public void parseValue(String valueText) throws Exception{
+		parse(valueText);
+		if(optionCollection!=null)if(isChanged())optionCollection.optionChanged(optionIndex);else optionCollection.optionUnchanged(optionIndex);
 	}
 	// let's return the default if no value was set yet
 	public T getValue(){return(value==null?getDefault():value);}
@@ -52,9 +76,11 @@ public class Option<T>{
 		return name+":"+value.toString();
 	}
 
-	// MDH@08NOV2018: typically used for setting the value from predefined options which is only possible
 	public void setValue(T value){
 		this.value=(value!=null&&value.equals(getDefault())?null:value);
+		// MDH@16NOV2018: bit of an issue here to determine when the option is changed or unchanged...
+		if(optionCollection==null)return;
+		if(isChanged())optionCollection.optionChanged(optionIndex);else optionCollection.optionUnchanged(optionIndex);
 	}
 
 }

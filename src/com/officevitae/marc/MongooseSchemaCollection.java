@@ -1,9 +1,6 @@
 package com.officevitae.marc;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Vector;
 
 public class MongooseSchemaCollection extends Vector<MongooseSchema> implements OptionCollection.OptionChangeListener{
@@ -31,21 +28,28 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema> implements 
 	public void informSyncListener(){
 		if(this.syncListener!=null)try{syncListener.syncChanged(this);}catch(Exception ex){}
 	}
-	public void setSynced(boolean synced){this.synced=synced;informSyncListener();}
+	private File optionsFile=null;
+	public void setSynced(boolean synced){
+		if(this.synced==synced)return; // ESSENTIAL to prevent doing it over and over again...
+		this.synced=synced;
+		informSyncListener();
+		// MDH@16NOV2018: if now considered synced all current option values should be considered initial values ESSENTIAL!!!
+		if(this.synced)if(optionCollection!=null)optionCollection.assumeInitialized();
+	}
 	// readOptionCollection() returns the read option collection (or null if nothing was read, or some error occurred)
-	private void readOptionCollection(){
+	// MDH@16NOV2018: if the file does not exist we need to write the current options to it
+	//                if after all that the file does either NOT exist or cannot be written this collection is not syncable!!!
+	private void syncOptionCollection(){
 		// the basic problem here is that a basic OptionCollection is synced because all its values are at defaults
 		// unless there's a file to read its contents from
+		optionsFile=new File(getAssociatedFolder(),"options");
 		try{
-			this.optionCollection=null;
-			File optionsFile=new File(getAssociatedFolder(),"options");
 			// if the file does NOT exist, we're synced, otherwise we're unsynced until the file was read successfully
 			// BUT the problem is that we cannot overwrite the file if we fail to read the options from it!!!
 			if(optionsFile.exists()){
 				syncable=false; // not syncable until the file was read
 				synced=false; // we're unsynced until everything was read successfully...
 				if(optionsFile.canRead()){
-					OptionCollection optionCollection=new OptionCollection(this);
 					BufferedReader br=new BufferedReader(new FileReader(optionsFile));
 					String optionLine=br.readLine();
 					while(optionLine!=null){
@@ -56,17 +60,22 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema> implements 
 							optionLine=br.readLine();
 						}
 					}
-					this.optionCollection=optionCollection;
 					br.close();
 					// managed to process the file (i.e. read all the lines), which means we're both synced and syncable!!!
 					synced=true;
 					syncable=true;
 					Utils.setInfo(null,"Option collection of Mongoose schema collection "+name+" read.");
 				}
+			}else{ // the options file does not exist and we try to create it
+				synced=false; // we need to do this otherwise saveOptionCollection won't work!!
+				saveOptionCollection();
 			}
 		}catch(Exception ex){
 			Utils.setInfo(null,"'"+ex.getLocalizedMessage()+"' reading the options of Mongoose schema collection "+name+".");
 		}finally{
+			// if the options file now exists and can be written, we consider the options syncable
+			// now if synced is false at this moment, we're definitely not syncable...
+			syncable=(synced?optionsFile.exists()&&optionsFile.canWrite():false);
 			informSyncListener();
 		}
 	}
@@ -75,11 +84,15 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema> implements 
 		if(syncable){
 			if(!synced){
 				try{
-					PrintWriter pw=new PrintWriter(new File(getAssociatedFolder(),"options"));
-					// if the option's value is the default we prepend the option line with #, so the file is easy to maintain!!
-					for(Option option:optionCollection) pw.println((option.isDefault()?"#":"")+option.toString());
-					pw.close();
-					setSynced(true);
+					// if the options file does not yet exist, create it
+					if(optionsFile.exists()||optionsFile.createNewFile()){
+						PrintWriter pw=new PrintWriter(optionsFile); // force creating the file if it does not yet exist!!!
+						// if the option's value is the default we prepend the option line with #, so the file is easy to maintain!!
+						for(Option option: optionCollection) pw.println((option.isDefault()?"#":"")+option.toString());
+						pw.close();
+						setSynced(true);
+					}else
+						Utils.setInfo(null,"Failed to create options file '"+optionsFile.getAbsolutePath()+"'.");
 				}catch(Exception ex){
 					Utils.setInfo(null,"'"+ex.getLocalizedMessage()+"' writing the options of Mongoose schema collection "+name+".");
 				}
@@ -91,19 +104,35 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema> implements 
 	}
 
 	// OptionCollection.OptionChangeListener implementation
+	// keep track of all the changed option indices
+	private Vector<Integer> changedOptionIndices=new Vector<Integer>();
+	public void optionUnchanged(int optionIndex){
+		if(changedOptionIndices.contains(optionIndex))changedOptionIndices.remove(optionIndex);
+		setSynced(changedOptionIndices.isEmpty());
+	}
 	public void optionChanged(int optionIndex){
+		if(!changedOptionIndices.contains(optionIndex))changedOptionIndices.add(optionIndex);
 		setSynced(false);
-		saveOptionCollection(); // go ahead try to save the option collection immediately...
+		//// NO, wait until the user actually switches the view... saveOptionCollection(); // go ahead try to save the option collection immediately...
 	}
 	// end OptionCollection.OptionChangeListener implementation
+
 	public String toString(){return name;}
 
 	// a single attempt to read the associated option collection????
 	public MongooseSchemaCollection(String name,SyncListener syncListener){
 		this.name=name;
-		optionCollection=new OptionCollection(this);
-		this.syncListener=syncListener;
-		readOptionCollection();
+		// for now if no sync listener is defined, we do not create an associated option collection!!!
+		if(syncListener!=null){
+			optionCollection=new OptionCollection(this);
+			optionCollection.setOptionChangeListener(this);
+			this.syncListener=syncListener;
+			// syncOptionCollection() renamed from readOptionCollection() because it will also write the current collection if the file does not exist...
+			syncOptionCollection();
+		}else{ // saveOptionCollection() should NOT attempt to save the option collection!!!
+			syncable=false;
+			synced=false;
+		}
 	}
 
 	///////public String getAssociatedFoldername(){return new File("./schemas",name).getAbsolutePath();}

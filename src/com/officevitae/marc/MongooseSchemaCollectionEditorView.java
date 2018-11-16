@@ -7,18 +7,28 @@ import java.awt.event.ActionListener;
 
 public class MongooseSchemaCollectionEditorView extends JPanel{
 
+	// MDH@16NOV2018: in rare occasions the options associated with the collection are not editable
+	//                this is accessible in the Mongoose schema collection, not the option collection
 	private MongooseSchemaCollection mongooseSchemaCollection=null;
 	private JButton saveMongooseSchemaCollectionOptionCollectionButton;
 	private OptionCollectionView optionCollectionView=null;
 	private JLabel optionCollectionLabel;
 	// MDH@12NOV2018: refresh() takes care of telling the user when it can and should Save the option collection...
 	public void refresh(){
-		if(saveMongooseSchemaCollectionOptionCollectionButton!=null)saveMongooseSchemaCollectionOptionCollectionButton.setEnabled(mongooseSchemaCollection.isSyncable()&&!mongooseSchemaCollection.isSynced());
+		if(saveMongooseSchemaCollectionOptionCollectionButton!=null)
+			saveMongooseSchemaCollectionOptionCollectionButton.setEnabled(mongooseSchemaCollection!=null&&mongooseSchemaCollection.isSyncable()&&!mongooseSchemaCollection.isSynced());
 	}
+	// OptionView.ChangeListener implementation
+
 	private void showMongooseSchemaCollection(){
-		if(optionCollectionView!=null)optionCollectionView.setOptionCollection(mongooseSchemaCollection!=null?mongooseSchemaCollection.getOptionCollection():null);
-		OptionCollection optionCollection=optionCollectionView.getOptionCollection();
-		optionCollectionLabel.setText(optionCollection!=null?"Options of Mongoose schema collection "+mongooseSchemaCollection.toString():"");
+		if(optionCollectionView!=null){
+			optionCollectionView.setOptionCollection(mongooseSchemaCollection!=null?mongooseSchemaCollection.getOptionCollection():null);
+			// MDH@16NOV2018: the option collection view is editable when there is an associated Mongoose schema collection that is both syncable and synced!!
+			//                this means that we have to force save the ass. option collection every time the user ends editing it...
+			optionCollectionView.setEditable(mongooseSchemaCollection!=null&&mongooseSchemaCollection.isSynced()&&mongooseSchemaCollection.isSyncable());
+			OptionCollection optionCollection=optionCollectionView.getOptionCollection();
+			optionCollectionLabel.setText(optionCollection!=null?"Options of Mongoose schema collection "+mongooseSchemaCollection.toString():"");
+		}
 		refresh();
 	}
 	private JComponent getOptionCollectionLabelView(){
@@ -33,9 +43,11 @@ public class MongooseSchemaCollectionEditorView extends JPanel{
 		saveMongooseSchemaCollectionOptionCollectionButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
-				if(mongooseSchemaCollection.saveOptionCollection())
+				if(mongooseSchemaCollection.saveOptionCollection()){
 					Utils.setInfo(null,"Options of Mongoose schema collection "+mongooseSchemaCollection.toString()+" saved!");
-				else
+					// we need to do a little more
+					if(optionCollectionView!=null)optionCollectionView.updateOptionViews();
+				}else
 					Utils.setInfo(null,"Failed to save the options of Mongoose schema collection '"+mongooseSchemaCollection.toString()+"'.");
 			}
 		});

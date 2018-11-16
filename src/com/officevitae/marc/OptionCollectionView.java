@@ -6,6 +6,20 @@ import javax.swing.event.ChangeListener;
 import java.awt.*;
 
 public class OptionCollectionView extends JPanel{
+	private boolean editable=true;
+	public void setEditable(boolean editable){
+		this.editable=editable;
+		// pass along to the option views
+		int optionIndex=optionsBox.getComponentCount();
+		while(--optionIndex>=0)optionsBox.getComponent(optionIndex).setEnabled(this.editable);
+	}
+	/*
+	private void setOptionChangeListener(OptionView.ChangeListener optionViewChangeListener){
+		// plug in the option view change listener into all option views
+		int optionIndex=optionsBox.getComponentCount();
+		while(--optionIndex>=0)((OptionView)optionsBox.getComponent(optionIndex)).setChangeListener(optionViewChangeListener);
+	}
+	*/
 	private Box optionsBox;
 	private JTextLinesEditor optionsTextLinesEditor;
 	private JComponent getOptionsTextView(){
@@ -22,6 +36,11 @@ public class OptionCollectionView extends JPanel{
 		if(optionCollection!=null)for(Option option:optionCollection)optionsBox.add(new OptionView(option));
 		// if currently showing the text, force a reread...
 		if(selectedOptionsTabIndex==1)optionsTextLinesEditor.read();
+	}
+	public void updateOptionViews(){
+		// this basically means to reshow the value (which will also update
+		int optionIndex=optionsBox.getComponentCount();
+		while(--optionIndex>=0)((OptionView)optionsBox.getComponent(optionIndex)).checkReset();
 	}
 	private void createView(){
 		JTabbedPane optionsTabbedPane=new JTabbedPane();

@@ -11,12 +11,43 @@ import java.awt.event.KeyEvent;
 
 public class OptionView<T> extends JPanel{
 
+	/* MDH@16NOV2018: Option will inform its OptionCollection and so up and up...
+	// if one of the reset buttons is enabled, the option view apparently changed...
+	public interface ChangeListener{
+		void optionChanged(Option option);
+		void optionUnchanged(Option option);
+	}
+	private ChangeListener changeListener=null;
+	private void informChangeListener(){
+		try{if(resetButton.isEnabled())changeListener.optionChanged(option);else changeListener.optionUnchanged(option);}catch(Exception ex){}
+	}
+	public void setChangeListener(ChangeListener changeListener){
+		this.changeListener=changeListener;
+		informChangeListener();
+	}
+	*/
 	private JButton infoButton=null,resetButton=null;
 	private JCheckBox checkBox=null;
 	private JTextField textField=null;
-
-	private T initialValue=null;
-	private void updateResetButton(T value){if(resetButton!=null)resetButton.setEnabled(!initialValue.equals(value));}
+	@Override
+	public void setEnabled(boolean enabled){
+		super.setEnabled(enabled); // TODO should we do this????
+		// are we going to show all contained components enabled/disabled? yes, except the info button!!!!
+		// careful here though, the reset button is only to be disabled (not enabled when it currently isn't)
+		if(resetButton!=null)if(!enabled)resetButton.setEnabled(false);
+		if(checkBox!=null)checkBox.setEnabled(enabled);
+		if(textField!=null)textField.setEnabled(enabled);
+	}
+	private void updateResetButton(T value){
+		boolean resetable=(option!=null&&option.isChanged()); // most convenient...
+		if(option!=null)
+			Utils.consoleprintln("Option "+option.getName()+" is "+(resetable?"":"NOT ")+"resettable.");
+		if(resetButton!=null){
+			resetButton.setEnabled(resetable);
+			//////informChangeListener();
+		}
+	}
+	private T optionValue;
 	// call showValue() to update the view (e.g. when the value changed externally somehow!!)
 	public void showValue(){
 		T value=option.getValue();
@@ -28,8 +59,8 @@ public class OptionView<T> extends JPanel{
 	private JComponent getContentsView(){
 		JPanel contentsPanel=new JPanel(new BorderLayout());
 		// for now we check the type
-		if(initialValue instanceof Boolean){
-			contentsPanel.add(checkBox=new JCheckBox(option.getName(),(Boolean)initialValue),BorderLayout.WEST);
+		if(optionValue instanceof Boolean){
+			contentsPanel.add(checkBox=new JCheckBox(option.getName(),(Boolean)optionValue),BorderLayout.WEST);
 			checkBox.addChangeListener(new ChangeListener(){
 				@Override
 				public void stateChanged(ChangeEvent e){
@@ -44,7 +75,7 @@ public class OptionView<T> extends JPanel{
 			});
 		}else{
 			contentsPanel.add(new JLabel("  "+option.getName()+": "),BorderLayout.WEST);
-			contentsPanel.add(textField=new JTextField(initialValue.toString()));
+			contentsPanel.add(textField=new JTextField(optionValue.toString()));
 			textField.addKeyListener(new KeyAdapter(){
 				@Override
 				public void keyReleased(KeyEvent e){
@@ -60,16 +91,19 @@ public class OptionView<T> extends JPanel{
 		}
 		return contentsPanel;
 	}
+	void checkReset(){
+		updateResetButton(option.getValue());
+	}
 	private void createView(){
 		if(option==null)return; // no option to show at all!!!
-		initialValue=option.getValue();
-		if(initialValue!=null){ // shouldn't happen though!!
+		optionValue=option.getValue();
+		if(optionValue!=null){ // shouldn't happen though!!
 			add(resetButton=new JButton("Reset"),BorderLayout.WEST);
 			resetButton.addActionListener(new ActionListener(){
 				@Override
 				public void actionPerformed(ActionEvent e){
 					try{
-						option.setValue(initialValue);
+						option.initialize();
 					}finally{
 						showValue();
 					}
@@ -87,6 +121,7 @@ public class OptionView<T> extends JPanel{
 				}
 			});
 		}
+		showValue();
 	}
 	public Option<T> option=null;
 	public OptionView(Option<T> option){
