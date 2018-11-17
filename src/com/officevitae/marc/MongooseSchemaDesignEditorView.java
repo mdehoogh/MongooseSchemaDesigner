@@ -765,6 +765,20 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 			}
 			this.mongooseSchema=mongooseSchema;
 			if(this.mongooseSchema!=null){
+				// MDH@17NOV2018: we should now force saving any just edited options from the parent mongoose schema collection
+				//                the problem is that we also allow editing the options on subschema's which is probably best not to
+				MongooseSchemaCollection mongooseSchemaCollection=this.mongooseSchema.getCollection();
+				if(mongooseSchemaCollection!=null){
+					if(!mongooseSchemaCollection.isSyncable())
+						Utils.setInfo(null,"WARNING: The options of the associated collection cannot be saved.");
+					else
+					if(!mongooseSchemaCollection.isSynced())
+						if(mongooseSchemaCollection.saveOptionCollection())
+							Utils.setInfo(null,"Options of the associated collection saved!");
+						else
+							Utils.setInfo(null,"WARNING: Failed to save the options of the associated collection, so no defaults available!");
+				}
+				// TODO is this the best way to deal wit failing to save???
 				optionCollectionView.setOptionCollection(this.mongooseSchema.getOptionCollection()); // replacing: showSchemaOptions();
 				showInExternalEditorButton.setEnabled(this.mongooseSchema.isAssociatedFileReadable());
 				boolean showOutputTab=(this.mongooseSchema.getParent()==null);

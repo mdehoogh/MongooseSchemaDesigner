@@ -80,12 +80,15 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 		getOptionWithName(option.getName()).setValue(option.getValue());
 	}
 
+	// MDH@17NOV2018: convenience methods for getting a specific option value/option default!!
+	Object getOptionValue(int optionIndex){return this.get(optionIndex).getValue();}
+	Object getOptionDefault(int optionIndex){return getOptionInfo(optionIndex).getDefault();}
 	// an option may request the default of the option
 	// which should be the actual value that the parent exposes for that option
 	// I guess we should do that by index
 	public Object getDefault(int optionIndex){
-		// either the value as stored in the parent, or otherwise the default stored in the OPTIONINFOS!!
-		return(parent!=null?parent.get(optionIndex).getValue():OPTIONINFOS.get(optionIndex).getDefault());
+		// the default is either the value of the parent option or the option default
+		return(parent!=null?parent.getOptionValue(optionIndex):getOptionDefault(optionIndex));
 	}
 
 	private Vector<String> producedTextLines=null;
@@ -101,6 +104,7 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 		// we can't actually remove options, so the only thing we can do is replace the value
 		for(String textLine:textLines)
 			try{
+				if(textLine.length()==0||textLine.charAt(0)=='#')continue; // TODO is this correct????
 				int colonpos=textLine.indexOf(":"); // additional colons might be present (e.g. in JavaScriptOption things)
 				getOptionWithName(textLine.substring(0,colonpos)).parseInitialValue(textLine.substring(colonpos+1));
 			}catch(Exception ex){
@@ -108,6 +112,7 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 			}
 	}
 	public OptionCollection(Object host){
+		super(OPTIONINFOS.size()); // we know how many places we're going to need!!!
 		this.host=host;
 		if(this.host instanceof OptionChangeListener)setOptionChangeListener((OptionChangeListener)this.host);
 		// very convenient
@@ -116,20 +121,31 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 			optionInfo=OPTIONINFOS.get(optionIndex);
 			if(optionInfo.getDefault() instanceof JavaScriptObject)
 				super.add(new JavaScriptObjectOption(this,optionIndex));
-			else super.add(new Option(this,optionIndex));
+			else
+				super.add(new Option(this,optionIndex));
 		}
 	}
+
+	// crucial is the ability to test whether the value of an option equals the option default!!!
+	public Option getNonDefaultOption(int optionIndex){
+		Option option=this.get(optionIndex);
+		return(option.getValue().equals(getOptionDefault(optionIndex))?null:option);
+	}
+	/* MDH@17NOV2018: replaced by the above code!!!
 	// TODO there must be a way to improve this!!
 	public Option getNonDefaultOption(Option option){
 		if(option==null||!option.isDefault())return option; // the option passed
 		if(parent==null)return null;
 		return parent.getNonDefaultOption(parent.getOptionWithName(option.getName()));
 	}
+	*/
+	// MDH@17NOV2018 NOTE: getTextLines() will only return lines for options whose value does not equal the option default!!
 	public Vector<String> getTextLines()throws Exception{
-		Vector<String> textLines=new Vector<String>();
-		for(Option option:this){
-			Option nonDefaultOption=getNonDefaultOption(option);
-			if(nonDefaultOption!=null&&!textLines.add(nonDefaultOption.toString()))throw new Exception("Failed to return option '"+option.getName()+"'.");
+		int l=this.size();
+		Vector<String> textLines=new Vector<String>(l);
+		for(int optionIndex=0;optionIndex<l;optionIndex++){
+			Option nonDefaultOption=getNonDefaultOption(optionIndex);
+			if(nonDefaultOption!=null&&!textLines.add(nonDefaultOption.toString()))throw new Exception("Failed to return option '"+nonDefaultOption.getName()+"'.");
 		}
 		Utils.setInfo(host,"Number of non-default options: "+textLines.size()+".");
 		return textLines;

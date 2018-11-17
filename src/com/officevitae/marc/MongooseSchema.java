@@ -64,6 +64,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 	public FieldCollection fieldCollection=null;
 	public FieldCollection getFieldCollection(){return fieldCollection;}
 
+	// MDH@17NOV2018: WARNING we can do it this way BUT we should never forget to set the parent option collection!!!
 	public OptionCollection optionCollection=new OptionCollection(this);
 	public OptionCollection getOptionCollection(){return optionCollection;}
 	/*
@@ -245,6 +246,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 	public MongooseSchema(String name,MongooseSchema parentSchema,MongooseSchemaCollection collection){
 		this.name=name;
 		if(collection!=null)if(collection.add(this))this.collection=collection;else Utils.setInfo(this,"Failed to register schema '"+name+"' with its collection.");
+		// MDH@17NOB2018: once the collection is known, we can create the option collection and set the parent option collection from the schema collection!!!
+		optionCollection.setParent(this.collection.getOptionCollection());
 		if(parentSchema!=null)setParent(parentSchema);
 		fieldCollection=new FieldCollection(); // constructor looks at parentSchema to determine what type of _id to add!!! BUT we need it BEFORE calling load()!!!
 		if(parentSchema==null)load(); // load the contents of the schema using the associated text file lines producer (to start with)
@@ -256,7 +259,10 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 	}
 	public MongooseSchema(String name,MongooseSchemaCollection collection){this(name,null,collection);} // a main schema (not a subschema!!)
 
-	MongooseSchemaCollection getCollection(){return collection;}
+	MongooseSchemaCollection getCollection(){
+		if(collection==null&&parentSchema!=null)return parentSchema.getCollection(); // MDH@17NOV2018: subschema's do not need to have a collection themselves...
+		return collection;
+	}
 
 	// MDH@29OCT2018: instead of 'knowing' something changed we check it by constructing the text output and comparing it with what was retrieved
 	private void checkSynced(){

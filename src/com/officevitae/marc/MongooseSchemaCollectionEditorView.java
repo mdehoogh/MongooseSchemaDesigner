@@ -7,6 +7,8 @@ import java.awt.event.ActionListener;
 
 public class MongooseSchemaCollectionEditorView extends JPanel{
 
+	// MDH@17NOV2018: being able to add new Mongoose schema's go here (or not)
+
 	// MDH@16NOV2018: in rare occasions the options associated with the collection are not editable
 	//                this is accessible in the Mongoose schema collection, not the option collection
 	private MongooseSchemaCollection mongooseSchemaCollection=null;

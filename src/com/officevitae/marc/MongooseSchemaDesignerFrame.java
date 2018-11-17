@@ -80,7 +80,11 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         return (mongooseSchemaEditorView=new MongooseSchemaDesignEditorView()); // that's easy
     }
     private JComponent getMongooseSchemaCollectionView(){
-    	return(mongooseSchemaCollectionEditorView=new MongooseSchemaCollectionEditorView());
+    	JPanel mongooseSchemaCollectionPanel=new JPanel(new BorderLayout());
+    	// at the top allow adding new Mongoose schema's to the collection BUT how to add subschema's?????
+    	///////////mongooseSchemaCollectionPanel.add(getNewMongooseSchemaView(),BorderLayout.SOUTH);
+		mongooseSchemaCollectionPanel.add(mongooseSchemaCollectionEditorView=new MongooseSchemaCollectionEditorView());
+		return mongooseSchemaCollectionPanel;
 	}
     private JButton newMongooseSchemaButton;
     // convenient to have a TreeNode class that we can set the sync listener on
@@ -138,9 +142,13 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         try{return((MongooseSchema)selectedMongooseSchemaNode.getUserObject());}catch(Exception ex){}
         return null;
     }
+
+    // MDH@17NOV2018: ability to add new mongoose schema's moved over to the edit part of a Mongoose schema collection (makes more sense)
+	//                delete button put here (or not)
+	//            NO just putting it on top of the collection options editor
     private JComponent getNewMongooseSchemaView(){
         JPanel newMongooseSchemaPanel=new JPanel(new BorderLayout());
-        newMongooseSchemaPanel.add(newMongooseSchemaButton=new JButton("Add"),BorderLayout.WEST);
+        newMongooseSchemaPanel.add(newMongooseSchemaButton=new JButton("Add schema(s)"),BorderLayout.WEST);
         newMongooseSchemaButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -180,11 +188,14 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         });
         return newMongooseSchemaPanel;
     }
-    private MongooseSchemaCollection getSelectedMongooseSchemaCollection(){return(MongooseSchemaCollection)selectedMongooseSchemaNode.getUserObject();}
+    private MongooseSchemaCollection getSelectedMongooseSchemaCollection(){
+    	try{return(MongooseSchemaCollection)selectedMongooseSchemaNode.getUserObject();}catch(Exception ex){}
+    	return null;
+    }
     private JButton saveMongooseSchemaCollectionButton;
     private JComponent getSaveMongooseSchemaCollectionView(){
     	JPanel saveMongooseSchemaCollectionPanel=new JPanel(new BorderLayout());
-    	saveMongooseSchemaCollectionPanel.add(saveMongooseSchemaCollectionButton=new JButton("Save schema collection"),BorderLayout.WEST);
+    	saveMongooseSchemaCollectionPanel.add(saveMongooseSchemaCollectionButton=new JButton("Save schemas in collection"),BorderLayout.WEST);
     	saveMongooseSchemaCollectionButton.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e){
@@ -195,9 +206,30 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
     	saveMongooseSchemaCollectionButton.setEnabled(false); // assuming there's no currently selected Mongoose Schema collection
     	return saveMongooseSchemaCollectionPanel;
 	}
+	private JButton deleteMongooseSchemaButton;
+	private JComponent getDeleteMongooseSchemaView(){
+    	JPanel deleteMongooseSchemaPanel=new JPanel(new BorderLayout());
+    	deleteMongooseSchemaPanel.add(deleteMongooseSchemaButton=new JButton("Delete"),BorderLayout.WEST);
+		deleteMongooseSchemaButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				// if we succeed in deleting the schema from the collection we need to find a way to
+				MongooseSchemaCollection mongooseSchemaCollection=getSelectedMongooseSchema().getCollection();
+				if(mongooseSchemaCollection.remove(getSelectedMongooseSchema())){
+					Utils.setInfo(null,"Mongoose schema deleted.");
+					// TODO will the following work????
+					((DefaultTreeModel)mongooseSchemasTree.getModel()).removeNodeFromParent(selectedMongooseSchemaNode);
+					setSelectedMongooseSchemaNode(null); // remove any selection
+				}else
+					Utils.setInfo(null,"Failed to delete Mongoose schema.");
+			}
+		});
+		deleteMongooseSchemaButton.setEnabled(false); // wait until a schema is selected!!!
+    	return deleteMongooseSchemaPanel;
+	}
     private JComponent getMongooseSchemaButtonView(){
     	JPanel mongooseSchemaButtonPanel=new JPanel(new BorderLayout());
-    	mongooseSchemaButtonPanel.add(getNewMongooseSchemaView(),BorderLayout.NORTH);
+    	mongooseSchemaButtonPanel.add(getDeleteMongooseSchemaView(),BorderLayout.NORTH);
     	mongooseSchemaButtonPanel.add(getSaveMongooseSchemaCollectionView(),BorderLayout.SOUTH);
     	return mongooseSchemaButtonPanel;
 	}
@@ -304,27 +336,35 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 	public String toString(){return "Office Vitae Mongoose Schema Designer";}
 	private void setSelectedMongooseSchema(MongooseSchema mongooseSchema){
 		mongooseSchemaEditorView.setMongooseSchema(mongooseSchema);
+		if(deleteMongooseSchemaButton!=null)deleteMongooseSchemaButton.setEnabled(mongooseSchema!=null); // we've got something to delete!!
 		if(mongooseSchema==null)return;
 		Utils.setInfo(this,"Selected schema: '"+mongooseSchema.getRepresentation(false)+"'.");
+		newMongooseSchemaButton.setText("Add subschema(s):");
 		checkForNewSchemaNames();
-		((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"MongooseSchema");
+		((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"MongooseSchemaOrMongooseSchemaCollection");
+		((CardLayout)mongooseSchemaOrMongooseSchemaCollectionEditorView.getLayout()).show(mongooseSchemaOrMongooseSchemaCollectionEditorView,"MongooseSchema");
 	}
 	private void setSelectedMongooseSchemaCollection(MongooseSchemaCollection mongooseSchemaCollection){
 		mongooseSchemaCollectionEditorView.setMongooseSchemaCollection(mongooseSchemaCollection);
 		saveMongooseSchemaCollectionButton.setEnabled(mongooseSchemaCollection!=null);
 		if(mongooseSchemaCollection==null)return;
+		newMongooseSchemaButton.setText("Add schema(s):");
 		Utils.setInfo(this,"Selected schema collection: '"+mongooseSchemaCollection.toString()+"'.");
-		((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"MongooseSchemaCollection");
+		((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"MongooseSchemaOrMongooseSchemaCollection");
+		((CardLayout)mongooseSchemaOrMongooseSchemaCollectionEditorView.getLayout()).show(mongooseSchemaOrMongooseSchemaCollectionEditorView,"MongooseSchemaCollection");
 	}
     private void setSelectedMongooseSchemaNode(DefaultMutableTreeNode mongooseSchemaNode){
 		// when a node gets selected and thus a new mongoose schema possibly the entered new names need to be reevaluated and need to be ALL new
-		this.selectedMongooseSchemaNode=(mongooseSchemaNode!=null?mongooseSchemaNode:schemasTreeRootNode);
-		// if the selected mongoose schema node is NOT the root node, we select the associated mongoose schema
-		Object selectedUserObject=this.selectedMongooseSchemaNode.getUserObject();
-		// MDH@08NOV2018: now allowing editing the collection itself now (to start with editing of the schema options)
-		// TODO: what if we have neither????
-		setSelectedMongooseSchemaCollection(selectedUserObject instanceof MongooseSchemaCollection?(MongooseSchemaCollection)selectedUserObject:null);
-		setSelectedMongooseSchema(selectedUserObject instanceof MongooseSchema?(MongooseSchema)selectedUserObject:null);
+		selectedMongooseSchemaNode=mongooseSchemaNode; ////(mongooseSchemaNode!=null?mongooseSchemaNode:schemasTreeRootNode);
+		if(selectedMongooseSchemaNode!=null){ // no tree node selected (e.g. after deleting a Mongoose schema)
+			// if the selected mongoose schema node is NOT the root node, we select the associated mongoose schema
+			Object selectedUserObject=selectedMongooseSchemaNode.getUserObject();
+			// MDH@08NOV2018: now allowing editing the collection itself now (to start with editing of the schema options)
+			// TODO: what if we have neither????
+			setSelectedMongooseSchemaCollection(selectedUserObject instanceof MongooseSchemaCollection?(MongooseSchemaCollection)selectedUserObject:null);
+			setSelectedMongooseSchema(selectedUserObject instanceof MongooseSchema?(MongooseSchema)selectedUserObject:null);
+		}else
+			((CardLayout)mongooseSchemaTreeElementEditorView.getLayout()).show(mongooseSchemaTreeElementEditorView,"None");
 		/* replacing:
 		if(!schemasTreeRootNode.equals(this.selectedMongooseSchemaNode))setSelectedMongooseSchema(((MongooseSchema)(this.selectedMongooseSchemaNode.getUserObject())));
 		else checkForNewSchemaNames(); // IMPORTANT I have to do this because getSelectedMongooseSchema() will return null when this happens!!!
@@ -371,12 +411,21 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         return mongooseSchemaListPanel;
     }
     */
+	JPanel mongooseSchemaOrMongooseSchemaCollectionEditorView; // where we should be switching...
+    private JComponent getMongooseSchemaOrMongooseSchemaCollectionView(){
+    	JPanel mongooseSchemaOrMongooseSchemaCollectionPanel=new JPanel(new BorderLayout());
+    	mongooseSchemaOrMongooseSchemaCollectionEditorView=new JPanel(new CardLayout());
+		mongooseSchemaOrMongooseSchemaCollectionEditorView.add(getMongooseSchemaView(),"MongooseSchema");
+		mongooseSchemaOrMongooseSchemaCollectionEditorView.add(getMongooseSchemaCollectionView(),"MongooseSchemaCollection");
+		mongooseSchemaOrMongooseSchemaCollectionPanel.add(mongooseSchemaOrMongooseSchemaCollectionEditorView);
+		mongooseSchemaOrMongooseSchemaCollectionPanel.add(getNewMongooseSchemaView(),BorderLayout.SOUTH);
+		return mongooseSchemaOrMongooseSchemaCollectionPanel;
+	}
     private JComponent mongooseSchemaTreeElementEditorView;
     private JComponent getMongooseSchemaTreeElementEditorView(){
     	JPanel mongooseSchemaTreeElementEditorPanel=new JPanel(new CardLayout());
 		mongooseSchemaTreeElementEditorPanel.add(new JLabel("Select either a Mongoose schema or Mongoose schema collection."),"None");
-		mongooseSchemaTreeElementEditorPanel.add(getMongooseSchemaView(),"MongooseSchema");
-		mongooseSchemaTreeElementEditorPanel.add(getMongooseSchemaCollectionView(),"MongooseSchemaCollection");
+		mongooseSchemaTreeElementEditorPanel.add(getMongooseSchemaOrMongooseSchemaCollectionView(),"MongooseSchemaOrMongooseSchemaCollection");
 		return mongooseSchemaTreeElementEditorPanel;
 	}
     private JComponent getMongooseSchemasView(){

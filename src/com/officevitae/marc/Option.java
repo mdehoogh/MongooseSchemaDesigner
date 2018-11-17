@@ -20,15 +20,15 @@ public class Option<T>{
 	}
 
 	private T initialValue=null; // whatever we parse we consider to be the initial value!!!
-	protected T value=null;
+	protected T value=null; // starts as its 'default'
 	private void parse(String valueText)throws Exception{
 		T _default=getDefault();
-		if(_default instanceof Boolean)value=(T)Boolean.valueOf(valueText);else
-		if(_default instanceof String)value=(T)Utils.dequote(valueText);else
-		if(_default instanceof Integer)value=(T)Integer.valueOf(valueText);else
-		if(_default instanceof Long)value=(T)Long.valueOf(valueText);else
-		if(_default instanceof Double)value=(T)Double.valueOf(valueText);else
-		if(_default instanceof Float)value=(T)Float.valueOf(valueText);else
+		if(_default instanceof Boolean)setValue((T)Boolean.valueOf(valueText));else
+		if(_default instanceof String)setValue((T)Utils.dequote(valueText));else
+		if(_default instanceof Integer)setValue((T)Integer.valueOf(valueText));else
+		if(_default instanceof Long)setValue((T)Long.valueOf(valueText));else
+		if(_default instanceof Double)setValue((T)Double.valueOf(valueText));else
+		if(_default instanceof Float)setValue((T)Float.valueOf(valueText));else
 			throw new Exception("Unable to parse value text '"+valueText+"'.");
 	}
 	// obviously any value should be of type T
@@ -57,15 +57,21 @@ public class Option<T>{
 		parse(valueText);
 		if(optionCollection!=null)if(isChanged())optionCollection.optionChanged(optionIndex);else optionCollection.optionUnchanged(optionIndex);
 	}
+
 	// let's return the default if no value was set yet
 	public T getValue(){return(value==null?getDefault():value);}
 
+	// MDH@17NOV2018: isDefault() means that the value of the parent of the option collection is used as default which might differ from the option default
+	// MDH@17NOV2018: simplifying by ascertaining that value is null, when it equals the default (see setValue)
 	public boolean isDefault(){
+		return(value==null);
+		/* replacing:
 		if(value==null)return true; // any null value automatically equals the default!!
 		T _default=getDefault();
 		boolean result=value.equals(_default);
 		Utils.consoleprintln("'"+_default.toString()+"' does "+(result?"":" NOT ")+"equal '"+value.toString()+"'.");
 		return result;
+		*/
 	}
 
 	public String toString(){
@@ -76,11 +82,11 @@ public class Option<T>{
 		return name+":"+value.toString();
 	}
 
-	public void setValue(T value){
+	public Option setValue(T value){
 		this.value=(value!=null&&value.equals(getDefault())?null:value);
 		// MDH@16NOV2018: bit of an issue here to determine when the option is changed or unchanged...
-		if(optionCollection==null)return;
-		if(isChanged())optionCollection.optionChanged(optionIndex);else optionCollection.optionUnchanged(optionIndex);
+		if(optionCollection!=null)if(isChanged())optionCollection.optionChanged(optionIndex);else optionCollection.optionUnchanged(optionIndex);
+		return this;
 	}
 
 }
