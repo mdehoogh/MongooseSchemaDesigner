@@ -26,7 +26,7 @@ public class OptionView<T> extends JPanel{
 		informChangeListener();
 	}
 	*/
-	private JButton infoButton=null,resetButton=null;
+	private JButton infoButton=null,resetButton=null,defaultButton=null,collectionButton=null;
 	private JCheckBox checkBox=null;
 	private JTextField textField=null;
 	@Override
@@ -47,6 +47,12 @@ public class OptionView<T> extends JPanel{
 			//////informChangeListener();
 		}
 	}
+	private void updateButtons(){
+		resetButton.setEnabled(option.differsFromInitialValue());
+		defaultButton.setEnabled(option.differsFromOptionDefault());
+		collectionButton.setVisible(option.hasParent());
+		collectionButton.setEnabled(option.differsFromParentDefault());
+	}
 	private T optionValue;
 	// call showValue() to update the view (e.g. when the value changed externally somehow!!)
 	public void showValue(){
@@ -54,7 +60,7 @@ public class OptionView<T> extends JPanel{
 		if(checkBox!=null)checkBox.setSelected((Boolean)value);
 		if(textField!=null)textField.setText(value.toString());
 		// only when the current value is not equal to the initial value
-		updateResetButton(value);
+		updateButtons();
 	}
 	private JComponent getContentsView(){
 		JPanel contentsPanel=new JPanel(new BorderLayout());
@@ -94,22 +100,51 @@ public class OptionView<T> extends JPanel{
 	void checkReset(){
 		updateResetButton(option.getValue());
 	}
+	private JComponent getButtonView(){
+		Box buttonBox=Box.createHorizontalBox();
+		buttonBox.add(defaultButton=new JButton("Default"),BorderLayout.WEST);
+		defaultButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				try{
+					option.resetToOptionDefault();
+				}finally{
+					showValue();
+				}
+			}
+		});
+		defaultButton.setEnabled(false); // initially disabled of course
+		buttonBox.add(collectionButton=new JButton("Collection"),BorderLayout.WEST);
+		collectionButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				try{
+					option.resetToParentDefault();
+				}finally{
+					showValue();
+				}
+			}
+		});
+		collectionButton.setEnabled(false); // initially disabled of course
+		buttonBox.add(resetButton=new JButton("Reset"),BorderLayout.WEST);
+		resetButton.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e){
+				try{
+					option.resetToInitialValue();
+				}finally{
+					showValue();
+				}
+			}
+		});
+		resetButton.setEnabled(false); // initially disabled of course
+		return buttonBox;
+	}
 	private void createView(){
 		if(option==null)return; // no option to show at all!!!
 		optionValue=option.getValue();
 		if(optionValue!=null){ // shouldn't happen though!!
-			add(resetButton=new JButton("Reset"),BorderLayout.WEST);
-			resetButton.addActionListener(new ActionListener(){
-				@Override
-				public void actionPerformed(ActionEvent e){
-					try{
-						option.initialize();
-					}finally{
-						showValue();
-					}
-				}
-			});
-			resetButton.setEnabled(false); // initially disabled of course
+			add(getButtonView(),BorderLayout.WEST);
 		}
 		add(getContentsView());
 		if(option.getInfo()!=null){

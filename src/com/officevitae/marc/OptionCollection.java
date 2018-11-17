@@ -80,6 +80,13 @@ public class OptionCollection extends Vector<Option> implements ITextLinesContai
 		getOptionWithName(option.getName()).setValue(option.getValue());
 	}
 
+	boolean hasParent(){return(parent!=null);}
+	Object getParentDefault(int optionIndex){return(parent!=null?parent.getOptionValue(optionIndex):null);}
+	boolean isParentValue(int optionIndex){
+		Object parentDefault=getParentDefault(optionIndex);
+		return(parentDefault==null||getOptionValue(optionIndex).equals(parentDefault));
+	}
+
 	// MDH@17NOV2018: convenience methods for getting a specific option value/option default!!
 	Object getOptionValue(int optionIndex){return this.get(optionIndex).getValue();}
 	Object getOptionDefault(int optionIndex){return getOptionInfo(optionIndex).getDefault();}

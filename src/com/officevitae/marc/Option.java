@@ -38,7 +38,7 @@ public class Option<T>{
 		// definititely unchanged now...
 		if(optionCollection!=null)optionCollection.optionUnchanged(optionIndex);
 	}
-	void initialize(){
+	void resetToInitialValue(){
 		value=initialValue;
 		// definititely unchanged now...
 		if(optionCollection!=null)optionCollection.optionUnchanged(optionIndex);
@@ -57,6 +57,19 @@ public class Option<T>{
 		parse(valueText);
 		if(optionCollection!=null)if(isChanged())optionCollection.optionChanged(optionIndex);else optionCollection.optionUnchanged(optionIndex);
 	}
+
+	// we allow resetting the value to the (generic) option default (which is the value that won't be written into the schema constructor opions)
+	public void resetToOptionDefault(){
+		setValue((T)optionCollection.getOptionDefault(optionIndex));
+	}
+	// we allow resetting to the Mongoose schema collection default (NOT the option collection mind you)
+	public void resetToParentDefault(){
+		setValue((T)optionCollection.getParentDefault(optionIndex));
+	}
+	public boolean hasParent(){return optionCollection.hasParent();}
+	public boolean differsFromInitialValue(){return isChanged();}
+	public boolean differsFromOptionDefault(){return !getValue().equals(optionCollection.getOptionDefault(optionIndex));}
+	public boolean differsFromParentDefault(){return !optionCollection.isParentValue(optionIndex);}
 
 	// let's return the default if no value was set yet
 	public T getValue(){return(value==null?getDefault():value);}
