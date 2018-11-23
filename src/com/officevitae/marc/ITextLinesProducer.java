@@ -52,7 +52,10 @@ public interface ITextLinesProducer{
 			if(linesToRead){
 				BufferedReader br=new BufferedReader(new FileReader(file));
 				String line=br.readLine();
-				while(line!=null){if(!super.add(line))break;line=br.readLine();}
+				while(line!=null){
+					if(!super.add(line))break;
+					line=br.readLine();
+				}
 				br.close(); // convenient to close the file even if we fail to store all text lines!!!
 				if(line!=null)throw new Exception("Unable to produce all text lines.");
 			}

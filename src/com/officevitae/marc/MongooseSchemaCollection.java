@@ -103,6 +103,36 @@ public class MongooseSchemaCollection extends Vector<MongooseSchema> implements 
 		return isSynced();
 	}
 
+	private String outputPath=null;
+	public String getOutputPath(){
+		if(outputPath==null){
+			try{
+				File outputPathFile=new File(getAssociatedFolder(),"outputpath");
+				if(outputPathFile.exists()&&!outputPathFile.isDirectory()&&outputPathFile.canRead()){
+					BufferedReader br=new BufferedReader(new FileReader(outputPathFile));
+					outputPath=br.readLine().trim();
+					br.close();
+				}
+			}catch(Exception ex){}
+		}
+		return outputPath;
+	}
+	public String setOutputPath(String outputPath){
+		if(outputPath!=null){
+			try{
+				File outputPathFile=new File(getAssociatedFolder(),"outputpath");
+				if(!outputPathFile.exists())outputPathFile.createNewFile(); // should now exist!!!
+				if(outputPathFile.exists()&&!outputPathFile.isDirectory()&&outputPathFile.canWrite()){
+					PrintWriter pw=new PrintWriter(outputPathFile);
+					pw.println(outputPath);
+					pw.close();
+					this.outputPath=outputPath; // save succeeded!!!
+				}
+			}catch(Exception ex){}
+		}
+		return this.outputPath;
+	}
+
 	// OptionCollection.OptionChangeListener implementation
 	// keep track of all the changed option indices
 	private Vector<Integer> changedOptionIndices=new Vector<Integer>();

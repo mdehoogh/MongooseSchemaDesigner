@@ -21,7 +21,8 @@ public class MapFieldType implements ICompositeFieldType{
 
 	public String toString(){
 		// the representation should be JavaScript style, so it can be used immediately
-		String representation=MongooseFieldType.MAP.toString(); // the full representation of the generic MAP instance
+		// MDH@20NOV2018: strangely enough Mongoose didn't like mongoose.Schema.Types.MAP so we're sticking to just Map!!!
+		String representation=MongooseFieldType.MAP.getDescription().toString(); // the full representation of the generic MAP instance
 		if(ofFieldType.equals(MongooseFieldType.MIXED))return representation; // just Map
 		// the External tag forces the use of getDescription().toString() instead of toString() itself (so function as a wrapper to return another text)
 		return "{type:"+representation+",of:"+(ofFieldType instanceof IFieldType.External?ofFieldType.getDescription().toString():ofFieldType.toString())+"}";

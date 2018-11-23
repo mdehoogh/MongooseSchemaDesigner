@@ -10,5 +10,3 @@ dbconnection
 +_id:ObjectId
 +name:String	required	+minlength=1
 +dbconnection:client_dbconnectionSchema
-autoIndex:false
-autoCreate:true

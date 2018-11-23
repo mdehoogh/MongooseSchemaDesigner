@@ -626,7 +626,7 @@ public class Field{
 	}
 
 	// I suppose we can take the type and other flags into acount as well and use them in the getters of the properties to be used in getTextRepresentation()!!
-	public boolean isAutoIncremented(){return(type.equals(MongooseFieldType.NUMBER)?!startAtLiteral.isDisabled()&&startAtLiteral.isValid():false);} // takes the field type also into account!!!
+	public boolean isAutoIncremented(){return(type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.LONG)||type.equals(MongooseFieldType.INT32)?!startAtLiteral.isDisabled()&&startAtLiteral.isValid():false);} // takes the field type also into account!!!
 	public boolean isReferencing(){return(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)?!refLiteral.isDisabled()&&refLiteral.isValid():false);}
 
 	public boolean isRequired(){return(isAutoIncremented()?false:required);}
@@ -672,7 +672,7 @@ public class Field{
 	public String getTypeRepresentation(boolean internal){
 		// we have to be careful here, because if this is the reference to an subschema field type we need another representation
 		// so, when the given type is NOT a predefined field type we also return the 'internal' description (so we'll get something that ends with Schema as we want it to!!)
-		if(internal||!(type instanceof ICompositeFieldType))return type.getDescription().toString();
+		if(internal||!(type instanceof ICompositeFieldType)&&!(type instanceof MongooseFieldType))return type.getDescription().toString();
 		String typeRepresentation=type.toString();
 		if(typeRepresentation.startsWith("{type:")&&typeRepresentation.endsWith("}"))return typeRepresentation.substring(6,typeRepresentation.length()-1).trim();
 		return typeRepresentation;

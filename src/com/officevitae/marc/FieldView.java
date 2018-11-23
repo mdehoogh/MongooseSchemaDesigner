@@ -189,7 +189,7 @@ public class FieldView extends JPanel implements FieldTypeSelectorView.ChangeLis
 				*/
 				// I suppose anything that is numeric can be auto-incremented!!
 				// can't tell exactly but Number fields seem to be the only auto-incremental fields (with the used library)
-				if(type.equals(MongooseFieldType.NUMBER))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
+				if(type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.INT32)||type.equals(MongooseFieldType.LONG))showStartAtView();else startAtLiteralView.setVisible(false); //////autoIncrementView.setVisible(false);
 
 				if(!autoincremented&&!field.getName().equalsIgnoreCase("_id")&&(type.equals(MongooseFieldType.OBJECTID)||type.equals(MongooseFieldType.NUMBER)||type.equals(MongooseFieldType.STRING)||type.equals(MongooseFieldType.BUFFER)))
 					showRefView();

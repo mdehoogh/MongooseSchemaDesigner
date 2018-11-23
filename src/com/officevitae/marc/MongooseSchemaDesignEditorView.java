@@ -10,6 +10,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeListener;
 import java.io.File;
+import java.io.IOException;
 import java.util.Vector;
 
 public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChangeListener, MongooseSchema.SyncListener,IMutableTextLinesProducer.ChangeListener,Utils.InfoMessageListener{
@@ -104,7 +105,8 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 									MongooseSchema referencedSchema=collection.getSchemaWithName(referencedSchemaName);
 									if(referencedSchema!=null){
 										field.setType(referencedSchema.getTypeOfIdField());
-										field.refLiteral.setText(referencedSchemaName);
+										// MDH@23OCT2018: given that Ref should represent the model not the schema, and typically model names are capitalized!!!
+										field.refLiteral.setText(Utils.capitalize(referencedSchemaName));
 										field.refLiteral.setDisabled(false);
 									}
 								}
@@ -311,11 +313,21 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	}
 	private JTextField saveOutputPathTextField;
 	private JComponent outputPathView;
+
+	/////////private String outputPath=null; // the (default) output path
+	private void setOutputPath(String outputPath){
+		try{
+			saveOutputPathTextField.setText(this.mongooseSchema.getCollection().setOutputPath(outputPath));
+		}catch(Exception ex){
+			saveOutputPathTextField.setText(outputPath);
+			if(ex instanceof IOException)Utils.setInfo(null,"ERROR: '"+ex.getLocalizedMessage()+"' saving the output path.");
+		}
+	}
 	private JComponent getOutputPathView(){
 		JPanel outputPathPanel=new JPanel(new BorderLayout());
 		outputPathPanel.add(new JLabel(" to: "),BorderLayout.WEST);
 		outputPathPanel.add(saveOutputPathTextField=new JTextField());
-		saveOutputPathTextField.setText("./app");
+		saveOutputPathTextField.setText("./app"); // might be overwritten with the output path provided by the schema collection
 		JButton browseForOutputPathButton;
 		outputPathPanel.add(browseForOutputPathButton=new JButton("Browse"),BorderLayout.EAST);
 		browseForOutputPathButton.addActionListener(new ActionListener(){
@@ -332,7 +344,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				chooser.setAcceptAllFileFilterUsed(false);
 				//
 				if(chooser.showOpenDialog(null)==JFileChooser.APPROVE_OPTION)
-					saveOutputPathTextField.setText(chooser.getSelectedFile().getAbsolutePath());
+					setOutputPath(chooser.getSelectedFile().getAbsolutePath());
 			}
 		});
 		return outputPathPanel;
@@ -364,9 +376,10 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 						Vector<String> written=new Vector<String>();
 						String schemaOutputFileName=mongooseSchema.getOutputFileName();
 						// MDH@06NOV2018: a bit of a nuisance since routes, controller and model files assume relative paths as well that we need to adhere to BUT ok these are relative...
-						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("controllers"),schemaOutputFileName+".controller.js")),controllerTextLinesEditor))written.add("model");
+						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("controllers"),schemaOutputFileName+".controller.js")),controllerTextLinesEditor))written.add("controller");
 						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("routes"),schemaOutputFileName+".routes.js")),routesTextLinesEditor))written.add("routes");
-						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("models"),schemaOutputFileName+".model.js")),modelTextLinesEditor))written.add("controller");
+						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("schemas"),schemaOutputFileName+".schema.js")),schemaTextLinesEditor))written.add("schema"); // MDH@20NOV2018: schema's to be saved separate from the connection needing model file
+						if(write(getExistingTextLinesConsumerFile(new File(getOutputSubFolder("models"),schemaOutputFileName+".model.js")),modelTextLinesEditor))written.add("model");
 						if(!written.isEmpty())Utils.setInfo(null,Utils.capitalize(String.join(", ",written)+" saved."));
 				}
 			}
@@ -545,12 +558,20 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		return saveModelPanel;
 	}
 	*/
+	private JComponent schemaSchemaView=null;
+	private JTextLinesEditor schemaTextLinesEditor;
+	private JComponent getSchemaSchemaView(){
+		JPanel schemaSchemaPanel=new JPanel(new BorderLayout());
+		schemaSchemaPanel.add(schemaTextLinesEditor=new JTextLinesEditor());
+		///////schemaTextPanel.add(saveModelView=getSaveModelView(),BorderLayout.SOUTH);
+		return schemaSchemaPanel;
+	}
 	private JComponent schemaModelView=null; // the one to show and/or hide!!!
 	private JComponent getSchemaModelView(){
-		JPanel schemaTextPanel=new JPanel(new BorderLayout());
-		schemaTextPanel.add(modelTextLinesEditor=new JTextLinesEditor());
+		JPanel schemaModelPanel=new JPanel(new BorderLayout());
+		schemaModelPanel.add(modelTextLinesEditor=new JTextLinesEditor());
 		///////schemaTextPanel.add(saveModelView=getSaveModelView(),BorderLayout.SOUTH);
-		return schemaTextPanel;
+		return schemaModelPanel;
 	}
 	private JTextLinesEditor fieldsTextLinesEditor; // where we show the text of the Mongoose Schema
 	public void textLinesChanged(IMutableTextLinesProducer textLinesProducer){
@@ -581,6 +602,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		////////schemaTextPanel.add(saveSchemaView=getSaveSchemaView(),BorderLayout.SOUTH);
 		return schemaTextPanel;
 	}
+	//private JComponent optionCollectionView=null; // the view for showing the option collection (if any)
 	private JComponent outputView;
 	private JTextLinesEditor routesTextLinesEditor,controllerTextLinesEditor;
 	private JComponent getSchemaRoutesView(){
@@ -596,6 +618,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 	private JComponent getOutputView(){
 		JPanel outputPanel=new JPanel(new BorderLayout());
 		JTabbedPane outputTabbedPane=new JTabbedPane();
+		outputTabbedPane.addTab("Schema",getSchemaSchemaView()); // MDH@20NOV2018: adding the schema view that contains the schema data separately...
 		outputTabbedPane.addTab("Model",getSchemaModelView());
 		outputTabbedPane.addTab("Routes",getSchemaRoutesView());
 		outputTabbedPane.addTab("Controller",getSchemaControllerView());
@@ -642,6 +665,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 							optionCollectionView.refresh(); /////if(selectedOptionsTabIndex==1)optionsTextLinesEditor.write(); // update the schema options from the text
 							break;
 					}
+					schemaTextLinesEditor.read();
 					modelTextLinesEditor.read();
 					routesTextLinesEditor.read();
 					controllerTextLinesEditor.read();
@@ -677,7 +701,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 		tabbedPane=new JTabbedPane();
 		// initially when the schema is selected in the tree view we show the text only (before it's parsed when the Design view is shown!!!)
 		tabbedPane.addTab("Fields",getSchemaFieldsView());
-		tabbedPane.addTab("Options",getOptionCollectionView());
+		getOptionCollectionView(); // MDH@20NOV2018: replacing: tabbedPane.addTab("Options",getOptionCollectionView());
 		outputView=getOutputView();
 		// now wait for a top-level Mongoose schema to be selected!!!		tabbedPane.addTab("Model",schemaModelView=getSchemaModelView());
 		tabbedPane.addChangeListener(new ChangeListener(){
@@ -757,6 +781,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				optionsTextLinesEditor.setTextLinesContainer(null);
 				 */
 				modelTextLinesEditor.setTextLinesContainer(null);
+				schemaTextLinesEditor.setTextLinesContainer(null);
 				/////this.mongooseSchemaTextLinesEditorGroup.removeTextLinesEditor(this.mongooseSchema); // MDH@17OCT2018: unregister the current MongooseSchema as one of the text lines editors
 				this.mongooseSchema.deleteSchemaSyncListener(this);
 				this.mongooseSchema.setFieldChangeListener(null);
@@ -778,13 +803,25 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 						else
 							Utils.setInfo(null,"WARNING: Failed to save the options of the associated collection, so no defaults available!");
 				}
+				// MDH@20NOV2018: show the output path that might've been stored with the collection!!!
+				String outputPath=(mongooseSchemaCollection!=null?mongooseSchemaCollection.getOutputPath():null);
+				saveOutputPathTextField.setText(outputPath!=null?outputPath:"./app");
+
+				while(tabbedPane.getTabCount()>1)tabbedPane.remove(tabbedPane.getTabCount()-1); // remove all except the Fields tab!!!
+
 				// TODO is this the best way to deal wit failing to save???
-				optionCollectionView.setOptionCollection(this.mongooseSchema.getOptionCollection()); // replacing: showSchemaOptions();
+				boolean showOptionsTab=(this.mongooseSchema.getOptionCollection()!=null);
+				if(showOptionsTab){
+					optionCollectionView.setOptionCollection(this.mongooseSchema.getOptionCollection()); // replacing: showSchemaOptions();
+					if(tabbedPane.getTabCount()<2)tabbedPane.addTab("Options",optionCollectionView);else;
+				}else
+					if(tabbedPane.getTabCount()>=2)tabbedPane.remove(1);
+
 				showInExternalEditorButton.setEnabled(this.mongooseSchema.isAssociatedFileReadable());
+
 				boolean showOutputTab=(this.mongooseSchema.getParent()==null);
 				saveView.setVisible(showOutputTab);
-				if(showOutputTab)if(tabbedPane.getTabCount()<3)tabbedPane.addTab("Output",outputView);else;
-				else if(tabbedPane.getTabCount()>=3)tabbedPane.remove(2);
+				if(showOutputTab)if(tabbedPane.getTabCount()<(showOptionsTab?3:2))tabbedPane.addTab("Output",outputView);else;else if(tabbedPane.getTabCount()>=(showOptionsTab?3:2))tabbedPane.remove(2);
 				schemaTagTextArea.setText(this.mongooseSchema.getTag());
 				showInfoButton.setEnabled(Utils.hasInfoMessages(this.mongooseSchema));
 
@@ -796,6 +833,7 @@ public class MongooseSchemaDesignEditorView extends JPanel implements IFieldChan
 				 */
 
 				// a basic MongooseSchema exposes both a model text lines consumer and producer (so we have to set them separately)
+				schemaTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getSchemaTextLinesProducer());
 				modelTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getModelTextLinesProducer());
 				routesTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getRoutesTextLinesProducer());
 				controllerTextLinesEditor.setTextLinesProducer(this.mongooseSchema.getControllerTextLinesProducer());

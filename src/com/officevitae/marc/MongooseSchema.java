@@ -65,7 +65,7 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 	public FieldCollection getFieldCollection(){return fieldCollection;}
 
 	// MDH@17NOV2018: WARNING we can do it this way BUT we should never forget to set the parent option collection!!!
-	public OptionCollection optionCollection=new OptionCollection(this);
+	public OptionCollection optionCollection=null; // MDH@20NOV2018: subschema's now do not have option collection associated with them (see constructor)
 	public OptionCollection getOptionCollection(){return optionCollection;}
 	/*
 	void updateOptions(List<Option> options){
@@ -247,8 +247,12 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 		this.name=name;
 		if(collection!=null)if(collection.add(this))this.collection=collection;else Utils.setInfo(this,"Failed to register schema '"+name+"' with its collection.");
 		// MDH@17NOB2018: once the collection is known, we can create the option collection and set the parent option collection from the schema collection!!!
-		optionCollection.setParent(this.collection.getOptionCollection());
-		if(parentSchema!=null)setParent(parentSchema);
+		// MDH@20NOV2018: let's prevent subschema's from having an option collection!!!!
+		if(parentSchema==null){
+			optionCollection=new OptionCollection(this);
+			optionCollection.setParent(this.collection.getOptionCollection());
+		}else
+			setParent(parentSchema);
 		fieldCollection=new FieldCollection(); // constructor looks at parentSchema to determine what type of _id to add!!! BUT we need it BEFORE calling load()!!!
 		if(parentSchema==null)load(); // load the contents of the schema using the associated text file lines producer (to start with)
 		/* MDH@02NOV2018: this would NOT be the right place to add the _id field, because parseTextLines() might get called AFTERWARDS, moved over to the constructor of FieldCollection, plus allowing replacement
@@ -343,7 +347,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 		addControllerTextLine(" * At: "+Utils.getTimestamp());
 		addControllerTextLine(" * Author: <Enter your name here>");
 		addControllerTextLine(" */");
-		addControllerTextLine("const "+Utils.capitalize(name)+"=require('../models/"+getOutputFileName()+".model.js');");
+		// MDH@20NOV2018: given that models are now connection-dependent we tell the user that the so created model uses the default connection!!!
+		addControllerTextLine("const "+Utils.capitalize(name)+"=require('../models/"+getOutputFileName()+".model.js')(); // the model using the default connection");
 		// this allows one to create instances of this model with data, and store it by calling save
 		// we're going to write skeloton methods for create, findOne, findAll, update and delete
 		addControllerTextLine("exports.create=function(req,res){");
@@ -358,13 +363,29 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 		}
 		addControllerTextLine("\t");
 		addControllerTextLine("\t// Step 2. Create a new object with the received data (properties of reg.body));");
-		addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"({");
-		// I suppose I can write the names of the required fields here passing in a null value initially???
-		if(!requiredFieldNames.isEmpty()) // something to check, all should be present in the body!!
-			for(String requiredFieldName:requiredFieldNames)addControllerTextLine("\t\t"+requiredFieldName+":req.body."+requiredFieldName+",");
-		if(!optionalFieldNames.isEmpty())
-			addControllerTextLine("\t\t// TODO insert initialization of optional fields ("+String.join(", ",optionalFieldNames)+") here");
-		addControllerTextLine("\t});");
+		// two ways of doing this, with or without optional fields!!!
+		if(optionalFieldNames.isEmpty()){ // no optional fields!!!
+			if(!requiredFieldNames.isEmpty()){ // something to check, all should be present in the body!!
+				addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"({");
+				// I suppose I can write the names of the required fields here passing in a null value initially???
+				for(String requiredFieldName: requiredFieldNames)
+					addControllerTextLine("\t\t"+requiredFieldName+":req.body['"+requiredFieldName+"'],");
+				addControllerTextLine("\t});");
+			}else
+				addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"({});"); // empty object creator...
+		}else{ // we have optional fields
+			// create a temporary object to host the value to store
+			// I suppose I can write the names of the required fields here passing in a null value initially???
+			if(!requiredFieldNames.isEmpty()){
+				addControllerTextLine("\tvar "+name.toLowerCase()+"Data={");
+				for(String requiredFieldName:requiredFieldNames)addControllerTextLine("\t\t"+requiredFieldName+":req.body['"+requiredFieldName+"'],");
+				addControllerTextLine("\t};"); // end the temporary object
+			}else // start as empty Object
+				addControllerTextLine("\tvar "+name.toLowerCase()+"Data={};");
+			// for all optional field names present in the body add a property to this temp object (enquoting the property name is safest!!!)
+			for(String optionalFieldName:optionalFieldNames)addControllerTextLine("\tif(req.body.hasOwnProperty('"+optionalFieldName+"'))if(req.body['"+optionalFieldName+"'])"+name.toLowerCase()+"Data['"+optionalFieldName+"']=req.body['"+optionalFieldName+"'];");
+			addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"("+name.toLowerCase()+"Data);"); // create the model instance!!
+		}
 		addControllerTextLine("\t// Step 3. Save the newly created instance");
 		addControllerTextLine("\t"+name+".save().then(data=>{");
 		addControllerTextLine("\t\tres.send(data); // or whatever else you want to send");
@@ -559,6 +580,17 @@ module.exports=(app)=>{
 		return routesTextLinesProducer;
 	}
 
+	private ITextLinesProducer schemaTextLinesProducer=null;
+	ITextLinesProducer getSchemaTextLinesProducer(){
+		if(schemaTextLinesProducer==null)
+			schemaTextLinesProducer=new ITextLinesProducer(){
+				String[] schemaTextLines;
+				public void produceTextLines()throws Exception{schemaTextLines=getSchemaTextLines();}
+				public String[] getProducedTextLines(){return schemaTextLines;}
+			};
+		return schemaTextLinesProducer;
+	}
+
 	// yes, we make a distinction between a text lines producer (to generate the model text lines) which would be me) and a text lines consumer which should be the file the text lines are to be written to
 	// NOTE for a JavaScriptMongooseSchema the producer would be the text file as well
 	// TODO perhaps we only need to create it once
@@ -707,8 +739,9 @@ module.exports=(app)=>{
 	//                I suppose it's the schema's that can be overwritten, so should be marked somehow????
 	//                the problem is that additional code can be placed between the schema definitions, so I guess we can put the schema names in the annotation: /*MSD:<schemaname>*/
 	public boolean hasSubSchemas(){return(subSchemas!=null&&!subSchemas.isEmpty());} // convenient method to determine if it has any subschema's defined at all!!!
+	// MDH@20NOV2018: the schema creation lines now go into the schema definition file
 	List<String> getModelSchemaCreationLines(){
-		Utils.setInfo(this,"Constructing the schema creation and model text of schema '"+getName()+"'.");
+		Utils.setInfo(this,"Constructing the schema creation text of schema '"+getName()+"'.");
 		Vector<String> modelSchemaCreationLines=new Vector<String>();
 		Utils.setInfo(this,"\tNumber of subschemas: "+subSchemas.size()+".");
 		if(!subSchemas.isEmpty())for(MongooseSchema subSchema:subSchemas)modelSchemaCreationLines.addAll(subSchema.getModelSchemaCreationLines());
@@ -743,6 +776,7 @@ module.exports=(app)=>{
 			fieldTextRepresentation.append("type:"+field.getTypeRepresentation(false)); // MDH@25OCT2018: again, NOT writing the description but the FULL name (particularly important for MapFieldType instances)
 			if(!field.isAutoIncremented()){
 				// if a ref property is defined write that before anything else
+				// NOTE the ref is supposed to be a model so typically the first letter would be a capital!!!
 				if(!field.refLiteral.isDisabled()&&field.refLiteral.isValid())fieldTextRepresentation.append(",ref:"+field.refLiteral.getValue());
 				// I suppose the index is also quite important
 				// MDH@25OCT2018: any valid index value is either text 'unique', 'index' or 'sparse' (currently)
@@ -779,7 +813,7 @@ module.exports=(app)=>{
 						if(!field.maxLengthLiteral.isDisabled()&&field.maxLengthLiteral.isValid())
 							fieldTextRepresentation.append(",maxlength:"+field.minLengthLiteral.getValue());
 						if(!field.matchLiteral.isDisabled()&&field.matchLiteral.isValid()) fieldTextRepresentation.append(",match:new RegExp("+field.matchLiteral.getValue()+")"); // assuming the user did NOT enclose the regular expression between / and /
-						if(!field.valuesLiteral.isDisabled()&&field.valuesLiteral.isValid()) fieldTextRepresentation.append("enum:['"+String.join("','",field.valuesLiteral.getValue())+"'']");
+						if(!field.valuesLiteral.isDisabled()&&field.valuesLiteral.isValid()) fieldTextRepresentation.append(",enum:['"+String.join("','",field.valuesLiteral.getValue())+"']");
 						break;
 				}
 				Utils.setInfo(this,"Text representation of field '"+fieldName+": '"+fieldTextRepresentation+"'.");
@@ -824,8 +858,15 @@ module.exports=(app)=>{
 		if(autoIncrementedField!=null){
 			modelSchemaCreationLines.add("");
 			// NO LONGER REQUIRED WITH mongoose-plugin-autoinc: pw.println("// DO NOT FORGET TO initialize THE PLUGIN IN YOUR app.js WITH mongoose.connection!");
+			// MDH@23NOV2018: switching to using ES5's require as node was not accepting import!!!
+			modelSchemaCreationLines.add("const autoinc=require('mongoose-plugin-autoinc');"); // MDH@24SEP2018: switched to an updated version of mongoose-auto-increment (which is 3 years old and requires a version 4 of Mongoose)
+			// TODO should the model name be capitalized or not????
+			modelSchemaCreationLines.add(name.toLowerCase()+"Schema.plugin(autoinc.autoIncrement,{model:'"+name+"',field:'"+autoIncrementedField.getName()+"',startAt:"+autoIncrementedField.startAtLiteral.getValue()+",incrementBy:1});");
+			/*
 			modelSchemaCreationLines.add("import { autoIncrement } from 'mongoose-plugin-autoinc';"); // MDH@24SEP2018: switched to an updated version of mongoose-auto-increment (which is 3 years old and requires a version 4 of Mongoose)
-			modelSchemaCreationLines.add(name.toLowerCase()+"Schema.plugin(autoIncrement,{model:'"+Utils.capitalize(name)+"',field:'"+autoIncrementedField.getName()+"',startAt:"+autoIncrementedField.startAtLiteral.getValue()+",incrementBy:1});");
+			// TODO should the model name be capitalized or not????
+			modelSchemaCreationLines.add(name.toLowerCase()+"Schema.plugin(autoIncrement,{model:'"+name+"',field:'"+autoIncrementedField.getName()+"',startAt:"+autoIncrementedField.startAtLiteral.getValue()+",incrementBy:1});");
+			*/
 			// being able to reset the counter would be nice, for which we need the connection and apparently mongoose.connection holds the connection (see app.js)
 			// TODO figure out when exactly the reset occurs????
 			///modelSchemaCreationLines.add("/* TO RESET AUTO-INCREMENT FIELD "+autoIncrementedField.getName()+" SAVE AN EMPTY INSTANCE, LIKE THIS:");
@@ -848,6 +889,31 @@ module.exports=(app)=>{
 		Utils.setInfo(this,"\tNumber of model lines: "+modelSchemaCreationLines.size()+".");
 		return modelSchemaCreationLines;
 	}
+
+	// MDH@20NOV2018: delegating to a separate schema file seems like the right way to do when we make the model connection-dependent
+	private String[] getSchemaTextLines(){
+		Vector<String> schemaTextLines=new Vector<String>();
+		schemaTextLines.add("/*");
+		schemaTextLines.add(" * Generated by: Office Vitae Mongoose Schema Designer");
+		schemaTextLines.add(" * At: "+Utils.getTimestamp());
+		schemaTextLines.add(" * Author: <Enter your name here>");
+		if(tag!=null&&!tag.trim().isEmpty())schemaTextLines.add(" * Description: "+tag); // the tag provides us with a description...
+		schemaTextLines.add(" */");
+		schemaTextLines.add("");
+		schemaTextLines.add("const mongoose=require('mongoose');");
+		schemaTextLines.add("require('mongoose-long')(mongoose);"); // Long (=integer) support TODO can we make this optional
+		schemaTextLines.add("var Int32=require('mongoose-int32');"); // Int32 support TODO can we make this optional (when it is actually used in the schema??)
+		schemaTextLines.add("");
+		// write all subschema (and myself of course)
+		schemaTextLines.addAll(getModelSchemaCreationLines());
+		schemaTextLines.add("module.exports="+name.toLowerCase()+"Schema;"); // TODO does this work????
+		/* MDH@20NOV2018: no model to export anymore)
+		schemaTextLines.add("");
+		// the first argument is the singular form of the document collection (table), typically what is returned (the model) is used as constructor therefore usually assigned to something that starts with a capital (e.g. Areamap,User,etc.)
+		schemaTextLines.add("module.exports=mongoose.model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement with first argument the singular version of the collection e.g. areamap (so the collection used will be areamaps)
+		*/
+		return(schemaTextLines.isEmpty()?new String[]{}:(String[])schemaTextLines.toArray(new String[schemaTextLines.size()]));
+	}
 	// keeping the model in a text file now the question when to actually read and write it
 	// I suppose read at start, so we have access to the text lines, and write at save!!
 	// in between we allow editing the text, extracting
@@ -867,14 +933,21 @@ module.exports=(app)=>{
 		modelTextLines.add(" */");
 		modelTextLines.add("");
 		modelTextLines.add("const mongoose=require('mongoose');");
+		// MDH@20NOV2018: the schema will take care of creating the schema!!!
+		modelTextLines.add("const "+name.toLowerCase()+"Schema=require('../schemas/"+getOutputFileName()+".schema.js');");
+		/* replacing:
 		modelTextLines.add("require('mongoose-long')(mongoose);"); // Long (=integer) support TODO can we make this optional
 		modelTextLines.add("var Int32=require('mongoose-int32');"); // Int32 support TODO can we make this optional (when it is actually used in the schema??)
 		modelTextLines.add("");
 		// write all subschema (and myself of course)
-		modelTextLines.addAll(getModelSchemaCreationLines());
+		modelTextLines.addAll(getModelCreationLines());
+		*/
 		modelTextLines.add("");
 		// the first argument is the singular form of the document collection (table), typically what is returned (the model) is used as constructor therefore usually assigned to something that starts with a capital (e.g. Areamap,User,etc.)
-		modelTextLines.add("module.exports=mongoose.model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement with first argument the singular version of the collection e.g. areamap (so the collection used will be areamaps)
+		// MDH@20NOV2018: making the model connection dependent!!!
+		modelTextLines.add("module.exports=(conn)=>{");
+		modelTextLines.add("  return(conn?conn:mongoose).model('"+name.toLowerCase()+"',"+name.toLowerCase()+"Schema);"); // the exports statement with first argument the singular version of the collection e.g. areamap (so the collection used will be areamaps)
+		modelTextLines.add("}");
 		return(modelTextLines.isEmpty()?new String[]{}:(String[])modelTextLines.toArray(new String[modelTextLines.size()]));
 	}
 	private ITextLinesConsumer.TextFile modelTextFile;
@@ -1322,6 +1395,9 @@ module.exports=(app)=>{
 	}
 	private final boolean load(){
 		// this is a retry of 'syncing' what's stored on disk and what we know to be the textLines internally...
+		if(name.equals("client")){
+			Utils.setInfo(null,"Loading client!");
+		}
 		synced=false;
 		textLines=null;
 		loadException=null;
