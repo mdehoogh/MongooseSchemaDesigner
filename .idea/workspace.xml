@@ -3,29 +3,68 @@
   <component name="ChangeListManager">
     <list default="true" id="7d8604b0-53c8-41d6-b597-b302511ce5ba" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/Field.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ITextLinesProducer$TextFile.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/ITextLinesProducer$TextFile.class" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchema.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$1.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$1.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$2.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$2.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$3.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$3.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$4.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$4.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$5.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$5.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$6.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$6.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$7.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$7.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$FieldListModel.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView$FieldListModel.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView.class" beforeDir="false" afterPath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignEditorView.class" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/client.msd" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/OfficeVitae/client.msd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/device.msd" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/OfficeVitae/device.msd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/sensortype.msd" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/OfficeVitae/sensortype.msd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/deviceinput.msd" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/OfficeVitaeClient/deviceinput.msd" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/Field.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/Field.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProducer.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/ITextLinesProducer.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MapFieldType.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$1.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$2.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$3.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$4.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$5.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame$MongooseSchemaTreeNode.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/out/production/MongooseSchemaDesigner/com/officevitae/marc/MongooseSchemaDesignerFrame.class" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/a.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/area.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/areamap.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/b.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/c.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/client.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/contract.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/dailypushnotification.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/device.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/deviceinput.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/devicetype.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/loradeviceinput.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/maplocation.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/mapoffice.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/officeshapepoint.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/options" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/outputpath" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/product.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/project.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/projectarea.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/pushnotificationreport.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/questiontext.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/sensor.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/sensortype.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/test.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/testautoinc.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/user.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/userprojectarea.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/userpushdevice.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitae/weatherreport.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alert.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alertcondition.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alertconditionchangereceiver.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alertdetection.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alertmessage.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alertreceiver.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/alertreport.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/area.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/areamap.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/device.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/deviceinput.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/maplocation.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/mapoffice.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/mapofficeshapepoint.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/offlinedevicereport.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/options" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/outputpath" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/project.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/questionnaire.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/questiontext.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/user.msd" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/OfficeVitaeClient/userinput.msd" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollection.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesigner.java" afterDir="false" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -38,38 +77,58 @@
     <session id="-1393264772">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="44" />
+          <entry key="project.closed" value="82" />
           <entry key="project.open.time.10" value="7" />
           <entry key="project.open.time.11" value="13" />
-          <entry key="project.open.time.12" value="9" />
+          <entry key="project.open.time.12" value="10" />
           <entry key="project.open.time.13" value="8" />
           <entry key="project.open.time.14" value="3" />
           <entry key="project.open.time.15" value="3" />
-          <entry key="project.open.time.2" value="1" />
-          <entry key="project.opened" value="44" />
+          <entry key="project.open.time.2" value="2" />
+          <entry key="project.open.time.22" value="3" />
+          <entry key="project.open.time.23" value="3" />
+          <entry key="project.open.time.24" value="6" />
+          <entry key="project.open.time.25" value="4" />
+          <entry key="project.open.time.26" value="2" />
+          <entry key="project.open.time.27" value="1" />
+          <entry key="project.open.time.28" value="2" />
+          <entry key="project.open.time.29" value="5" />
+          <entry key="project.open.time.30" value="1" />
+          <entry key="project.open.time.31" value="1" />
+          <entry key="project.open.time.32" value="1" />
+          <entry key="project.open.time.33" value="1" />
+          <entry key="project.open.time.35" value="1" />
+          <entry key="project.open.time.36" value="1" />
+          <entry key="project.open.time.41" value="1" />
+          <entry key="project.open.time.48" value="1" />
+          <entry key="project.open.time.53" value="1" />
+          <entry key="project.open.time.58" value="1" />
+          <entry key="project.opened" value="82" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="java" value="140" />
+          <entry key="java" value="142" />
           <entry key="js" value="1" />
+          <entry key="outputpath" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="JAVA" value="140" />
+          <entry key="JAVA" value="142" />
           <entry key="JavaScript" value="1" />
+          <entry key="PLAIN_TEXT" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="java" value="228272" />
+          <entry key="java" value="230148" />
           <entry key="txt" value="48" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="JAVA" value="228272" />
+          <entry key="JAVA" value="230148" />
           <entry key="PLAIN_TEXT" value="48" />
         </counts>
       </usages-collector>
@@ -81,31 +140,19 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesigner.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="421">
-              <caret line="387" column="9" lean-forward="true" selection-start-line="387" selection-start-column="9" selection-end-line="387" selection-end-column="9" />
-              <folding>
-                <element signature="imports" expanded="true" />
-              </folding>
+            <state relative-caret-position="435">
+              <caret line="36" lean-forward="true" selection-start-line="36" selection-end-line="36" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Field.java">
+        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaFactory.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="200">
-              <caret line="629" column="210" selection-start-line="629" selection-start-column="200" selection-end-line="629" selection-end-column="210" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="15">
-              <caret line="247" selection-start-line="247" selection-end-line="247" />
+            <state relative-caret-position="180">
+              <caret line="15" column="49" selection-start-line="15" selection-start-column="49" selection-end-line="15" selection-end-column="49" />
             </state>
           </provider>
         </entry>
@@ -113,7 +160,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="200">
+            <state relative-caret-position="1590">
               <caret line="121" column="42" selection-start-line="121" selection-start-column="42" selection-end-line="121" selection-end-column="42" />
             </state>
           </provider>
@@ -191,17 +238,12 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>getSelectedMongooseSchemaC</find>
-      <find>CardLayout</find>
-      <find>getNewMongoose</find>
-      <find>checkForNewSchema</find>
       <find>getFieldContents</find>
       <find>getModelTextLinesProducer</find>
       <find>getSchemaModelView</find>
       <find>require('</find>
       <find>getModelTextLines(</find>
       <find>update</find>
-      <find>getSchemaTextLines(</find>
       <find>getController</find>
       <find>OptionCollection optionCo</find>
       <find>outputView=</find>
@@ -221,6 +263,11 @@
       <find>c Field</find>
       <find>refLiteral</find>
       <find>valuesLiteral</find>
+      <find>getSchemaTextLines(</find>
+      <find>function</find>
+      <find>getSchema</find>
+      <find>ovnode</find>
+      <find>Save output to</find>
     </findStrings>
     <replaceStrings>
       <replace>Utils.consoleprintln(</replace>
@@ -265,7 +312,6 @@
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptObjectOption.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionCollectionView.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaCollectionEditorView.java" />
-        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionView.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/Option.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/OptionCollection.java" />
@@ -276,14 +322,14 @@
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/Field.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java" />
         <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java" />
+        <option value="$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java" />
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds">
-    <option name="x" value="45" />
-    <option name="y" value="85" />
-    <option name="width" value="2435" />
-    <option name="height" value="928" />
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="y" value="24" />
+    <option name="width" value="1680" />
+    <option name="height" value="988" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -317,12 +363,12 @@
           <select />
         </subPane>
       </pane>
-      <pane id="PackagesPane" />
       <pane id="Scope" />
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
-    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1542478822984" />
+    <property name="com.android.tools.idea.instantapp.provision.ProvisionBeforeRunTaskProvider.myTimeStamp" value="1576180724994" />
     <property name="project.structure.last.edited" value="Artifacts" />
     <property name="project.structure.proportion" value="0.15" />
     <property name="project.structure.side.proportion" value="0.2" />
@@ -341,8 +387,8 @@
     </option>
   </component>
   <component name="RunManager">
-    <configuration name="MongooseSchemaDesignerFrame" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="com.officevitae.marc.MongooseSchemaDesignerFrame" />
+    <configuration name="MongooseSchemaDesigner" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.officevitae.marc.MongooseSchemaDesigner" />
       <module name="MongooseSchemaDesigner" />
       <option name="VM_PARAMETERS" value="-Xdock:name=&quot;Mongoose Schema Designer&quot;" />
       <extension name="coverage">
@@ -364,7 +410,7 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.MongooseSchemaDesignerFrame" />
+        <item itemvalue="Application.MongooseSchemaDesigner" />
       </list>
     </recent_temporary>
   </component>
@@ -390,9 +436,9 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="45" y="85" width="2435" height="928" extended-state="0" />
+    <frame x="0" y="23" width="1680" height="991" extended-state="6" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8662921" visible="true" weight="0.19933139" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.8662921" visible="true" weight="0.26678878" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Image Layers" order="2" />
       <window_info id="Designer" order="3" />
@@ -401,7 +447,7 @@
       <window_info id="Favorites" order="6" sideWeight="0.13370787" side_tool="true" weight="0.18803419" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.17105263" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.2914349" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3119266" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -409,7 +455,7 @@
       <window_info anchor="bottom" id="Terminal" order="7" />
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Messages" order="10" weight="0.319378" />
+      <window_info anchor="bottom" id="Messages" order="10" weight="0.3192436" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -432,7 +478,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java</url>
-          <line>1059</line>
+          <line>1074</line>
           <properties />
           <option name="timeStamp" value="14" />
         </line-breakpoint>
@@ -450,7 +496,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="java-line">
           <url>file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java</url>
-          <line>1298</line>
+          <line>1313</line>
           <properties />
           <option name="timeStamp" value="25" />
         </line-breakpoint>
@@ -503,20 +549,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaFactory.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="15" column="49" selection-start-line="15" selection-start-column="49" selection-end-line="15" selection-end-column="49" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/JavaScriptMongooseSchema.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="390">
           <caret line="27" column="9" selection-start-line="27" selection-start-column="9" selection-end-line="27" selection-end-column="9" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -637,9 +673,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="585">
           <caret line="42" column="92" selection-start-line="42" selection-start-column="92" selection-end-line="42" selection-end-column="92" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -671,10 +704,34 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignerFrame.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="4425">
-          <caret line="306" column="5" selection-start-line="306" selection-start-column="5" selection-end-line="306" selection-end-column="5" />
+        <state relative-caret-position="209">
+          <caret line="920" column="32" lean-forward="true" selection-start-line="920" selection-start-column="32" selection-end-line="920" selection-end-column="32" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Field.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9195">
+          <caret line="629" column="210" selection-start-line="629" selection-start-column="200" selection-end-line="629" selection-end-column="210" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3435">
+          <caret line="247" selection-start-line="247" selection-end-line="247" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1590">
+          <caret line="121" column="42" selection-start-line="121" selection-start-column="42" selection-end-line="121" selection-end-column="42" />
         </state>
       </provider>
     </entry>
@@ -726,34 +783,24 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/Field.java">
+    <entry file="file://$PROJECT_DIR$/schemas/OfficeVitaeClient/outputpath">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="200">
-          <caret line="629" column="210" selection-start-line="629" selection-start-column="200" selection-end-line="629" selection-end-column="210" />
+        <state>
+          <caret column="31" selection-start-column="31" selection-end-column="31" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/FieldView.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaFactory.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="15">
-          <caret line="247" selection-start-line="247" selection-end-line="247" />
+        <state relative-caret-position="180">
+          <caret line="15" column="49" selection-start-line="15" selection-start-column="49" selection-end-line="15" selection-end-column="49" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesignEditorView.java">
+    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchemaDesigner.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="200">
-          <caret line="121" column="42" selection-start-line="121" selection-start-column="42" selection-end-line="121" selection-end-column="42" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/com/officevitae/marc/MongooseSchema.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="421">
-          <caret line="387" column="9" lean-forward="true" selection-start-line="387" selection-start-column="9" selection-end-line="387" selection-end-column="9" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
+        <state relative-caret-position="435">
+          <caret line="36" lean-forward="true" selection-start-line="36" selection-end-line="36" />
         </state>
       </provider>
     </entry>

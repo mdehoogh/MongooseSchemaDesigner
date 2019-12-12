@@ -35,7 +35,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 */
 
-public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,MongooseSchema.SyncListener,MongooseSchemaCollection.SyncListener {
+public class MongooseSchemaDesigner extends JFrame implements IInfoViewer,MongooseSchema.SyncListener,MongooseSchemaCollection.SyncListener {
 
 	///////////private Vector<String> toplevelSchemaNames=new Vector<String>();
 
@@ -48,14 +48,14 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         infoLabel.addMouseListener(new MouseAdapter(){
 			@Override
 			public void mousePressed(MouseEvent e){
-				Utils.setInfo(MongooseSchemaDesignerFrame.this," ");
+				Utils.setInfo(MongooseSchemaDesigner.this," ");
 			}
 		});
         infoLabel.setForeground(Color.BLUE);
         JButton infoButton;
         infoPanel.add(infoButton=new JButton("Show info log"),BorderLayout.EAST);
 		infoButton.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent event){SwingUtils.showInfoFrame(MongooseSchemaDesignerFrame.this,"Information messages log");}
+			public void actionPerformed(ActionEvent event){SwingUtils.showInfoFrame(MongooseSchemaDesigner.this,"Information messages log");}
 		});
 		return infoPanel;
     }
@@ -501,10 +501,10 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
 	}
 
     private PrintStream console=null;
-    public MongooseSchemaDesignerFrame(){
+    public MongooseSchemaDesigner(){
         this.getContentPane().add(getView());
         Utils.setInfoViewer(this); // register myself as info viewer
-        this.setTitle("Mongoose Schema Designer \u00A9 2018 Office Vitae");
+        this.setTitle("Mongoose Schema Designer \u00A9 2018-2019 Marc P. de Hoogh");
         this.setSize(1280,1024);
         this.setLocationRelativeTo(null); // center on screen please
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -605,6 +605,6 @@ public class MongooseSchemaDesignerFrame extends JFrame implements IInfoViewer,M
         ///System.setProperty("apple.laf.useScreenMenuBar", "true");
         ///System.setProperty("com.apple.mrj.application.apple.menu.about.name", "Mongoose Schema Designer");
         System.out.println("Starting Mongoose Schema Designer...");
-        new MongooseSchemaDesignerFrame().setVisible(true);
+        new MongooseSchemaDesigner().setVisible(true);
     }
 }

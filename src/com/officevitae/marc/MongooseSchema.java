@@ -340,6 +340,8 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 		for(String string:stringList)sbResult.append(separator+prefix+string);
 		return(sbResult.substring(separator.length()));
 	}
+
+	// MDH@12DEC2019: we'll be changing this a bit to be able to work with any database connection (after a year of not working on it!!)
 	private String[] getControllerTextLines() throws Exception{
 		if(controllerTextLines!=null)controllerTextLines.clear();else controllerTextLines=new Vector<String>();
 		addControllerTextLine("/*");
@@ -347,55 +349,59 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 		addControllerTextLine(" * At: "+Utils.getTimestamp());
 		addControllerTextLine(" * Author: <Enter your name here>");
 		addControllerTextLine(" */");
+		String lowerName=name.toLowerCase();
+		addControllerTextLine("module.exports=(conn)=>{ // requires plugging in the connection to use for creating models");
 		// MDH@20NOV2018: given that models are now connection-dependent we tell the user that the so created model uses the default connection!!!
-		addControllerTextLine("const "+Utils.capitalize(name)+"=require('../models/"+getOutputFileName()+".model.js')(); // the model using the default connection");
+		// MDH@12DEC2019: now using either the default (i.e. mongoose) or the connection passed in
+		addControllerTextLine("\tconst "+Utils.capitalize(name)+"=require('../models/"+getOutputFileName()+".model.js')(conn?conn:require('mongoose'));");
 		// this allows one to create instances of this model with data, and store it by calling save
 		// we're going to write skeloton methods for create, findOne, findAll, update and delete
-		addControllerTextLine("exports.create=function(req,res){");
-		addControllerTextLine("\t// Step 1. if not all required fields are present, return appropriate error message.");
+		addControllerTextLine("\treturn{"); // doesn't like return on a separate line (unfortunately)
+		addControllerTextLine("\t\tcreate:function(req,res){");
+		addControllerTextLine("\t\t\t// Step 1. if not all required fields are present, return appropriate error message.");
 		// MDH@08NOV2018: let's collect all required fields to start with
 		//                TODO how about required fields that are subschema's????
 		Vector<String> requiredFieldNames=new Vector<String>(),optionalFieldNames=new Vector<String>();
 		for(Field field:fieldCollection)if(!field.isVirtual()&&!field.isRequiredBlocked())if(field.isRequired())requiredFieldNames.add(field.getName());else if(!field.isAutoIncremented())optionalFieldNames.add(field.getName());
 		if(!requiredFieldNames.isEmpty()){ // something to check, all should be present in the body!!
-			addControllerTextLine("\tif("+join(requiredFieldNames,"||","!req.body.")+")");
-			addControllerTextLine("\t\treturn res.status(400).send({error:'Not all required input fields to create a "+Utils.capitalize(name)+" document specified.'});");
+			addControllerTextLine("\t\t\tif("+join(requiredFieldNames,"||","!req.body.")+")");
+			addControllerTextLine("\t\t\t\treturn res.status(400).send({error:'Not all required input fields to create a "+Utils.capitalize(name)+" document specified.'});");
 		}
-		addControllerTextLine("\t");
-		addControllerTextLine("\t// Step 2. Create a new object with the received data (properties of reg.body));");
+		addControllerTextLine("\t\t\t");
+		addControllerTextLine("\t\t\t// Step 2. Create a new object with the received data (properties of reg.body));");
 		// two ways of doing this, with or without optional fields!!!
 		if(optionalFieldNames.isEmpty()){ // no optional fields!!!
 			if(!requiredFieldNames.isEmpty()){ // something to check, all should be present in the body!!
-				addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"({");
+				addControllerTextLine("\t\t\tconst "+name+"=new "+Utils.capitalize(name)+"({");
 				// I suppose I can write the names of the required fields here passing in a null value initially???
 				for(String requiredFieldName: requiredFieldNames)
-					addControllerTextLine("\t\t"+requiredFieldName+":req.body['"+requiredFieldName+"'],");
-				addControllerTextLine("\t});");
+					addControllerTextLine("\t\t\t\t"+requiredFieldName+":req.body['"+requiredFieldName+"'],");
+				addControllerTextLine("\t\t\t});");
 			}else
-				addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"({});"); // empty object creator...
+				addControllerTextLine("\t\t\tconst "+name+"=new "+Utils.capitalize(name)+"({});"); // empty object creator...
 		}else{ // we have optional fields
 			// create a temporary object to host the value to store
 			// I suppose I can write the names of the required fields here passing in a null value initially???
 			if(!requiredFieldNames.isEmpty()){
-				addControllerTextLine("\tvar "+name.toLowerCase()+"Data={");
-				for(String requiredFieldName:requiredFieldNames)addControllerTextLine("\t\t"+requiredFieldName+":req.body['"+requiredFieldName+"'],");
-				addControllerTextLine("\t};"); // end the temporary object
+				addControllerTextLine("\t\t\tvar "+name.toLowerCase()+"Data={");
+				for(String requiredFieldName:requiredFieldNames)addControllerTextLine("\t\t\t\t"+requiredFieldName+":req.body['"+requiredFieldName+"'],");
+				addControllerTextLine("\t\t\t};"); // end the temporary object
 			}else // start as empty Object
-				addControllerTextLine("\tvar "+name.toLowerCase()+"Data={};");
+				addControllerTextLine("\t\t\tvar "+name.toLowerCase()+"Data={};");
 			// for all optional field names present in the body add a property to this temp object (enquoting the property name is safest!!!)
-			for(String optionalFieldName:optionalFieldNames)addControllerTextLine("\tif(req.body.hasOwnProperty('"+optionalFieldName+"'))if(req.body['"+optionalFieldName+"'])"+name.toLowerCase()+"Data['"+optionalFieldName+"']=req.body['"+optionalFieldName+"'];");
-			addControllerTextLine("\tconst "+name+"=new "+Utils.capitalize(name)+"("+name.toLowerCase()+"Data);"); // create the model instance!!
+			for(String optionalFieldName:optionalFieldNames)addControllerTextLine("\t\t\tif(req.body.hasOwnProperty('"+optionalFieldName+"'))if(req.body['"+optionalFieldName+"'])"+name.toLowerCase()+"Data['"+optionalFieldName+"']=req.body['"+optionalFieldName+"'];");
+			addControllerTextLine("\t\tconst "+name+"=new "+Utils.capitalize(name)+"("+name.toLowerCase()+"Data);"); // create the model instance!!
 		}
-		addControllerTextLine("\t// Step 3. Save the newly created instance");
-		addControllerTextLine("\t"+name+".save().then(data=>{");
-		addControllerTextLine("\t\tres.send(data); // or whatever else you want to send");
-		addControllerTextLine("\t}).catch(err=>{");
-		addControllerTextLine("\t\tres.status(500).send({");
-		addControllerTextLine("\t\t\terror:err.message||'Some error occurred trying to add a "+name+"'");
-		addControllerTextLine("\t\t});");
-		addControllerTextLine("\t});");
-		addControllerTextLine("};");
-		addControllerTextLine("exports.findAll=function(req,res){");
+		addControllerTextLine("\t\t\t// Step 3. Save the newly created instance");
+		addControllerTextLine("\t\t\t"+name+".save().then(data=>{");
+		addControllerTextLine("\t\t\t\tres.send(data); // or whatever else you want to send");
+		addControllerTextLine("\t\t\t}).catch(err=>{");
+		addControllerTextLine("\t\t\t\tres.status(500).send({");
+		addControllerTextLine("\t\t\t\t\terror:err.message||'Some error occurred trying to add a "+name+"'");
+		addControllerTextLine("\t\t\t\t});");
+		addControllerTextLine("\t\t\t});");
+		addControllerTextLine("\t\t},");
+		addControllerTextLine("\t\tfindAll:function(req,res){");
 		/*    Client.find()
     .then(clients => {
         res.send(clients);
@@ -405,16 +411,16 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
         });
     });
 		*/
-		addControllerTextLine("\t"+Utils.capitalize(name)+".find()");
-		addControllerTextLine("\t.then("+name+"s => {");
-		addControllerTextLine("\t\tres.send("+name+"s);");
-		addControllerTextLine("\t}).catch(err => {");
-		addControllerTextLine("\t\tres.status(500).send({");
-		addControllerTextLine("\t\t\terror: err.message || 'Some error occurred while retrieving "+name+"s.'");
-		addControllerTextLine("\t\t});");
-		addControllerTextLine("\t});");
-		addControllerTextLine("};");
-		addControllerTextLine("exports.findOne=function(req,res){");
+		addControllerTextLine("\t\t\t"+Utils.capitalize(name)+".find()");
+		addControllerTextLine("\t\t\t.then("+name+"s => {");
+		addControllerTextLine("\t\t\t\tres.send("+name+"s);");
+		addControllerTextLine("\t\t\t}).catch(err => {");
+		addControllerTextLine("\t\t\t\tres.status(500).send({");
+		addControllerTextLine("\t\t\t\t\terror: err.message || 'Some error occurred while retrieving "+name+"s.'");
+		addControllerTextLine("\t\t\t\t});");
+		addControllerTextLine("\t\t\t});");
+		addControllerTextLine("\t\t},");
+		addControllerTextLine("\t\tfindOne:function(req,res){");
 		/*
 		    Client.findById(req.params.clientId)
     .then(client => {
@@ -436,26 +442,26 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
     });
 
 		 */
-		addControllerTextLine("\t"+Utils.capitalize(name)+".findById(req.params."+name+"Id)");
-		addControllerTextLine("\t.then("+name+" => {");
-		addControllerTextLine("\t\tif(!"+name+"){");
-		addControllerTextLine("\t\t\treturn res.status(404).send({");
-		addControllerTextLine("\t\t\t\terror: '"+Utils.capitalize(name)+" with id ' + req.params."+name+"Id + ' not found.'");
+		addControllerTextLine("\t\t\t"+Utils.capitalize(name)+".findById(req.params."+lowerName+"Id)");
+		addControllerTextLine("\t\t\t.then("+name+" => {");
+		addControllerTextLine("\t\t\t\tif(!"+name+"){");
+		addControllerTextLine("\t\t\t\t\treturn res.status(404).send({");
+		addControllerTextLine("\t\t\t\t\t\terror: '"+Utils.capitalize(name)+" with id ' + req.params."+lowerName+"Id + ' not found.'");
+		addControllerTextLine("\t\t\t\t\t});");
+		addControllerTextLine("\t\t\t\t}");
+		addControllerTextLine("\t\t\t\tres.send("+name+");");
+		addControllerTextLine("\t\t\t}).catch(err => {");
+		addControllerTextLine("\t\t\t\tif(err.kind=='ObjectId'){");
+		addControllerTextLine("\t\t\t\t\treturn res.status(404).send({");
+		addControllerTextLine("\t\t\t\t\t\terror: 'Client with id ' + req.params."+lowerName+"Id + ' not found.'");
+		addControllerTextLine("\t\t\t\t\t});");
+		addControllerTextLine("\t\t\t\t}");
+		addControllerTextLine("\t\t\t\treturn res.status(500).send({");
+		addControllerTextLine("\t\t\t\t\terror: 'Failed to retrieve the "+lowerName+" with id ' + req.params."+lowerName+"Id + '.'");
+		addControllerTextLine("\t\t\t\t});");
 		addControllerTextLine("\t\t\t});");
-		addControllerTextLine("\t\t}");
-		addControllerTextLine("\t\tres.send("+name+");");
-		addControllerTextLine("\t}).catch(err => {");
-		addControllerTextLine("\t\tif(err.kind=='ObjectId'){");
-		addControllerTextLine("\t\t\treturn res.status(404).send({");
-		addControllerTextLine("\t\t\t\terror: 'Client with id ' + req.params."+name+"Id + ' not found.'");
-		addControllerTextLine("\t\t\t});");
-		addControllerTextLine("\t\t}");
-		addControllerTextLine("\t\treturn res.status(500).send({");
-		addControllerTextLine("\t\t\terror: 'Failed to retrieve the "+name+" with id ' + req.params."+name+"Id + '.'");
-		addControllerTextLine("\t\t});");
-		addControllerTextLine("\t});");
-		addControllerTextLine("};");
-		addControllerTextLine("exports.update=function(req,res){");
+		addControllerTextLine("\t\t},");
+		addControllerTextLine("\t\tupdate:function(req,res){");
 		/* MDH@06NOV2018: NO not all required fields need to be present of course just the ones you want to set!!!
 		addControllerTextLine("\t// Step 1. All required fields should all be present");
 		if(!requiredFieldNames.isEmpty()){
@@ -467,47 +473,49 @@ public class MongooseSchema implements IFieldChangeListener,IFieldType.External,
 		}
 		*/
 		// do the update passing in req.body as a whole
-		addControllerTextLine("\t"+Utils.capitalize(name)+".findOneAndUpdate(req.params."+name+"Id,{$set:req.body})");
-		addControllerTextLine("\t.then("+name+" => {");
-		addControllerTextLine("\t\tif(!"+name+"){");
-		addControllerTextLine("\t\t\treturn res.status(400).send({");
-		addControllerTextLine("\t\t\t\terror:'"+Utils.capitalize(name)+" with id ' + req.params."+name+"Id + 'not found.'");
+		addControllerTextLine("\t\t\t"+Utils.capitalize(name)+".findOneAndUpdate(req.params."+lowerName+"Id,{$set:req.body})");
+		addControllerTextLine("\t\t\t.then("+name+" => {");
+		addControllerTextLine("\t\t\t\tif(!"+name+"){");
+		addControllerTextLine("\t\t\t\t\treturn res.status(400).send({");
+		addControllerTextLine("\t\t\t\t\t\terror:'"+Utils.capitalize(name)+" with id ' + req.params."+lowerName+"Id + 'not found.'");
+		addControllerTextLine("\t\t\t\t\t});");
+		addControllerTextLine("\t\t\t\t}");
+		addControllerTextLine("\t\t\t\tres.send({'updated':"+name+"});");
+		addControllerTextLine("\t\t\t}).catch(err => {");
+		addControllerTextLine("\t\t\t\tif(err.kind == 'ObjectId'){");
+		addControllerTextLine("\t\t\t\t\treturn res.send(404).send({");
+		addControllerTextLine("\t\t\t\t\t\terror: '"+name+" with id ' + req.params."+lowerName+"Id + ' not found.'");
+		addControllerTextLine("\t\t\t\t\t});");
+		addControllerTextLine("\t\t\t\t}");
+		addControllerTextLine("\t\t\t\treturn res.status(500).send({");
+		addControllerTextLine("\t\t\t\t\tbody: req.body,");
+		addControllerTextLine("\t\t\t\t\terror: 'Failed to update the "+lowerName+" with id ' + req.params."+lowerName+"Id + '.'");
+		addControllerTextLine("\t\t\t\t});");
 		addControllerTextLine("\t\t\t});");
-		addControllerTextLine("\t\t}");
-		addControllerTextLine("\t\tres.send({'updated':"+name+"});");
-		addControllerTextLine("\t}).catch(err => {");
-		addControllerTextLine("\t\tif(err.kind == 'ObjectId'){");
-		addControllerTextLine("\t\t\treturn res.send(404).send({");
-		addControllerTextLine("\t\t\t\terror: '"+name+" with id ' + req.params."+name+"Id + ' not found.'");
+		addControllerTextLine("\t\t},");
+		addControllerTextLine("\t\tdelete:function(req,res){");
+		addControllerTextLine("\t\t\t"+Utils.capitalize(name)+".findOneAndDelete(req.params."+lowerName+"Id)");
+		addControllerTextLine("\t\t\t.then("+name+" => {");
+		addControllerTextLine("\t\t\t\tif(!"+name+"){");
+		addControllerTextLine("\t\t\t\t\treturn res.status(400).send({");
+		addControllerTextLine("\t\t\t\t\t\terror: '"+Utils.capitalize(name)+" with id ' + req.params."+lowerName+"Id + 'not found.'");
+		addControllerTextLine("\t\t\t\t\t});");
+		addControllerTextLine("\t\t\t\t}");
+		addControllerTextLine("\t\t\t\tres.send({message:'"+name+" deleted successfully.'});");
+		addControllerTextLine("\t\t\t}).catch(err => {");
+		addControllerTextLine("\t\t\t\tif(err.kind == 'ObjectId'||err.name=='NotFound'){");
+		addControllerTextLine("\t\t\t\t\treturn res.send(404).send({");
+		addControllerTextLine("\t\t\t\t\t\terror: '"+lowerName+" with id ' + req.params."+lowerName+"Id + ' not found.'");
+		addControllerTextLine("\t\t\t\t\t});");
+		addControllerTextLine("\t\t\t\t}");
+		addControllerTextLine("\t\t\t\treturn res.status(500).send({");
+		addControllerTextLine("\t\t\t\t\tbody: req.body,");
+		addControllerTextLine("\t\t\t\t\terror: 'Failed to delete the "+lowerName+" with id ' + req.params."+lowerName+"Id + '.'");
+		addControllerTextLine("\t\t\t\t});");
 		addControllerTextLine("\t\t\t});");
-		addControllerTextLine("\t\t}");
-		addControllerTextLine("\t\treturn res.status(500).send({");
-		addControllerTextLine("\t\t\tbody: req.body,");
-		addControllerTextLine("\t\t\terror: 'Failed to update the "+name+" with id ' + req.params."+name+"Id + '.'");
-		addControllerTextLine("\t\t});");
-		addControllerTextLine("\t});");
-		addControllerTextLine("};");
-		addControllerTextLine("exports.delete=function(req,res){");
-		addControllerTextLine("\t"+Utils.capitalize(name)+".findOneAndDelete(req.params."+name+"Id)");
-		addControllerTextLine("\t.then("+name+" => {");
-		addControllerTextLine("\t\tif(!"+name+"){");
-		addControllerTextLine("\t\t\treturn res.status(400).send({");
-		addControllerTextLine("\t\t\t\terror: '"+Utils.capitalize(name)+" with id ' + req.params."+name+"Id + 'not found.'");
-		addControllerTextLine("\t\t\t});");
-		addControllerTextLine("\t\t}");
-		addControllerTextLine("\t\tres.send({message:'"+name+" deleted successfully.'});");
-		addControllerTextLine("\t}).catch(err => {");
-		addControllerTextLine("\t\tif(err.kind == 'ObjectId'||err.name=='NotFound'){");
-		addControllerTextLine("\t\t\treturn res.send(404).send({");
-		addControllerTextLine("\t\t\t\terror: '"+name+" with id ' + req.params."+name+"Id + ' not found.'");
-		addControllerTextLine("\t\t\t});");
-		addControllerTextLine("\t\t}");
-		addControllerTextLine("\t\treturn res.status(500).send({");
-		addControllerTextLine("\t\t\tbody: req.body,");
-		addControllerTextLine("\t\t\terror: 'Failed to delete the "+name+" with id ' + req.params."+name+"Id + '.'");
-		addControllerTextLine("\t\t});");
-		addControllerTextLine("\t});");
-		addControllerTextLine("};");
+		addControllerTextLine("\t\t},");
+		addControllerTextLine("\t};");
+		addControllerTextLine(("}"));
 		return(String[])controllerTextLines.toArray(new String[controllerTextLines.size()]);
 	}
 	private ITextLinesProducer controllerTextLinesProducer=null;
@@ -559,8 +567,10 @@ module.exports=(app)=>{
 		addRoutesTextLine(" * At: "+Utils.getTimestamp());
 		addRoutesTextLine(" * Author: <Enter your name here>");
 		addRoutesTextLine(" */");
-		addRoutesTextLine("module.exports=(app)=>{");
-		addRoutesTextLine("\tconst "+lowerName+"s=require('../controllers/"+getOutputFileName()+".controller.js');");
+		// MDH@12DEC2019: app changed to router to indicate that it's essentially a Router object being passed to it (typically express() itself)
+		//                now conn is also included in order to be able to pass it along to controllers.js
+		addRoutesTextLine("module.exports=(router,conn)=>{");
+		addRoutesTextLine("\tconst "+lowerName+"s=require('../controllers/"+getOutputFileName()+".controller.js')(conn);");
 		addRoutesTextLine("\tapp.post('/"+lowerName+"s',"+lowerName+"s.create);");
 		addRoutesTextLine("\tapp.get('/"+lowerName+"s',"+lowerName+"s.findAll);");
 		addRoutesTextLine("\tapp.get('/"+lowerName+"s/:"+lowerName+"Id',"+lowerName+"s.findOne);");
@@ -792,6 +802,10 @@ module.exports=(app)=>{
 				// general options
 				if(field.aliasLiteral.isValid()&&!field.aliasLiteral.isDisabled())fieldTextRepresentation.append(",alias:'"+field.aliasLiteral.getValue()+"'");
 				if(!field.defaultLiteral.isDisabled()&&field.defaultLiteral.isValid())fieldTextRepresentation.append(",default:"+field.defaultLiteral.getValue()); // assuming getValue will quote the text if it's a String default????
+				// not to forget the set, get and validate literals
+				if(field.getLiteral.isValid()&&!field.getLiteral.isDisabled())fieldTextRepresentation.append(",get:"+field.getLiteral.getValue());
+				if(field.setLiteral.isValid()&&!field.setLiteral.isDisabled())fieldTextRepresentation.append(",set:"+field.setLiteral.getValue());
+				if(field.validateLiteral.isValid()&&!field.validateLiteral.isDisabled())fieldTextRepresentation.append(",validate:"+field.validateLiteral.getValue());
 				// type-specific options
 				IFieldType fieldType=field.getType();
 				if(fieldType instanceof MongooseFieldType)
@@ -901,6 +915,7 @@ module.exports=(app)=>{
 		schemaTextLines.add(" */");
 		schemaTextLines.add("");
 		schemaTextLines.add("const mongoose=require('mongoose');");
+		schemaTextLines.add("// Comment out the following lines if you're not using the integer data types provided by the mongoose-long and mongoose-int32 libraries.");
 		schemaTextLines.add("require('mongoose-long')(mongoose);"); // Long (=integer) support TODO can we make this optional
 		schemaTextLines.add("var Int32=require('mongoose-int32');"); // Int32 support TODO can we make this optional (when it is actually used in the schema??)
 		schemaTextLines.add("");
